@@ -3,7 +3,7 @@
 | Milestone | Status |
 | --- | --- |
 | 1. Scope, contracts and synthetic test data | **Done**, pending teammate review of the model/profile boundary |
-| 2. React layout and selected green theme | Not started |
+| 2. React layout and selected green theme | **Done** (see below) |
 | 3. Node API and workflow storage | Not started |
 | 4. Filters, assignment and bulk actions | Not started |
 | 5. Integration checks, usability and handoff | Not started |
@@ -20,3 +20,18 @@
 - Model owner: agree identifiers, score meaning and the `getAssessments(caseIds)` shape. Until then the mock adapter is used.
 - Profile owner: agree `personId` and the full-profile route (`fullProfilePath` is null in the fixture).
 - Undo window (10 minutes) and the 100-item bulk limit are proposals for the team to confirm.
+
+## Milestone 2: React layout and green theme
+
+Built in `web/` (React 19, TypeScript, Vite; npm workspace at the repo root).
+
+- App shell, filter sidebar (views, support areas with parent/child checkboxes and an indeterminate state, assistance reported, simulated model priority, workflow), three overview counters, toolbar, table, pagination (8 per page), minimal New case panel and the compact right overview (440 px on wide screens, a slide-over on narrower ones).
+- The three support areas and nine circumstances come from the JSON catalogs; the old placeholder categories are gone.
+- Only `web/src/data/caseSource.ts` imports the fixture. Milestone 3 swaps it for API calls.
+- Filter, sort, paging, counters and follow-up wording are pure functions in `web/src/domain/` with 12 unit tests.
+- Small screens: filters sit behind a Filters button. Panels close with Escape and return focus to where you were.
+- Checked in a real browser at 1440 px and 390 px with no console errors.
+
+Deliberately not done yet (Milestones 3–4): assignment, bulk assign/status, status changes, notes, review and Undo. Those controls are visible but disabled. The New case form adds an in-memory case only.
+
+Known limit: the fixture is bundled into the page, so the build is over 500 kB until the API replaces it.

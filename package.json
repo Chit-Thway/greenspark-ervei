@@ -1,0 +1,14 @@
+{
+  "name": "greenspark-ervei",
+  "private": true,
+  "version": "0.1.0",
+  "engines": { "node": ">=22" },
+  "workspaces": ["web"],
+  "scripts": {
+    "check:fixture": "node scripts/generate-synthetic-cases.mjs --check",
+    "dev": "npm run dev -w web",
+    "build": "npm run build -w web",
+    "test": "npm run test -w web",
+    "typecheck": "npm run typecheck -w web"
+  }
+}

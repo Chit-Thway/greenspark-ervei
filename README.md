@@ -18,7 +18,22 @@ The approved direction as of **16 October 2026** is the bright green/mint theme 
 - [Test-data instructions and limitations](data/synthetic/README.md)
 - [Clickable workflow, selected theme and overview references](docs/design/README.md)
 
-The React application and Node API have not been built yet. The contracts are proposals to agree with the model and profile teammates.
+The React screen (Milestone 2) is built and reads the fixture through one adapter. The Node API and SQLite storage are not built yet, so assignment, status and notes are shown read-only. The contracts are proposals to agree with the model and profile teammates.
+
+## Run the app
+
+Needs Node.js 22 or newer.
+
+```sh
+npm install
+npm run dev        # http://localhost:5173
+npm test           # filter/sort/paging/follow-up unit tests
+npm run typecheck
+npm run build
+npm run check:fixture
+```
+
+Use the **Demo view** menu in the header to switch between the manager and support workers. It is a labelled stand-in, not sign-in. New cases added in the browser last until you reload. The profile link stays hidden until `VITE_PROFILE_URL_TEMPLATE` is set (for example `https://profiles.example/people/{personId}`).
 
 ## Start from milestone 1
 
