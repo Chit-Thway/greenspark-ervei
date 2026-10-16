@@ -1,5 +1,7 @@
 # Workflow audit — 16 October 2026
 
+Resolution: all seven findings have been fixed on `debug`. See [the fix and verification report](2026-10-16-workflow-fixes.md). The audit below records the original behavior before those fixes.
+
 Audit branch: `debug`. Inspected application commit: `0a4eaf33e88745d9dc0ab5801ebec2bda02795d1`.
 Started at 19:20 Australia/Perth. Focus: manager assignment → worker casework → review/status/notes → conflict recovery and Undo. Findings were reproduced before filing. This branch contains audit evidence and reproduction support; application behavior has not been changed.
 

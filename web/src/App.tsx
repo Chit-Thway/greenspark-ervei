@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CaseStatus, QueueQuery, ReviewStatus, StaffUser } from "./domain/types";
 import { ApiClientError, createApiClient, type Catalog, type CaseItem, type CaseListResponse, type ErrorDetail, type MutationResult } from "./data/api";
-import { ASSISTANCE_OPTIONS, DEFAULT_QUERY, activeFilterCount } from "./domain/query";
+import { ASSISTANCE_OPTIONS, DEFAULT_QUERY, MAX_BULK_ITEMS, activeFilterCount } from "./domain/query";
+import { addSelection } from "./domain/selection";
 import { PRIORITY_TEXT, STATUS_LABELS } from "./domain/format";
 import { FilterSidebar } from "./components/FilterSidebar";
 import { CaseTable } from "./components/CaseTable";
@@ -57,6 +58,9 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; o
   const [listError, setListError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshTick, setRefreshTick] = useState(0);
+  const [loadedListKey, setLoadedListKey] = useState<string | null>(null);
+  const [validatedSelectionKey, setValidatedSelectionKey] = useState<string | null>(null);
+  const [selectionError, setSelectionError] = useState<string | null>(null);
   // Selected case IDs map to the version the user last saw, so bulk requests carry expectedVersion.
   const [selected, setSelected] = useState<Map<string, number>>(new Map());
   const [openItem, setOpenItem] = useState<CaseItem | null>(null);
@@ -68,8 +72,22 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; o
   const [bulkStatus, setBulkStatus] = useState<CaseStatus>("in_progress");
   const returnFocus = useRef<HTMLElement | null>(null);
   const noticeTimer = useRef<number | undefined>(undefined);
+  const overviewRequest = useRef(0);
   const isManager = user.role === "manager";
   const refresh = () => setRefreshTick((n) => n + 1);
+  const filterKey = JSON.stringify({ ...query, page: 0, sort: "", pageSize: 0 });
+  const selectionKey = `${filterKey}:${refreshTick}`;
+  const listKey = `${JSON.stringify(query)}:${refreshTick}`;
+  const hasSelection = selected.size > 0;
+  // Key comparisons block actions in the render that changes the query, before effects run.
+  const selectionPending = hasSelection && validatedSelectionKey !== selectionKey;
+  const listPending = loading || loadedListKey !== listKey;
+  const bulkDisabled = busy || listPending || selectionPending || searchText !== query.search || selected.size > MAX_BULK_ITEMS;
+
+  useEffect(() => () => {
+    overviewRequest.current += 1;
+    window.clearTimeout(noticeTimer.current);
+  }, []);
 
   // Debounce the search box so we don't query on every keystroke.
   useEffect(() => {
@@ -89,6 +107,7 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; o
         setList(r);
         setListError(null);
         setLoading(false);
+        setLoadedListKey(listKey);
         if (r.page !== query.page) setQuery((q) => ({ ...q, page: r.page }));
         // Refresh remembered versions for selected rows we can see on this page.
         setSelected((s) => {
@@ -112,17 +131,23 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; o
   }, [client, query, refreshTick]);
 
   // Filter changes (and data changes) drop selected IDs that no longer match.
-  const filterKey = JSON.stringify({ ...query, page: 0, sort: "", pageSize: 0 });
   useEffect(() => {
-    if (selected.size === 0) return;
+    setSelectionError(null);
+    if (!hasSelection) {
+      setValidatedSelectionKey(selectionKey);
+      return;
+    }
     let current = true;
     client.matchingIds(query).then((ids) => {
       if (!current) return;
       const keep = new Set(ids);
       setSelected((s) => (s.size && [...s.keys()].some((id) => !keep.has(id)) ? new Map([...s].filter(([id]) => keep.has(id))) : s));
-    }, () => { /* the list request reports connection problems */ });
+      setValidatedSelectionKey(selectionKey);
+    }, () => {
+      if (current) setSelectionError("Couldn’t verify the selected cases. Retry or clear the selection before applying changes.");
+    });
     return () => { current = false; };
-  }, [filterKey, refreshTick]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [client, selectionKey, hasSelection]); // selectionKey includes all filters and the refresh generation
 
   const say = (n: Notice | null) => {
     window.clearTimeout(noticeTimer.current);
@@ -134,20 +159,30 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; o
   const reset = () => { setSearchText(""); setQuery({ ...DEFAULT_QUERY }); };
 
   const open = async (id: string) => {
+    const request = ++overviewRequest.current;
     returnFocus.current = document.activeElement as HTMLElement | null;
     setNewCaseOpen(false);
     const fromList = list?.items.find((i) => i.case.id === id);
-    if (fromList) setOpenItem(fromList);
+    setOpenItem(fromList ?? null);
     try {
-      setOpenItem(await client.overview(id));
+      const fresh = await client.overview(id);
+      if (request !== overviewRequest.current) return;
+      setOpenItem((o) => o?.case.id === id && o.case.version > fresh.case.version ? o : fresh);
     } catch (e) {
-      if (!fromList) say({ kind: "error", message: errorText(e) });
+      if (request === overviewRequest.current && !fromList) say({ kind: "error", message: errorText(e) });
     }
   };
   const close = () => {
+    overviewRequest.current += 1;
     setOpenItem(null);
     setNewCaseOpen(false);
     returnFocus.current?.focus();
+  };
+  const showNewCase = () => {
+    overviewRequest.current += 1;
+    returnFocus.current = document.activeElement as HTMLElement;
+    setOpenItem(null);
+    setNewCaseOpen(true);
   };
 
   const nameOf = (id: string | null) => (id ? catalog.users.find((u) => u.id === id)?.displayName ?? id : "nobody");
@@ -155,7 +190,7 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; o
   function applyUpdated(r: MutationResult) {
     setOpenItem((o) => {
       const u = o && r.updated.find((c) => c.id === o.case.id);
-      return u && o ? { ...o, case: u } : o;
+      return u && o && u.version >= o.case.version ? { ...o, case: u } : o;
     });
     setSelected((s) => {
       const n = new Map(s);
@@ -164,21 +199,36 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; o
     });
   }
 
+  async function refreshCases(ids: string[]): Promise<boolean> {
+    const results = await Promise.allSettled([...new Set(ids)].map(async (id) => {
+      const fresh = await client.overview(id);
+      setOpenItem((o) => o?.case.id === id && fresh.case.version >= o.case.version ? fresh : o);
+      setSelected((s) => s.has(id) ? new Map(s).set(id, Math.max(s.get(id)!, fresh.case.version)) : s);
+    }));
+    return results.every((r) => r.status === "fulfilled");
+  }
+
   async function handleError(e: unknown) {
     if (e instanceof ApiClientError && e.code === "version_conflict") {
       if (e.current) {
-        setOpenItem((o) => (o && o.case.id === e.current!.id ? { ...o, case: e.current! } : o));
+        applyUpdated({ actionId: null, updated: [e.current], unchanged: [] });
       }
       say({ kind: "error", message: "That case was changed by someone else. It has been refreshed. Review it and try again." });
     } else if (e instanceof ApiClientError && e.code === "bulk_validation_failed") {
       const stale = e.details.filter((d) => d.code === "version_conflict" && d.caseId);
-      // Pull in the latest versions so a retry carries what the user can now see.
-      await Promise.all(stale.map((d) => client.overview(d.caseId!).then((o) => setSelected((s) => (s.has(o.case.id) ? new Map(s).set(o.case.id, o.case.version) : s)), () => undefined)));
+      const affected = e.details.filter((d) => (d.code === "version_conflict" || d.code === "forbidden") && d.caseId);
+      const refreshed = await refreshCases(affected.map((d) => d.caseId!));
+      const conflictMessage = refreshed
+        ? "No changes were made. Some cases changed; their latest details are loaded. Review them and apply again."
+        : "No changes were made. Couldn’t refresh some changed cases. Reopen them before retrying.";
       say({
         kind: "error",
-        message: stale.length ? "No changes were made. Some cases changed since you selected them; their latest versions are loaded, so review and apply again." : "No changes were made. Some cases can’t be updated:",
+        message: stale.length ? conflictMessage : "No changes were made. Some cases can’t be updated:",
         details: e.details,
       });
+    } else if (e instanceof ApiClientError && e.code === "forbidden") {
+      const refreshed = openItem && await refreshCases([openItem.case.id]);
+      say({ kind: "error", message: errorText(e) + (refreshed ? " The latest case details have been loaded." : " Reopen the case to load its latest assignment.") });
     } else {
       say({ kind: "error", message: errorText(e) });
     }
@@ -230,10 +280,14 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; o
     },
   };
 
-  const bulkAssign = () =>
-    run(() => client.assign(bulkAssignee || null, selectedItems()), (r) => (bulkAssignee ? `Assigned ${plural(r.updated.length)} to ${nameOf(bulkAssignee)}.` : `Unassigned ${plural(r.updated.length)}.`));
-  const bulkSetStatus = () =>
-    run(() => client.setStatus(bulkStatus, selectedItems()), (r) => `Set ${plural(r.updated.length)} to ${STATUS_LABELS[bulkStatus]}.`);
+  const bulkAssign = () => {
+    if (bulkDisabled || !hasSelection || selected.size > MAX_BULK_ITEMS) return;
+    return run(() => client.assign(bulkAssignee || null, selectedItems()), (r) => (bulkAssignee ? `Assigned ${plural(r.updated.length)} to ${nameOf(bulkAssignee)}.` : `Unassigned ${plural(r.updated.length)}.`));
+  };
+  const bulkSetStatus = () => {
+    if (bulkDisabled || !hasSelection || selected.size > MAX_BULK_ITEMS) return;
+    return run(() => client.setStatus(bulkStatus, selectedItems()), (r) => `Set ${plural(r.updated.length)} to ${STATUS_LABELS[bulkStatus]}.`);
+  };
 
   async function undo(actionId: string) {
     setBusy(true);
@@ -250,11 +304,14 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; o
   }
 
   async function createCase(input: NewCaseInput) {
+    const request = overviewRequest.current;
     setBusy(true);
     try {
       const item = await client.createCase(input);
-      setNewCaseOpen(false);
-      setOpenItem(item);
+      if (request === overviewRequest.current) {
+        setNewCaseOpen(false);
+        setOpenItem(item);
+      }
       say({ kind: "success", message: `Added ${input.displayName} as ${item.case.id}.` });
       refresh();
     } catch (e) {
@@ -267,19 +324,22 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; o
   const rows = list?.items ?? [];
   const filterCount = activeFilterCount({ ...query, search: searchText });
   const panelOpen = openItem !== null || newCaseOpen;
-  const toggleRow = (id: string, on: boolean) =>
-    setSelected((s) => {
-      const n = new Map(s);
-      const row = rows.find((r) => r.case.id === id);
-      if (on && row) n.set(id, row.case.version); else n.delete(id);
-      return n;
-    });
-  const togglePage = (on: boolean) =>
-    setSelected((s) => {
-      const n = new Map(s);
-      for (const r of rows) { if (on) n.set(r.case.id, r.case.version); else n.delete(r.case.id); }
-      return n;
-    });
+  const addSelected = (items: { caseId: string; expectedVersion: number }[]) => {
+    const result = addSelection(selected, items);
+    setSelected(result.selected);
+    if (result.limited) say({ kind: "error", message: `You can select up to ${MAX_BULK_ITEMS} cases per action. The remaining cases were not selected; process them separately.` });
+  };
+  const toggleRow = (id: string, on: boolean) => {
+    if (bulkDisabled) return;
+    const row = rows.find((r) => r.case.id === id);
+    if (on && row) addSelected([versioned(row.case)]);
+    else setSelected((s) => { const n = new Map(s); n.delete(id); return n; });
+  };
+  const togglePage = (on: boolean) => {
+    if (bulkDisabled) return;
+    if (on) addSelected(rows.map((r) => versioned(r.case)));
+    else setSelected((s) => { const n = new Map(s); for (const r of rows) n.delete(r.case.id); return n; });
+  };
 
   return (
     <div className={`app${panelOpen ? " has-panel" : ""}`}>
@@ -314,7 +374,7 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; o
               <h1>Case queue</h1>
               <p className="sub">A clearer view of who needs support next.</p>
             </div>
-            <button type="button" className="btn btn-primary" onClick={() => { returnFocus.current = document.activeElement as HTMLElement; setOpenItem(null); setNewCaseOpen(true); }}>
+            <button type="button" className="btn btn-primary" onClick={showNewCase}>
               + New case
             </button>
           </div>
@@ -364,21 +424,24 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; o
             {selected.size > 0 ? (
               <div className="bulkbar" role="region" aria-label="Selected cases">
                 <strong>{selected.size} selected</strong>
+                <span className="hint">Maximum {MAX_BULK_ITEMS} cases per action.</span>
+                {selectionPending ? <span role="status">{selectionError ?? "Checking selected cases…"}</span> : null}
+                {selectionPending && selectionError ? <button type="button" className="link-btn" onClick={refresh}>Retry selection</button> : null}
                 <label className="inline">
                   <span className="sr-only">Assign selected cases to</span>
-                  <select value={bulkAssignee} disabled={!isManager || busy} onChange={(e) => setBulkAssignee(e.target.value)} title={isManager ? undefined : "Only managers can assign cases"}>
+                  <select value={bulkAssignee} disabled={!isManager || bulkDisabled} onChange={(e) => setBulkAssignee(e.target.value)} title={isManager ? undefined : "Only managers can assign cases"}>
                     <option value="">Unassigned</option>
                     {catalog.users.filter((u) => catalog.assignableUserIds.includes(u.id)).map((u) => <option key={u.id} value={u.id}>{u.displayName}</option>)}
                   </select>
                 </label>
-                <button type="button" className="btn btn-small" disabled={!isManager || busy} onClick={bulkAssign}>Assign</button>
+                <button type="button" className="btn btn-small" disabled={!isManager || bulkDisabled} onClick={bulkAssign}>Assign</button>
                 <label className="inline">
                   <span className="sr-only">Set status of selected cases to</span>
-                  <select value={bulkStatus} disabled={busy} onChange={(e) => setBulkStatus(e.target.value as CaseStatus)}>
+                  <select value={bulkStatus} disabled={bulkDisabled} onChange={(e) => setBulkStatus(e.target.value as CaseStatus)}>
                     {Object.entries(STATUS_LABELS).map(([id, l]) => <option key={id} value={id}>{l}</option>)}
                   </select>
                 </label>
-                <button type="button" className="btn btn-small" disabled={busy} onClick={bulkSetStatus}>Update status</button>
+                <button type="button" className="btn btn-small" disabled={bulkDisabled} onClick={bulkSetStatus}>Update status</button>
                 <button type="button" className="link-btn" onClick={() => setSelected(new Map())}>Clear selection</button>
                 {!isManager ? <span className="hint">Workers can only update cases assigned to them.</span> : null}
               </div>
@@ -393,6 +456,7 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; o
             ) : (
               <CaseTable
                 data={catalog} rows={rows} currentUserId={user.id} selectedIds={new Set(selected.keys())} openCaseId={openItem?.case.id ?? null}
+                selectionDisabled={bulkDisabled}
                 onToggleRow={toggleRow} onTogglePage={togglePage} onOpen={open}
               />
             )}

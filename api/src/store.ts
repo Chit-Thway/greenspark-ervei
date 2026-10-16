@@ -19,7 +19,12 @@ CREATE TABLE IF NOT EXISTS workflow_action_items (action_id TEXT NOT NULL, case_
 
 type Row = Record<string, string | number | null>;
 
-export interface WorkflowSnapshot { status: string; assignedToUserId: string | null }
+export interface WorkflowSnapshot {
+  status: string;
+  assignedToUserId: string | null;
+  // Optional for action logs written before follow-up dates were included.
+  followUpAt?: string | null;
+}
 
 export class Store {
   readonly db: DatabaseSync;
@@ -147,14 +152,15 @@ export class Store {
   }
 
   /** Applies a status/assignment change and bumps the version. Returns the new version. */
-  updateWorkflow(caseId: string, patch: { status?: string; assignedToUserId?: string | null; reviewStatus?: string }, updatedAt: string): number {
-    const cur = this.db.prepare("SELECT version, status, assigned_to, review_status FROM cases WHERE id = ?").get(caseId) as Row;
+  updateWorkflow(caseId: string, patch: { status?: string; assignedToUserId?: string | null; reviewStatus?: string; followUpAt?: string | null }, updatedAt: string): number {
+    const cur = this.db.prepare("SELECT version, status, assigned_to, review_status, follow_up_at FROM cases WHERE id = ?").get(caseId) as Row;
     const version = (cur.version as number) + 1;
-    this.db.prepare("UPDATE cases SET version = ?, status = ?, assigned_to = ?, review_status = ?, updated_at = ? WHERE id = ?").run(
+    this.db.prepare("UPDATE cases SET version = ?, status = ?, assigned_to = ?, review_status = ?, follow_up_at = ?, updated_at = ? WHERE id = ?").run(
       version,
       patch.status ?? (cur.status as string),
       patch.assignedToUserId === undefined ? (cur.assigned_to as string | null) : patch.assignedToUserId,
       patch.reviewStatus ?? (cur.review_status as string),
+      patch.followUpAt === undefined ? (cur.follow_up_at as string | null) : patch.followUpAt,
       updatedAt,
       caseId,
     );
