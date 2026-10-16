@@ -1,5 +1,6 @@
-import { useEffect, useRef } from "react";
-import type { Person, QueueCase, QueueDataset } from "../domain/types";
+import { useEffect, useRef, useState } from "react";
+import type { CaseStatus, QueueCase, ReviewStatus, StaffUser } from "../domain/types";
+import type { CaseItem, Catalog } from "../data/api";
 import { describeFollowUp, formatDateTime, initials, PERIOD_TEXT, STATUS_LABELS } from "../domain/format";
 import { isResolved } from "../domain/query";
 import { profileUrl } from "../config";
@@ -14,11 +15,31 @@ function answerText(c: QueueCase, fieldId: string): { text: string; tone: "yes" 
   return { text: v, tone: v === "No" ? "no" : "yes" };
 }
 
-export function OverviewPanel(props: { data: QueueDataset; c: QueueCase; person: Person | undefined; currentUserId: string; onClose: () => void }) {
-  const { data, c, person } = props;
+export interface OverviewActions {
+  onAssign: (userId: string | null) => Promise<boolean>;
+  onStatus: (status: CaseStatus) => Promise<boolean>;
+  onReview: (next: ReviewStatus) => Promise<boolean>;
+  onNote: (text: string) => Promise<boolean>;
+}
+
+export function OverviewPanel(props: { data: Catalog; item: CaseItem; user: StaffUser; busy: boolean; actions: OverviewActions; onClose: () => void }) {
+  const { data, item, user } = props;
+  const c = item.case;
+  const person = item.person ?? undefined;
+  const isManager = user.role === "manager";
+  const canEdit = isManager || c.workflow.assignedToUserId === user.id;
+  const workers = data.users.filter((u) => data.assignableUserIds.includes(u.id));
+  const [assignee, setAssignee] = useState(c.workflow.assignedToUserId ?? "");
+  const [status, setStatus] = useState<CaseStatus>(c.workflow.status);
+  const [note, setNote] = useState("");
+  // Re-sync the controls whenever the server version of this case changes.
+  useEffect(() => {
+    setAssignee(c.workflow.assignedToUserId ?? "");
+    setStatus(c.workflow.status);
+  }, [c.version]); // eslint-disable-line react-hooks/exhaustive-deps
   const ref = useRef<HTMLElement>(null);
   const field = (id: string) => data.evidenceFields.find((f) => f.id === id);
-  const assignee = data.users.find((u) => u.id === c.workflow.assignedToUserId);
+  const assignedUser = data.users.find((u) => u.id === c.workflow.assignedToUserId);
   const userName = (id: string) => data.users.find((u) => u.id === id)?.displayName ?? id;
   const fu = describeFollowUp(c.workflow.followUpAt, isResolved(c), data.asOf);
   const link = person ? profileUrl(person.id) : null;
@@ -53,7 +74,7 @@ export function OverviewPanel(props: { data: QueueDataset; c: QueueCase; person:
       </div>
 
       <dl className="facts">
-        <div><dt>Assigned worker</dt><dd>{assignee ? assignee.displayName : "Unassigned"}</dd></div>
+        <div><dt>Assigned worker</dt><dd>{assignedUser ? assignedUser.displayName : "Unassigned"}</dd></div>
         <div><dt>Household</dt><dd>{person?.householdSummary}</dd></div>
         <div><dt>Case status</dt><dd>{STATUS_LABELS[c.workflow.status]}</dd></div>
         <div>
@@ -133,20 +154,43 @@ export function OverviewPanel(props: { data: QueueDataset; c: QueueCase; person:
         <h3 id="ov-review">Worker review</h3>
         <p>{c.workflow.reviewStatus === "reviewed" ? "Suggestions reviewed by staff." : "Suggestions awaiting worker review."}</p>
         <div className="actions">
-          <button type="button" className="btn" disabled title="Connected when the API is added">Mark reviewed</button>
-          <button type="button" className="btn" disabled title="Connected when the API is added">Assign worker</button>
+          <button
+            type="button" className="btn" disabled={!canEdit || props.busy}
+            onClick={() => props.actions.onReview(c.workflow.reviewStatus === "reviewed" ? "needs_review" : "reviewed")}
+          >
+            {c.workflow.reviewStatus === "reviewed" ? "Mark as needs review" : "Mark reviewed"}
+          </button>
         </div>
+        {!canEdit ? <p className="hint">Only the assigned worker or a manager can change this case.</p> : null}
       </section>
 
       <section className="ov-section" aria-labelledby="ov-progress">
         <h3 id="ov-progress">Case progress</h3>
         <label className="field">
+          <span>Assigned worker</span>
+          <select value={assignee} disabled={!isManager || props.busy} onChange={(e) => setAssignee(e.target.value)}>
+            <option value="">Unassigned</option>
+            {workers.map((w) => <option key={w.id} value={w.id}>{w.displayName}</option>)}
+          </select>
+        </label>
+        {isManager ? (
+          <div className="actions">
+            <button type="button" className="btn" disabled={props.busy || assignee === (c.workflow.assignedToUserId ?? "")} onClick={() => props.actions.onAssign(assignee || null)}>
+              Save assignment
+            </button>
+          </div>
+        ) : <p className="hint">Only managers can assign cases.</p>}
+        <label className="field">
           <span>Case status</span>
-          <select value={c.workflow.status} disabled>
+          <select value={status} disabled={!canEdit || props.busy} onChange={(e) => setStatus(e.target.value as CaseStatus)}>
             {Object.entries(STATUS_LABELS).map(([id, l]) => <option key={id} value={id}>{l}</option>)}
           </select>
         </label>
-        <p className="hint">Status, assignment and notes become editable once the workflow API is connected.</p>
+        <div className="actions">
+          <button type="button" className="btn" disabled={!canEdit || props.busy || status === c.workflow.status} onClick={() => props.actions.onStatus(status)}>
+            Save status
+          </button>
+        </div>
       </section>
 
       <section className="ov-section" aria-labelledby="ov-notes">
@@ -158,10 +202,22 @@ export function OverviewPanel(props: { data: QueueDataset; c: QueueCase; person:
             ))}
           </ul>
         )}
-        <label className="field">
-          <span>Add a case note</span>
-          <textarea rows={3} disabled placeholder="Record a check-in, referral or next step…" />
-        </label>
+        <form
+          onSubmit={async (e) => {
+            e.preventDefault();
+            if (!note.trim()) return;
+            if (await props.actions.onNote(note.trim())) setNote("");
+          }}
+        >
+          <label className="field">
+            <span>Add a case note</span>
+            <textarea rows={3} maxLength={500} value={note} disabled={!canEdit || props.busy} onChange={(e) => setNote(e.target.value)} placeholder="Record a check-in, referral or next step…" />
+          </label>
+          <div className="actions">
+            <button type="submit" className="btn btn-primary" disabled={!canEdit || props.busy || !note.trim()}>Add note</button>
+            <span className="hint">{note.length}/500</span>
+          </div>
+        </form>
       </section>
     </aside>
   );

@@ -1,12 +1,12 @@
 import { useEffect, useRef } from "react";
-import type { Person, QueueCase, QueueDataset } from "../domain/types";
+import type { Catalog, CaseItem } from "../data/api";
 import { describeFollowUp, initials, shortName, STATUS_LABELS } from "../domain/format";
 import { isResolved } from "../domain/query";
 import { PriorityBadge } from "./Primitives";
 
 export function CaseTable(props: {
-  data: QueueDataset;
-  rows: QueueCase[];
+  data: Catalog;
+  rows: CaseItem[];
   currentUserId: string;
   selectedIds: Set<string>;
   openCaseId: string | null;
@@ -15,9 +15,8 @@ export function CaseTable(props: {
   onOpen: (id: string) => void;
 }) {
   const { data, rows, selectedIds } = props;
-  const people = new Map<string, Person>(data.people.map((p) => [p.id, p]));
   const users = new Map(data.users.map((u) => [u.id, u]));
-  const selectedOnPage = rows.filter((r) => selectedIds.has(r.id)).length;
+  const selectedOnPage = rows.filter((r) => selectedIds.has(r.case.id)).length;
   const headRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
     if (headRef.current) headRef.current.indeterminate = selectedOnPage > 0 && selectedOnPage < rows.length;
@@ -48,8 +47,7 @@ export function CaseTable(props: {
           </tr>
         </thead>
         <tbody>
-          {rows.map((c) => {
-            const person = people.get(c.personId);
+          {rows.map(({ case: c, person }) => {
             const assignee = c.workflow.assignedToUserId ? users.get(c.workflow.assignedToUserId) : null;
             const fu = describeFollowUp(c.workflow.followUpAt, isResolved(c), data.asOf);
             const labels = c.circumstances

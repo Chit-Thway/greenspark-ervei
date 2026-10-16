@@ -5,7 +5,7 @@ export interface NewCaseInput {
   suburb: string;
 }
 
-export function NewCasePanel(props: { onSubmit: (input: NewCaseInput) => void; onClose: () => void }) {
+export function NewCasePanel(props: { busy: boolean; onSubmit: (input: NewCaseInput) => void; onClose: () => void }) {
   const [name, setName] = useState("");
   const [suburb, setSuburb] = useState("");
   const [touched, setTouched] = useState(false);
@@ -45,7 +45,7 @@ export function NewCasePanel(props: { onSubmit: (input: NewCaseInput) => void; o
           {touched && !suburb.trim() ? <span id="nc-sub-err" className="error">Enter a suburb.</span> : null}
         </label>
         <div className="actions">
-          <button type="submit" className="btn btn-primary">Create case</button>
+          <button type="submit" className="btn btn-primary" disabled={props.busy}>Create case</button>
           <button type="button" className="btn" onClick={props.onClose}>Cancel</button>
         </div>
       </form>

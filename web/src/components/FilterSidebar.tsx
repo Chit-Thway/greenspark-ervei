@@ -1,6 +1,7 @@
 import { useState } from "react";
-import type { PriorityLabel, QueueDataset, QueueQuery, QueueView } from "../domain/types";
-import { ASSISTANCE_OPTIONS, PRIORITY_LABELS, activeFilterCount, facetCounts } from "../domain/query";
+import type { PriorityLabel, QueueQuery, QueueView } from "../domain/types";
+import type { Catalog, Facets } from "../data/api";
+import { ASSISTANCE_OPTIONS, PRIORITY_LABELS, activeFilterCount } from "../domain/query";
 import { PRIORITY_TEXT, STATUS_LABELS } from "../domain/format";
 import { Checkbox } from "./Primitives";
 
@@ -16,14 +17,14 @@ function toggle<T>(list: T[], item: T, on: boolean): T[] {
 }
 
 export function FilterSidebar(props: {
-  data: QueueDataset;
+  data: Catalog;
+  facets: Facets | null;
   query: QueueQuery;
-  currentUserId: string;
   onChange: (patch: Partial<QueueQuery>) => void;
   onReset: () => void;
 }) {
-  const { data, query, currentUserId, onChange } = props;
-  const facets = facetCounts(data, query, currentUserId);
+  const { data, query, onChange } = props;
+  const facets = props.facets;
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const workers = data.users.filter((u) => u.role === "support_worker");
 
@@ -46,7 +47,7 @@ export function FilterSidebar(props: {
             onClick={() => onChange({ view: v.id })}
           >
             <span>{v.label}</span>
-            <span className="count">{facets.view[v.id]}</span>
+            <span className="count">{facets?.view[v.id] ?? "–"}</span>
           </button>
         ))}
       </nav>
@@ -65,7 +66,7 @@ export function FilterSidebar(props: {
                   checked={all}
                   indeterminate={selected.length > 0 && !all}
                   label={area.label}
-                  count={facets.area(children.map((c) => c.id))}
+                  count={facets?.areas[area.id]}
                   onChange={(on) =>
                     onChange({
                       circumstanceIds: on
@@ -91,7 +92,7 @@ export function FilterSidebar(props: {
                       key={c.id}
                       checked={query.circumstanceIds.includes(c.id)}
                       label={c.label}
-                      count={facets.circumstance(c.id)}
+                      count={facets?.circumstances[c.id]}
                       onChange={(on) => onChange({ circumstanceIds: toggle(query.circumstanceIds, c.id, on) })}
                     />
                   ))}
@@ -113,7 +114,7 @@ export function FilterSidebar(props: {
                 key={o.id}
                 checked={query.assistanceIds.includes(o.id)}
                 label={o.label.replace(/ \((at report|past 12 months)\)$/, "")}
-                count={facets.assistance(o.id)}
+                count={facets?.assistance[o.id]}
                 onChange={(on) => onChange({ assistanceIds: toggle(query.assistanceIds, o.id, on) })}
               />
             ))}
@@ -129,7 +130,7 @@ export function FilterSidebar(props: {
             key={l}
             checked={query.priorityLabels.includes(l)}
             label={PRIORITY_TEXT[l]}
-            count={facets.priority(l)}
+            count={facets?.priority[l]}
             onChange={(on) => onChange({ priorityLabels: toggle(query.priorityLabels, l, on) })}
           />
         ))}

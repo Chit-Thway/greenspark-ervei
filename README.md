@@ -19,7 +19,7 @@ The approved direction as of **16 October 2026** is the bright green/mint theme 
 - [Test-data instructions and limitations](data/synthetic/README.md)
 - [Clickable workflow, selected theme and overview references](docs/design/README.md)
 
-The React screen (Milestone 2) and the Node API with SQLite storage (Milestone 3) are built. The screen still reads the fixture through its adapter; connecting it to the API is Milestone 4, so assignment, status and notes are read-only in the browser for now. The contracts are proposals to agree with the model and profile teammates.
+The React screen is connected to the Node API (SQLite storage). Managers can assign cases singly or in bulk, and workers can find and update their own cases, with notes, review state and guarded Undo. The contracts are proposals to agree with the model and profile teammates.
 
 ## Run the app
 
@@ -27,8 +27,9 @@ Needs Node.js 22 or newer.
 
 ```sh
 npm install
-npm run dev        # web, http://localhost:5173
-npm run dev:api    # API, http://localhost:3001 (see docs/api.md)
+npm run dev        # API (3001) and web (5173) together; open http://localhost:5173
+npm run dev:api    # API only (see docs/api.md)
+npm run dev:web    # web only; /api is proxied to API_URL (default http://localhost:3001)
 npm run reset      # delete the workflow database
 npm test           # filter/sort/paging/follow-up unit tests
 npm run typecheck
@@ -36,7 +37,7 @@ npm run build
 npm run check:fixture
 ```
 
-Use the **Demo view** menu in the header to switch between the manager and support workers. It is a labelled stand-in, not sign-in. New cases added in the browser last until you reload. The profile link stays hidden until `VITE_PROFILE_URL_TEMPLATE` is set (for example `https://profiles.example/people/{personId}`).
+Use the **Demo view** menu in the header to switch between the manager and support workers. It is a labelled stand-in, not sign-in. Changes are saved in the local SQLite file and persist across restarts; run `npm run reset` to restore the original 100 cases. The profile link stays hidden until `VITE_PROFILE_URL_TEMPLATE` is set (for example `https://profiles.example/people/{personId}`).
 
 ## Start from milestone 1
 

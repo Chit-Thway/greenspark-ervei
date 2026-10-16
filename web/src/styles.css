@@ -163,3 +163,13 @@ textarea { resize: vertical; }
   .tagline { display: none; } .whoami { margin-left: 0; }
   .facts { grid-template-columns: 1fr; }
 }
+
+.notice-slot:empty { display: none; }
+.notice-slot { margin-bottom: 12px; }
+.notice { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; border-radius: var(--r-panel); padding: 10px 14px; border: 1px solid; font-size: 13px; }
+.notice-success { background: var(--selected); border-color: #b7e8cf; color: #064e36; }
+.notice-error { background: var(--urgent-bg); border-color: #f5b5ae; color: var(--urgent); }
+.notice ul { margin: 6px 0 0; padding-left: 18px; }
+.notice-actions { display: flex; align-items: center; gap: 4px; flex: none; }
+.inline select { width: auto; padding: 4px 8px; font-size: 12px; }
+.list-error { padding: 8px 16px; color: var(--urgent); font-size: 12px; }

@@ -5,7 +5,7 @@
 | 1. Scope, contracts and synthetic test data | **Done**, pending teammate review of the model/profile boundary |
 | 2. React layout and selected green theme | **Done** (see below) |
 | 3. Node API and workflow storage | **Done** (see below) |
-| 4. Filters, assignment and bulk actions | Not started |
+| 4. Filters, assignment and bulk actions | **Done** (see below) |
 | 5. Integration checks, usability and handoff | Not started |
 
 ## Milestone 1 review (16 October 2026)
@@ -47,3 +47,18 @@ Built in `api/` (Express 5, TypeScript, zod, `node:sqlite`). Shared filter/sort/
 - 25 API tests (permissions, stale versions, atomic bulk, undo conflicts and expiry, new case, persistence, reset, fixture unchanged). `npm test` runs shared, web and API tests; `npm run typecheck` covers all three.
 
 Choices to confirm: errors for bulk requests are always `422 bulk_validation_failed` with per-item reasons (including permission and stale-version failures); reviews and notes bump the version but are not logged as undoable actions; any signed-in user can create a case.
+
+## Milestone 4: connected filters, assignment and bulk actions
+
+The screen now reads and writes only through the API (`web/src/data/api.ts`); the fixture is no longer bundled into the page.
+
+- **Queue:** search (debounced), parent/child filters, assistance, priority, workflow filters, sort and paging run on the server. Counters and filter counts come from the same server definition.
+- **Assignment:** managers assign one case from the overview or many from the selection bar. The assignee list and the Assign controls are disabled for workers, and the server enforces it too.
+- **Assigned to me:** workers see their cases under that view and can update status, review state and notes on them only.
+- **Selection:** kept across pages (each ID remembers the version the user last saw), cleared of IDs that stop matching when filters change or after a change moves them out of view.
+- **Feedback:** a message bar reports success, "already had that value", stale versions (the case is refreshed) and rejected bulk requests with each failing case listed. Nothing is changed when any case in a bulk request fails.
+- **Undo:** assignment and status changes show an Undo button for 20 seconds. The server still decides whether it is allowed (10-minute window, no newer edits).
+- **New case:** creates a real case through the API; it persists.
+- **Checks:** a real-browser run against the live API and web servers covered manager bulk assign and Undo, selection across pages and pruning, worker "Assigned to me", notes, status and review, a stale-edit conflict, a rejected worker bulk update, new case, and persistence after reload. API tests gained the `ids` endpoint (26 total). Those browser checks are not yet a committed test; Milestone 5 turns them into one.
+
+Known gaps: the profile link and model adapter are still placeholders (Milestone 5); Undo is offered only from the message bar, so it is gone after the message is dismissed or times out.

@@ -8,7 +8,7 @@ Express + TypeScript in `api/`, with SQLite for workflow state. It implements [w
 npm install
 npm run dev:api     # http://localhost:3001 (PORT to change)
 npm run reset       # delete the workflow database; the next start reseeds from the fixture
-npm test            # includes 25 API tests
+npm test            # includes the API tests
 ```
 
 Needs Node.js 22 or newer. SQLite uses Node's built-in `node:sqlite`, so there is nothing native to compile. Node prints an "ExperimentalWarning: SQLite is an experimental feature" line on start; that is expected.
@@ -39,6 +39,7 @@ Every `/api` route except `/api/health` needs an `X-Demo-User` header naming a f
 | `GET /api/catalogs` | Support areas, circumstances, evidence fields, recommendations, assistance options |
 | `GET /api/users` | All staff; `assignableUserIds` is non-empty for managers only |
 | `GET /api/cases` | `search, view, circumstanceIds, assistanceIds, priorityLabels` (comma separated), `minPriorityScore, assessmentStatus, status, assignedToUserId, sort, page, pageSize`. Returns `items`, totals, global `counters` and filter `facets` |
+| `GET /api/cases/ids` | Same filters, no paging: IDs of every matching case (used to drop selections that no longer match) |
 | `GET /api/cases/:id/overview` | Case and person |
 | `POST /api/cases` | `{personId}` or `{displayName, suburb}`; starts at version 1, unassigned, evidence unknown, model pending |
 | `POST /api/cases/bulk/assignment` | Manager only. `{assigneeUserId \| null, items:[{caseId, expectedVersion}]}` |
@@ -68,4 +69,4 @@ For the single-case status endpoint the specific 403/404/409 is returned directl
 
 ## Not in this milestone
 
-The React app still reads the fixture directly (Milestone 4 connects it). There is no production sign-in or account administration.
+There is no production sign-in or account administration. The model and profile integrations are still mock/placeholder (Milestone 5).

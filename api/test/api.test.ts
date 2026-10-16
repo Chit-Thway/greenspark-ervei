@@ -42,6 +42,12 @@ describe("identity and reads", () => {
     expect((await h.call(M, "GET", "/api/cases?search=GS-2001")).body.items[0].case.id).toBe("GS-2001");
   });
 
+  it("returns matching ids across all pages for selection pruning", async () => {
+    const r = await h.call(M, "GET", "/api/cases/ids?status=resolved");
+    expect(r.body.ids).toHaveLength(10);
+    expect((await h.call(M, "GET", "/api/cases/ids?status=bogus")).status).toBe(422);
+  });
+
   it("validates list parameters and returns unknown cases as 404", async () => {
     expect((await h.call(M, "GET", "/api/cases?status=bogus")).status).toBe(422);
     expect((await h.call(M, "GET", "/api/cases?page=0")).status).toBe(422);

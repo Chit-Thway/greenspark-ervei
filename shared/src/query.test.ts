@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { loadDataset } from "../data/caseSource";
+import { readFileSync } from "node:fs";
+import { toDataset, type RawFixture } from "./fixture";
 import { activeFilterCount, applyFilters, DEFAULT_QUERY, facetCounts, overviewCounters, paginate, sortCases } from "./query";
-import { describeFollowUp } from "./format";
 
-const data = await loadDataset();
+const data = toDataset(JSON.parse(readFileSync(new URL("../../data/synthetic/case-queue.v1.json", import.meta.url), "utf8")) as RawFixture);
 const me = "staff-alex";
 const q = (over: Partial<typeof DEFAULT_QUERY>) => ({ ...DEFAULT_QUERY, ...over });
 
@@ -87,12 +87,3 @@ describe("sorting, paging and counters", () => {
   });
 });
 
-describe("follow-up wording", () => {
-  it("covers overdue, today, future, none and resolved", () => {
-    expect(describeFollowUp("2026-10-14T14:00:00+08:00", false, "2026-10-16").text).toBe("2d overdue");
-    expect(describeFollowUp("2026-10-16T14:00:00+08:00", false, "2026-10-16").text).toBe("Today · 2 pm");
-    expect(describeFollowUp("2026-10-18T09:30:00+08:00", false, "2026-10-16").text).toBe("18 Oct · 9:30 am");
-    expect(describeFollowUp(null, false, "2026-10-16").text).toBe("Not scheduled");
-    expect(describeFollowUp("2026-10-14T14:00:00+08:00", true, "2026-10-16").tone).toBe("none");
-  });
-});

@@ -81,9 +81,9 @@ export function createApp(store: Store, clock: Clock = () => new Date()) {
     res.json({ users: store.catalog.users, assignableUserIds: a.role === "manager" ? store.catalog.users.filter((u) => u.role === "support_worker").map((u) => u.id) : [] });
   });
 
-  app.get("/api/cases", (req, res) => {
+  const queryOf = (req: Request): QueueQuery => {
     const p = parse(listParams, req.query);
-    const q: QueueQuery = {
+    return {
       ...DEFAULT_QUERY,
       search: p.search ?? "", view: p.view ?? "all",
       circumstanceIds: csv(p.circumstanceIds), assistanceIds: csv(p.assistanceIds),
@@ -91,6 +91,16 @@ export function createApp(store: Store, clock: Clock = () => new Date()) {
       minPriorityScore: p.minPriorityScore ?? 0, assessmentStatus: p.assessmentStatus ?? "", status: p.status ?? "",
       assignedToUserId: p.assignedToUserId ?? "", sort: p.sort ?? "priority_desc", page: p.page ?? 1, pageSize: p.pageSize ?? 8,
     };
+  };
+
+  // IDs of every case matching the filters (ignores paging); lets the UI drop selections that stopped matching.
+  app.get("/api/cases/ids", (req, res) => {
+    const data = store.dataset();
+    res.json({ ids: applyFilters(data, queryOf(req), actor(res).id).map((c) => c.id) });
+  });
+
+  app.get("/api/cases", (req, res) => {
+    const q = queryOf(req);
     const me = actor(res).id;
     const data = store.dataset();
     const matches = sortCases(applyFilters(data, q, me), data.people, q.sort);
