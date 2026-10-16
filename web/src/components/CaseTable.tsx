@@ -10,6 +10,7 @@ export function CaseTable(props: {
   currentUserId: string;
   selectedIds: Set<string>;
   openCaseId: string | null;
+  selectionDisabled: boolean;
   onToggleRow: (id: string, on: boolean) => void;
   onTogglePage: (on: boolean) => void;
   onOpen: (id: string) => void;
@@ -34,7 +35,7 @@ export function CaseTable(props: {
                 type="checkbox"
                 aria-label="Select all cases on this page"
                 checked={rows.length > 0 && selectedOnPage === rows.length}
-                disabled={rows.length === 0}
+                disabled={rows.length === 0 || props.selectionDisabled}
                 onChange={(e) => props.onTogglePage(e.target.checked)}
               />
             </th>
@@ -65,6 +66,7 @@ export function CaseTable(props: {
                     type="checkbox"
                     aria-label={`Select ${person?.displayName ?? c.id}`}
                     checked={selectedIds.has(c.id)}
+                    disabled={props.selectionDisabled}
                     onChange={(e) => props.onToggleRow(c.id, e.target.checked)}
                   />
                 </td>

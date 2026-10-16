@@ -27,14 +27,18 @@ export function OverviewPanel(props: { data: Catalog; item: CaseItem; user: Staf
   const person = item.person ?? undefined;
   const isManager = user.role === "manager";
   const canEdit = isManager || c.workflow.assignedToUserId === user.id;
-  const workers = data.users.filter((u) => data.assignableUserIds.includes(u.id));
+  // Workers cannot assign, but their read-only select must contain the actual owner.
+  const workers = data.users.filter((u) => data.assignableUserIds.includes(u.id) || u.id === c.workflow.assignedToUserId);
   const [assignee, setAssignee] = useState(c.workflow.assignedToUserId ?? "");
   const [status, setStatus] = useState<CaseStatus>(c.workflow.status);
   const [note, setNote] = useState("");
-  // Re-sync the controls whenever the server version of this case changes.
+  const previousWorkflow = useRef(c.workflow);
+  // Refresh server values without discarding a deliberate, unsaved choice on conflict.
   useEffect(() => {
-    setAssignee(c.workflow.assignedToUserId ?? "");
-    setStatus(c.workflow.status);
+    const previous = previousWorkflow.current;
+    setAssignee((draft) => draft === (previous.assignedToUserId ?? "") ? c.workflow.assignedToUserId ?? "" : draft);
+    setStatus((draft) => draft === previous.status ? c.workflow.status : draft);
+    previousWorkflow.current = c.workflow;
   }, [c.version]); // eslint-disable-line react-hooks/exhaustive-deps
   const ref = useRef<HTMLElement>(null);
   const field = (id: string) => data.evidenceFields.find((f) => f.id === id);

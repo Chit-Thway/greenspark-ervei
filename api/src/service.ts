@@ -3,9 +3,9 @@ import type { CaseStatus, Person, QueueCase, ReviewStatus, StaffUser } from "@gr
 import { ApiError, type ErrorDetail } from "./errors";
 import { perthIso, type Clock } from "./clock";
 import type { Store, WorkflowSnapshot } from "./store";
+export { MAX_BULK_ITEMS } from "@greenspark/shared";
 
 export const UNDO_WINDOW_MS = 10 * 60 * 1000;
-export const MAX_BULK_ITEMS = 100;
 
 export interface Item { caseId: string; expectedVersion: number }
 export interface MutationResult { actionId: string | null; updated: QueueCase[]; unchanged: string[] }
@@ -107,9 +107,13 @@ export class WorkflowService {
       for (const item of items) {
         const c = this.store.getCase(item.caseId)!;
         if (isNoop(c)) { unchanged.push(c.id); continue; }
-        const before = { status: c.workflow.status, assignedToUserId: c.workflow.assignedToUserId };
-        const resultingVersion = this.store.updateWorkflow(c.id, patch, now);
-        logItems.push({ caseId: c.id, before, after: { ...before, ...patch } as WorkflowSnapshot, resultingVersion });
+        const before = { status: c.workflow.status, assignedToUserId: c.workflow.assignedToUserId, followUpAt: c.workflow.followUpAt };
+        const after = { ...before, ...patch };
+        // A normal reopen starts unscheduled, including cases resolved before this fix.
+        // Undo restores the complete previous snapshot instead of taking this path.
+        if (patch.status && (patch.status === "resolved" || c.workflow.status === "resolved")) after.followUpAt = null;
+        const resultingVersion = this.store.updateWorkflow(c.id, after, now);
+        logItems.push({ caseId: c.id, before, after, resultingVersion });
       }
       let actionId: string | null = null;
       if (logItems.length) {
@@ -169,7 +173,7 @@ export class WorkflowService {
 
       const now = this.now();
       const logItems = action.items.map((i) => {
-        const resultingVersion = this.store.updateWorkflow(i.caseId, { status: i.before.status, assignedToUserId: i.before.assignedToUserId }, now);
+        const resultingVersion = this.store.updateWorkflow(i.caseId, i.before, now);
         return { caseId: i.caseId, before: i.after, after: i.before, resultingVersion };
       });
       this.store.markUndone(actionId, actor.id, now);

@@ -49,7 +49,7 @@ Bulk requests are **all-or-nothing**. The server validates every item first (unk
 
 `POST /api/cases/bulk/status` takes `{ "status": "waiting", "items": [...] }`. For a worker, every item must be one of their own cases.
 
-Statuses are `new`, `in_progress`, `waiting`, `resolved`; any to any is allowed (including reopening). Moving to `resolved` clears the displayed follow-up; reopening without a date shows Not scheduled.
+Statuses are `new`, `in_progress`, `waiting`, `resolved`; any to any is allowed (including reopening). Moving to `resolved` clears the scheduled follow-up; a normal reopen shows Not scheduled, including cases resolved by older app versions. Undo of resolution restores the prior status and follow-up date together.
 
 ## Notes and review
 
