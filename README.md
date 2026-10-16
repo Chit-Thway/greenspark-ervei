@@ -59,7 +59,7 @@ Assignment, “Assigned to me,” and bulk actions belong to the interface workf
 - Settle the first screen's filters, manager permissions and supported bulk actions.
 - Use clearly labelled mock cases for the interface prototype, then connect the agreed data flow.
 
-The existing `customers.json` is placeholder data. Its structure does not define this architecture or the future integration contract.
+Source datasets and their schemas are still being verified. Generated demo customer records have been removed to avoid confusion with source data.
 
 ## Visual references
 
