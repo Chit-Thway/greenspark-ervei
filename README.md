@@ -12,6 +12,8 @@ The approved direction as of **16 October 2026** is the bright green/mint theme 
 
 - [Scope, approved recommendations and five implementation milestones](docs/implementation-plan.md)
 - [Proposed data/API/model/profile contract](docs/data-contract.md)
+- [Workflow contract: assignment, bulk actions, versioning, Undo](docs/workflow-contract.md)
+- [Build progress by milestone](docs/progress.md)
 - [100-person synthetic development fixture](data/synthetic/case-queue.v1.json)
 - [Test-data instructions and limitations](data/synthetic/README.md)
 - [Clickable workflow, selected theme and overview references](docs/design/README.md)
