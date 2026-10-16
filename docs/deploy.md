@@ -5,7 +5,7 @@ The API can also serve the built web app, so the whole demo runs as **one Node w
 | Setting | Value |
 | --- | --- |
 | Runtime | Node (22 or newer; set `NODE_VERSION=22.22.0`) |
-| Build command | `npm install && npm run build -w web` |
+| Build command | `npm install && npm run build -w web` (the repo's `.npmrc` makes `npm install` include build tools even when `NODE_ENV=production`) |
 | Start command | `npm run start -w api` |
 | Health check path | `/api/health` |
 | `GREENSPARK_BASIC_AUTH` | `user:password`. Optional but recommended: the demo has no real sign-in, so without it anyone with the link can act as the manager. Health checks are exempt. Remove the variable to open the site up. |
