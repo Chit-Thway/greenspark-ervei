@@ -351,7 +351,7 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; o
               </label>
             </div>
 
-            <div className="chips" aria-label="Active filters">
+            <div className="chips" role="group" aria-label="Active filters">
               {query.circumstanceIds.map((id) => <Chip key={id} label={catalog.circumstances.find((c) => c.id === id)?.label ?? id} onRemove={() => change({ circumstanceIds: query.circumstanceIds.filter((x) => x !== id) })} />)}
               {query.assistanceIds.map((id) => <Chip key={id} label={ASSISTANCE_OPTIONS.find((o) => o.id === id)?.label ?? id} onRemove={() => change({ assistanceIds: query.assistanceIds.filter((x) => x !== id) })} />)}
               {query.priorityLabels.map((l) => <Chip key={l} label={`Priority: ${PRIORITY_TEXT[l]}`} onRemove={() => change({ priorityLabels: query.priorityLabels.filter((x) => x !== l) })} />)}

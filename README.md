@@ -14,6 +14,8 @@ The approved direction as of **16 October 2026** is the bright green/mint theme 
 - [Proposed data/API/model/profile contract](docs/data-contract.md)
 - [Workflow contract: assignment, bulk actions, versioning, Undo](docs/workflow-contract.md)
 - [Node API: run, reset, endpoints and errors](docs/api.md)
+- [Demo script](docs/demo-script.md)
+- [Model/profile integration boundaries](docs/integration.md)
 - [Build progress by milestone](docs/progress.md)
 - [100-person synthetic development fixture](data/synthetic/case-queue.v1.json)
 - [Test-data instructions and limitations](data/synthetic/README.md)
@@ -31,13 +33,14 @@ npm run dev        # API (3001) and web (5173) together; open http://localhost:5
 npm run dev:api    # API only (see docs/api.md)
 npm run dev:web    # web only; /api is proxied to API_URL (default http://localhost:3001)
 npm run reset      # delete the workflow database
-npm test           # filter/sort/paging/follow-up unit tests
+npm test           # unit and API tests
+npm run test:e2e   # real-browser workflow, keyboard, accessibility and small-screen checks
 npm run typecheck
 npm run build
 npm run check:fixture
 ```
 
-Use the **Demo view** menu in the header to switch between the manager and support workers. It is a labelled stand-in, not sign-in. Changes are saved in the local SQLite file and persist across restarts; run `npm run reset` to restore the original 100 cases. The profile link stays hidden until `VITE_PROFILE_URL_TEMPLATE` is set (for example `https://profiles.example/people/{personId}`).
+Use the **Demo view** menu in the header to switch between the manager and support workers. It is a labelled stand-in, not sign-in. Changes are saved in the local SQLite file and persist across restarts; run `npm run reset` to restore the original 100 cases. The profile link stays hidden until the API is started with `GREENSPARK_PROFILE_URL_TEMPLATE` (for example `https://profiles.example/people/{personId}`). The first `npm run test:e2e` needs a Chromium browser: run `npx playwright install chromium`, or set `PW_CHROMIUM_PATH`.
 
 ## Start from milestone 1
 

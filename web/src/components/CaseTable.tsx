@@ -87,7 +87,7 @@ export function CaseTable(props: {
                     </span>
                   </div>
                 </td>
-                <td>
+                <td data-label="Support needs">
                   {labels.length ? (
                     <>
                       <span>{labels[0]}</span>
@@ -97,10 +97,10 @@ export function CaseTable(props: {
                     <span className="muted">No circumstances flagged</span>
                   )}
                 </td>
-                <td>
+                <td data-label="Priority">
                   <PriorityBadge c={c} />
                 </td>
-                <td>
+                <td data-label="Assigned to">
                   {assignee ? (
                     <>
                       <span>{shortName(assignee.displayName)}</span>
@@ -110,7 +110,7 @@ export function CaseTable(props: {
                     <span className="unassigned">Unassigned</span>
                   )}
                 </td>
-                <td>
+                <td data-label="Status">
                   <span className={`status status-${c.workflow.status}`}>{STATUS_LABELS[c.workflow.status]}</span>
                   <span className={`sub follow-${fu.tone}`}>{fu.text}</span>
                 </td>

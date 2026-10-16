@@ -3,7 +3,6 @@ import type { CaseStatus, QueueCase, ReviewStatus, StaffUser } from "../domain/t
 import type { CaseItem, Catalog } from "../data/api";
 import { describeFollowUp, formatDateTime, initials, PERIOD_TEXT, STATUS_LABELS } from "../domain/format";
 import { isResolved } from "../domain/query";
-import { profileUrl } from "../config";
 import { PriorityBadge } from "./Primitives";
 
 function answerText(c: QueueCase, fieldId: string): { text: string; tone: "yes" | "no" | "unknown" } {
@@ -42,7 +41,8 @@ export function OverviewPanel(props: { data: Catalog; item: CaseItem; user: Staf
   const assignedUser = data.users.find((u) => u.id === c.workflow.assignedToUserId);
   const userName = (id: string) => data.users.find((u) => u.id === id)?.displayName ?? id;
   const fu = describeFollowUp(c.workflow.followUpAt, isResolved(c), data.asOf);
-  const link = person ? profileUrl(person.id) : null;
+  // The full profile belongs to another team; the link shows only when its route is configured on the server.
+  const link = person && data.profileUrlTemplate ? data.profileUrlTemplate.replace("{personId}", encodeURIComponent(person.id)) : null;
   const a = c.modelAssessment;
 
   useEffect(() => {

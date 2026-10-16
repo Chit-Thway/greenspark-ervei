@@ -6,7 +6,7 @@
 | 2. React layout and selected green theme | **Done** (see below) |
 | 3. Node API and workflow storage | **Done** (see below) |
 | 4. Filters, assignment and bulk actions | **Done** (see below) |
-| 5. Integration checks, usability and handoff | Not started |
+| 5. Integration checks, usability and handoff | **Done**, pending teammate agreement on the model/profile boundaries |
 
 ## Milestone 1 review (16 October 2026)
 
@@ -62,3 +62,28 @@ The screen now reads and writes only through the API (`web/src/data/api.ts`); th
 - **Checks:** a real-browser run against the live API and web servers covered manager bulk assign and Undo, selection across pages and pruning, worker "Assigned to me", notes, status and review, a stale-edit conflict, a rejected worker bulk update, new case, and persistence after reload. API tests gained the `ids` endpoint (26 total). Those browser checks are not yet a committed test; Milestone 5 turns them into one.
 
 Known gaps: the profile link and model adapter are still placeholders (Milestone 5); Undo is offered only from the message bar, so it is gone after the message is dismissed or times out.
+
+## Milestone 5: integration checks, usability and handoff
+
+- **End-to-end tests** (`npm run test:e2e`, 13 tests, ~20 s): start a throwaway API and database plus the web app, then drive a real browser through the manager-to-worker story, persistence across reload, permissions, stale edits, empty/pending/unavailable/unknown states, a failed request, keyboard use, an axe accessibility scan, and a 390 px layout.
+- **Fixes found by those checks:** the filter chips group had an invalid ARIA label; on phones the page scrolled sideways because visually hidden table text escaped its scroll area; and the table now becomes stacked cards below 640 px so priority, assignee and status stay visible.
+- **Model boundary:** a replaceable `ModelAdapter` (default: synthetic). Adapter errors, missing results and unscored "ready" results degrade to "Assessment unavailable" instead of Routine. 5 API tests.
+- **Profile boundary:** the link is driven by `GREENSPARK_PROFILE_URL_TEMPLATE` on the API; hidden when unset.
+- **Docs:** [demo-script.md](demo-script.md), [integration.md](integration.md), and updated run/reset instructions in the README and [api.md](api.md).
+
+### Remaining integration gaps
+
+- The prediction model and the full profile are not built (other teammates). Their contracts are proposals only; see [integration.md](integration.md).
+- The queue asks the model adapter about every case on each list request. Fine for 100 demo cases; a real model will need batching or caching.
+- Demo identity only: no production sign-in or account administration.
+- Undo is offered only in the message bar after an action.
+- Automated checks cover Chromium only; no screen-reader testing was done beyond axe.
+- The fixture's 25 existing notes and all workflow data are invented.
+
+### Summary against the five milestones
+
+1. Scope, contracts, fixture: done.
+2. React layout and theme: done.
+3. Node API and storage: done.
+4. Filters, assignment, bulk actions: done.
+5. Integration checks and handoff: done, apart from the teammate agreements above.

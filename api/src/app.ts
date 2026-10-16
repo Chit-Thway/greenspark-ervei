@@ -2,12 +2,13 @@ import express, { type NextFunction, type Request, type Response } from "express
 import { z } from "zod";
 import {
   ASSISTANCE_OPTIONS, DEFAULT_QUERY, PRIORITY_LABELS, applyFilters, facetCounts, overviewCounters, paginate, sortCases,
-  type QueueQuery, type StaffUser,
+  type QueueCase, type QueueQuery, type StaffUser,
 } from "@greenspark/shared";
 import { ApiError } from "./errors";
-import { MAX_BULK_ITEMS, WorkflowService } from "./service";
+import { MAX_BULK_ITEMS, WorkflowService, type MutationResult } from "./service";
 import type { Store } from "./store";
 import type { Clock } from "./clock";
+import { SyntheticModelAdapter, withAssessments, type ModelAdapter } from "./adapters";
 
 const STATUSES = ["new", "in_progress", "waiting", "resolved"] as const;
 const SORTS = ["priority_desc", "priority_asc", "followup", "name", "updated"] as const;
@@ -43,8 +44,21 @@ function parse<T>(schema: z.ZodType<T>, data: unknown): T {
   return r.data;
 }
 
-export function createApp(store: Store, clock: Clock = () => new Date()) {
+export interface AppOptions {
+  clock?: Clock;
+  modelAdapter?: ModelAdapter;
+  /** Where the teammate-owned full profile lives, e.g. "https://profiles.example/people/{personId}". Null hides the link. */
+  profileUrlTemplate?: string | null;
+}
+
+export function createApp(store: Store, options: AppOptions = {}) {
+  const clock = options.clock ?? (() => new Date());
+  const model = options.modelAdapter ?? new SyntheticModelAdapter(store);
+  const profileUrlTemplate = options.profileUrlTemplate ?? null;
   const service = new WorkflowService(store, clock);
+  const enrich = (cases: QueueCase[]) => withAssessments(model, cases);
+  const enrichOne = async (c: QueueCase) => (await enrich([c]))[0]!;
+  const enrichResult = async (r: MutationResult) => ({ ...r, updated: await enrich(r.updated) });
   const app = express();
   app.disable("x-powered-by");
   app.use(express.json({ limit: "100kb" }));
@@ -71,7 +85,7 @@ export function createApp(store: Store, clock: Clock = () => new Date()) {
     res.json({
       supportAreas: c.supportAreas, circumstances: c.circumstances, evidenceFields: c.evidenceFields,
       recommendations: c.recommendations, assistanceOptions: ASSISTANCE_OPTIONS, priorityLabels: PRIORITY_LABELS,
-      statuses: STATUSES, asOf: c.asOf,
+      statuses: STATUSES, asOf: c.asOf, profileUrlTemplate,
     });
   });
 
@@ -94,15 +108,17 @@ export function createApp(store: Store, clock: Clock = () => new Date()) {
   };
 
   // IDs of every case matching the filters (ignores paging); lets the UI drop selections that stopped matching.
-  app.get("/api/cases/ids", (req, res) => {
+  app.get("/api/cases/ids", async (req, res) => {
     const data = store.dataset();
+    data.cases = await enrich(data.cases);
     res.json({ ids: applyFilters(data, queryOf(req), actor(res).id).map((c) => c.id) });
   });
 
-  app.get("/api/cases", (req, res) => {
+  app.get("/api/cases", async (req, res) => {
     const q = queryOf(req);
     const me = actor(res).id;
     const data = store.dataset();
+    data.cases = await enrich(data.cases);
     const matches = sortCases(applyFilters(data, q, me), data.people, q.sort);
     const page = paginate(matches, q.page, q.pageSize);
     const people = new Map(data.people.map((x) => [x.id, x]));
@@ -121,44 +137,44 @@ export function createApp(store: Store, clock: Clock = () => new Date()) {
     });
   });
 
-  app.get("/api/cases/:caseId/overview", (req, res) => {
+  app.get("/api/cases/:caseId/overview", async (req, res) => {
     const c = store.getCase(String(req.params.caseId));
     if (!c) throw new ApiError("not_found", "Case not found.");
-    res.json({ case: c, person: store.getPerson(c.personId) });
+    res.json({ case: await enrichOne(c), person: store.getPerson(c.personId) });
   });
 
-  app.post("/api/cases", (req, res) => {
+  app.post("/api/cases", async (req, res) => {
     const c = service.createCase(parse(newCaseBody, req.body));
-    res.status(201).json({ case: c, person: store.getPerson(c.personId) });
+    res.status(201).json({ case: await enrichOne(c), person: store.getPerson(c.personId) });
   });
 
-  app.post("/api/cases/bulk/assignment", (req, res) => {
+  app.post("/api/cases/bulk/assignment", async (req, res) => {
     const b = parse(assignBody, req.body);
-    res.json(service.assign(actor(res), b.assigneeUserId, b.items));
+    res.json(await enrichResult(service.assign(actor(res), b.assigneeUserId, b.items)));
   });
 
-  app.post("/api/cases/bulk/status", (req, res) => {
+  app.post("/api/cases/bulk/status", async (req, res) => {
     const b = parse(bulkStatusBody, req.body);
-    res.json(service.setStatus(actor(res), b.status, b.items, true));
+    res.json(await enrichResult(service.setStatus(actor(res), b.status, b.items, true)));
   });
 
-  app.patch("/api/cases/:caseId/status", (req, res) => {
+  app.patch("/api/cases/:caseId/status", async (req, res) => {
     const b = parse(statusBody, req.body);
-    res.json(service.setStatus(actor(res), b.status, [{ caseId: String(req.params.caseId), expectedVersion: b.expectedVersion }], false));
+    res.json(await enrichResult(service.setStatus(actor(res), b.status, [{ caseId: String(req.params.caseId), expectedVersion: b.expectedVersion }], false)));
   });
 
-  app.post("/api/cases/:caseId/notes", (req, res) => {
+  app.post("/api/cases/:caseId/notes", async (req, res) => {
     const b = parse(noteBody, req.body);
-    res.status(201).json({ case: service.addNote(actor(res), String(req.params.caseId), b.text, b.expectedVersion) });
+    res.status(201).json({ case: await enrichOne(service.addNote(actor(res), String(req.params.caseId), b.text, b.expectedVersion)) });
   });
 
-  app.patch("/api/cases/:caseId/review", (req, res) => {
+  app.patch("/api/cases/:caseId/review", async (req, res) => {
     const b = parse(reviewBody, req.body);
-    res.json(service.setReview(actor(res), String(req.params.caseId), b.reviewStatus, b.expectedVersion));
+    res.json(await enrichResult(service.setReview(actor(res), String(req.params.caseId), b.reviewStatus, b.expectedVersion)));
   });
 
-  app.post("/api/workflow-actions/:actionId/undo", (req, res) => {
-    res.json(service.undo(actor(res), String(req.params.actionId)));
+  app.post("/api/workflow-actions/:actionId/undo", async (req, res) => {
+    res.json(await enrichResult(service.undo(actor(res), String(req.params.actionId))));
   });
 
   app.use("/api", (_req, _res, next) => next(new ApiError("not_found", "No such endpoint.")));

@@ -1,6 +1,6 @@
 import type { AddressInfo } from "node:net";
 import type { Server } from "node:http";
-import { createApp } from "../src/app";
+import { createApp, type AppOptions } from "../src/app";
 import { FIXTURE_PATH } from "../src/config";
 import { Store } from "../src/store";
 
@@ -10,10 +10,10 @@ export class TestClock {
   advance(ms: number) { this.time = new Date(this.time.getTime() + ms); }
 }
 
-export async function start(dbPath = ":memory:", clock = new TestClock()) {
+export async function start(dbPath = ":memory:", clock = new TestClock(), options: Omit<AppOptions, "clock"> = {}) {
   const store = new Store(dbPath, FIXTURE_PATH);
   const server: Server = await new Promise((resolve) => {
-    const s = createApp(store, clock.now).listen(0, () => resolve(s));
+    const s = createApp(store, { clock: clock.now, ...options }).listen(0, () => resolve(s));
   });
   const base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
   async function call(user: string | null, method: string, path: string, body?: unknown) {

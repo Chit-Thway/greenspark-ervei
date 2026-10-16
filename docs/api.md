@@ -18,6 +18,7 @@ Needs Node.js 22 or newer. SQLite uses Node's built-in `node:sqlite`, so there i
 | `GREENSPARK_DB` | `data/runtime/greenspark.sqlite` (git-ignored) |
 | `GREENSPARK_FIXTURE` | `data/synthetic/case-queue.v1.json` |
 | `PORT` | `3001` |
+| `GREENSPARK_PROFILE_URL_TEMPLATE` | unset (profile link hidden); e.g. `https://profiles.example/people/{personId}` |
 
 ## Persistence and reset
 
@@ -69,4 +70,4 @@ For the single-case status endpoint the specific 403/404/409 is returned directl
 
 ## Not in this milestone
 
-There is no production sign-in or account administration. The model and profile integrations are still mock/placeholder (Milestone 5).
+There is no production sign-in or account administration. Model results come through a replaceable adapter; see [integration.md](integration.md).

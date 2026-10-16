@@ -1,6 +1,6 @@
 # Case queue implementation plan
 
-Status: planning and synthetic test-data preparation only. Application implementation has not started.
+Status: all five milestones are built. See [progress.md](progress.md) for what was delivered and the remaining integration gaps.
 
 Approved scope recorded on 16 October 2026, Australia/Perth.
 
@@ -141,4 +141,4 @@ All names, combinations of answers, dates, workflow records and model scores are
 - Prepared the proposed contract and reproducible fixture.
 - Preserved the selected green theme as a design reference.
 
-The React app, Node API and SQLite storage belong to later milestones and have not been implemented by this planning step.
+The React app, Node API and SQLite storage were built in milestones 2–5; see [progress.md](progress.md).
