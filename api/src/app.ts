@@ -1,3 +1,5 @@
+import { timingSafeEqual } from "node:crypto";
+import { join } from "node:path";
 import express, { type NextFunction, type Request, type Response } from "express";
 import { z } from "zod";
 import {
@@ -49,6 +51,10 @@ export interface AppOptions {
   modelAdapter?: ModelAdapter;
   /** Where the teammate-owned full profile lives, e.g. "https://profiles.example/people/{personId}". Null hides the link. */
   profileUrlTemplate?: string | null;
+  /** Directory of the built web app. When set, this server also serves the pages (single-process hosting). */
+  staticDir?: string | null;
+  /** Optional "user:password" for HTTP Basic auth in front of everything except /api/health. For shared demo hosting. */
+  basicAuth?: string | null;
 }
 
 export function createApp(store: Store, options: AppOptions = {}) {
@@ -61,6 +67,17 @@ export function createApp(store: Store, options: AppOptions = {}) {
   const enrichResult = async (r: MutationResult) => ({ ...r, updated: await enrich(r.updated) });
   const app = express();
   app.disable("x-powered-by");
+
+  if (options.basicAuth) {
+    const expected = Buffer.from(options.basicAuth);
+    app.use((req, res, next) => {
+      if (req.path === "/api/health") return next();
+      const header = req.header("authorization") ?? "";
+      const given = header.startsWith("Basic ") ? Buffer.from(header.slice(6), "base64") : Buffer.alloc(0);
+      if (given.length === expected.length && timingSafeEqual(given, expected)) return next();
+      res.set("WWW-Authenticate", 'Basic realm="GreenSpark demo"').status(401).send("Authentication required.");
+    });
+  }
   app.use(express.json({ limit: "100kb" }));
 
   app.get("/api/health", (_req, res) => { res.json({ ok: true, demo: true }); });
@@ -178,6 +195,12 @@ export function createApp(store: Store, options: AppOptions = {}) {
   });
 
   app.use("/api", (_req, _res, next) => next(new ApiError("not_found", "No such endpoint.")));
+
+  if (options.staticDir) {
+    const dir = options.staticDir;
+    app.use(express.static(dir));
+    app.get(/^\/(?!api\/).*/, (_req, res) => { res.sendFile(join(dir, "index.html")); });
+  }
 
   app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
     if (err instanceof ApiError) {
