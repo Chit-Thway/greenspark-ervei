@@ -1,0 +1,130 @@
+import { expect, test } from "@playwright/test";
+import { api, expectTotal, MANAGER, openQueue, switchUser, total } from "./helpers";
+
+// One shared database for the run, so these steps run in order as a single story.
+test.describe.serial("manager to worker workflow", () => {
+  let assigned: string[] = [];
+
+  test("manager sees all 100 demo cases with counters and filter counts", async ({ page }) => {
+    await openQueue(page);
+    await expectTotal(page, 100);
+    await expect(page.locator("tbody tr")).toHaveCount(8);
+    await expect(page.getByText("Showing 1–8 of 100 cases")).toBeVisible();
+    await expect(page.getByRole("button", { name: /^Unassigned/ })).toContainText("20");
+    await expect(page.locator(".sidebar")).toContainText("Financial pressure");
+    await expect(page.locator(".sidebar")).not.toContainText("Domestic violence");
+  });
+
+  test("manager bulk-assigns two unassigned cases, then Undo restores them", async ({ page }) => {
+    await openQueue(page);
+    await page.getByRole("button", { name: /^Unassigned/ }).click();
+    await expectTotal(page, 20);
+    const boxes = page.locator("tbody tr input[type=checkbox]");
+    assigned = await page.locator("tbody tr").evaluateAll((rows) => rows.slice(0, 2).map((r) => r.getAttribute("data-case-id")!));
+    await boxes.nth(0).check();
+    await boxes.nth(1).check();
+    await page.getByLabel("Assign selected cases to").selectOption({ label: "Alex Morgan" });
+    await page.getByRole("button", { name: "Assign", exact: true }).click();
+    await expect(page.locator(".notice-success")).toContainText("Assigned 2 cases to Alex Morgan");
+    await expectTotal(page, 18);
+
+    await page.getByRole("button", { name: "Undo" }).click();
+    await expect(page.locator(".notice-success")).toContainText("Undone");
+    await expectTotal(page, 20);
+
+    // Assign again for the worker steps.
+    await boxes.nth(0).check();
+    await boxes.nth(1).check();
+    await page.getByLabel("Assign selected cases to").selectOption({ label: "Alex Morgan" });
+    await page.getByRole("button", { name: "Assign", exact: true }).click();
+    await expect(page.locator(".notice-success")).toContainText("Assigned 2 cases");
+    await expectTotal(page, 18);
+  });
+
+  test("selection survives paging and drops cases that stop matching a filter", async ({ page }) => {
+    await openQueue(page);
+    await page.getByLabel("Select all cases on this page").check();
+    await page.getByRole("button", { name: "Next" }).click();
+    await expect(page.getByText("Page 2 of 13")).toBeVisible();
+    await expect(page.locator(".bulkbar strong")).toHaveText("8 selected");
+    await page.locator(".sidebar").getByLabel("Case status").selectOption("resolved");
+    await expectTotal(page, 10);
+    await expect(page.locator(".bulkbar")).toHaveCount(0); // none of the 8 selected cases was resolved
+  });
+
+  test("the worker finds the assigned cases under Assigned to me and updates them", async ({ page }) => {
+    await openQueue(page, "staff-alex");
+    await page.getByRole("button", { name: /^Assigned to me/ }).click();
+    expect(await total(page)).toBeGreaterThanOrEqual(2);
+    await page.getByRole("button", { name: "Next" }).click().catch(() => undefined);
+    await page.getByRole("button", { name: /^Assigned to me/ }).click();
+    const first = page.locator("tbody tr").first();
+    const caseId = (await first.getAttribute("data-case-id"))!;
+    await first.locator(".name-btn").click();
+    const panel = page.locator(".overview");
+    await expect(panel).toBeVisible();
+    await expect(panel.getByLabel("Assigned worker")).toBeDisabled();
+    await expect(panel).toContainText("Only managers can assign cases");
+
+    await panel.getByLabel("Add a case note").fill("Called and left a message.");
+    await panel.getByRole("button", { name: "Add note" }).click();
+    await expect(page.locator(".notice-success")).toContainText("Note added");
+    await expect(panel.locator(".notes")).toContainText("Called and left a message.");
+
+    const status = (await first.locator(".status").innerText()).trim() === "Waiting" ? "in_progress" : "waiting";
+    await panel.getByLabel("Case status").selectOption(status);
+    await panel.getByRole("button", { name: "Save status" }).click();
+    await expect(page.locator(".notice-success")).toContainText("Status set to");
+
+    const review = panel.getByRole("button", { name: /Mark/ });
+    await review.click();
+    await expect(page.locator(".notice-success")).toContainText("Marked as");
+
+    // A stale edit: the manager adds a note behind the worker's back.
+    const cur = (await api(page, MANAGER, "GET", `/api/cases/${caseId}/overview`)).body.case;
+    await api(page, MANAGER, "POST", `/api/cases/${caseId}/notes`, { text: "Manager edit", expectedVersion: cur.version });
+    await panel.getByLabel("Case status").selectOption(status === "waiting" ? "new" : "waiting");
+    await panel.getByRole("button", { name: "Save status" }).click();
+    await expect(page.locator(".notice-error")).toContainText("changed by someone else");
+    await expect(panel.locator(".notes")).toContainText("Manager edit");
+  });
+
+  test("a worker's bulk update on other people's cases is refused as a whole", async ({ page }) => {
+    await openQueue(page, "staff-alex");
+    await page.getByLabel("Select all cases on this page").check();
+    await expect(page.getByRole("button", { name: "Assign", exact: true })).toBeDisabled();
+    await page.getByRole("button", { name: "Update status" }).click();
+    const err = page.locator(".notice-error");
+    await expect(err).toContainText("No changes were made");
+    await expect(err.locator("li").first()).toContainText("assigned to you");
+  });
+
+  test("manager creates a case; it persists across a reload", async ({ page }) => {
+    await openQueue(page);
+    await page.getByRole("button", { name: "+ New case" }).click();
+    await page.getByRole("button", { name: "Create case" }).click();
+    await expect(page.locator(".error")).toHaveCount(2);
+    await page.getByLabel("Display name (fictional)").fill("Jordan Newcase");
+    await page.getByRole("textbox", { name: "Suburb" }).fill("Perth");
+    await page.getByRole("button", { name: "Create case" }).click();
+    await expect(page.locator(".notice-success")).toContainText("Added Jordan Newcase");
+    await expect(page.locator("#ov-title")).toHaveText("Jordan Newcase");
+    await expect(page.locator(".overview")).toContainText("Assessment pending");
+    await expect(page.locator(".overview")).toContainText("No circumstances flagged");
+    await page.reload();
+    await expectTotal(page, 101);
+    await page.getByPlaceholder("Search name, case ID or suburb…").fill("Jordan Newcase");
+    await expectTotal(page, 1);
+  });
+
+  test("worker view is the same shared queue; managers cannot be impersonated by request body", async ({ page }) => {
+    await openQueue(page, "staff-sarah");
+    await expectTotal(page, 101);
+    const cur = (await api(page, "staff-sarah", "GET", `/api/cases/${assigned[0]}/overview`)).body.case;
+    const r = await api(page, "staff-sarah", "POST", "/api/cases/bulk/assignment", { assigneeUserId: "staff-sarah", items: [{ caseId: cur.id, expectedVersion: cur.version }], actorUserId: MANAGER });
+    expect(r.status).toBe(422);
+    const r2 = await api(page, "staff-sarah", "POST", "/api/cases/bulk/assignment", { assigneeUserId: "staff-sarah", items: [{ caseId: cur.id, expectedVersion: cur.version }] });
+    expect(r2.status).toBe(403);
+    await switchUser(page, "staff-manager");
+  });
+});

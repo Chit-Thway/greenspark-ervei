@@ -1,0 +1,25 @@
+{
+  "name": "greenspark-ervei",
+  "private": true,
+  "version": "0.1.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "workspaces": [
+    "shared",
+    "web",
+    "api",
+    "e2e"
+  ],
+  "scripts": {
+    "check:fixture": "node scripts/generate-synthetic-cases.mjs --check",
+    "dev": "node scripts/dev.mjs",
+    "build": "npm run build -w web",
+    "test": "npm run test -w shared --if-present && npm run test -w web && npm run test -w api",
+    "typecheck": "npm run typecheck -w shared && npm run typecheck -w web && npm run typecheck -w api && npm run typecheck -w e2e",
+    "dev:api": "npm run dev -w api",
+    "reset": "npm run reset -w api",
+    "dev:web": "npm run dev -w web",
+    "test:e2e": "npm run test -w e2e"
+  }
+}
