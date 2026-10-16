@@ -1,0 +1,50 @@
+{
+  "name": "GreenSpark Bright Mint",
+  "status": "proposed implementation tokens for the approved visual direction",
+  "defaultMode": "light",
+  "colors": {
+    "brand": "#00875A",
+    "brandHover": "#006B47",
+    "onBrand": "#FFFFFF",
+    "background": "#F7F9FA",
+    "surface": "#FFFFFF",
+    "sidebar": "#F4FAF7",
+    "selectedSurface": "#E3FCEF",
+    "foreground": "#253858",
+    "mutedForeground": "#5E6C84",
+    "border": "#DFE1E6",
+    "focusRing": "#00875A",
+    "urgent": "#AE2E24",
+    "urgentSurface": "#FFECEB",
+    "high": "#974F0C",
+    "highSurface": "#FFF4E5",
+    "moderate": "#2458A6",
+    "moderateSurface": "#E9F2FF",
+    "routine": "#52645B",
+    "routineSurface": "#EEF3F0",
+    "suggestion": "#6E5A91",
+    "suggestionSurface": "#F3EFF8"
+  },
+  "typography": {
+    "fontFamily": "Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif",
+    "bodyPx": 14,
+    "tablePx": 13,
+    "secondaryPx": 12,
+    "minimumPx": 11,
+    "headingPx": 28
+  },
+  "layout": {
+    "desktopSidebarPx": 232,
+    "desktopOverviewPx": 440,
+    "headerMinHeightPx": 72,
+    "contentPaddingPx": 24,
+    "controlRadiusPx": 6,
+    "panelRadiusPx": 10,
+    "defaultPageSize": 8
+  },
+  "notes": [
+    "These are explicit starting tokens for implementation, not a claim that every pixel was extracted from the generated theme image.",
+    "Preserve the approved hierarchy and green light appearance; adapt dimensions responsively.",
+    "Pair priority colors with visible text labels."
+  ]
+}

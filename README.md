@@ -6,9 +6,26 @@ Help essential-service teams identify customers who may need support, understand
 
 ## Current stage
 
-The current focus is **the first interface and the data flow around it**. Our team handles data and the interface; another teammate owns the prediction model. Managers and support workers will share the same interface initially.
+The current focus is **planning the first interface and preparing clearly labelled synthetic test data**. The planned stack is React + TypeScript + Vite for the interface and Node.js + TypeScript + Express for the API. Managers and support workers share the same interface with role-appropriate actions.
 
-This README captures the working design as of **16 October 2026**, based on the team's whiteboard sketch and current interface brief. The features below describe the intended workflow; data sources, integration contracts and implementation details are still being agreed.
+The approved direction as of **16 October 2026** is the bright green/mint theme and the existing case-queue workflow, including the compact right-side overview. Another teammate owns the prediction model, and another owns full individual cards/profiles.
+
+- [Scope, approved recommendations and five implementation milestones](docs/implementation-plan.md)
+- [Proposed data/API/model/profile contract](docs/data-contract.md)
+- [100-person synthetic development fixture](data/synthetic/case-queue.v1.json)
+- [Test-data instructions and limitations](data/synthetic/README.md)
+- [Clickable workflow, selected theme and overview references](docs/design/README.md)
+
+The React application and Node API have not been built yet. The contracts are proposals to agree with the model and profile teammates.
+
+## Start from milestone 1
+
+1. Read [the implementation plan](docs/implementation-plan.md), then [the data contract](docs/data-contract.md).
+2. Inspect [the design references](docs/design/README.md). Open `docs/design/workflow-reference.html` in a browser to try the approved interactions; the selected green image defines the visual direction.
+3. Run `node scripts/generate-synthetic-cases.mjs --check` from the repository root. This checks the existing 100-person fixture without npm packages, a backend or source-data downloads.
+4. Review the proposed person/model integration boundaries, then build milestones 2-5. External model/profile work can remain behind the documented mock adapters while this queue is implemented.
+
+The original preview's illustrative categories and counts are superseded by the current plan and JSON catalogs. The new app should use the versioned synthetic fixture, not the preview's embedded example cases.
 
 ## Architecture at a glance
 
@@ -33,14 +50,14 @@ The first screen is a shared staff workspace with a case list, a filter panel on
 
 | Capability | Intended behaviour |
 | --- | --- |
-| Support-category filters | Narrow the list using recorded circumstances such as income loss or domestic and family violence, where staff have appropriate access. |
+| Support-area filters | Financial pressure; heating, cooling and home comfort; health-related energy needs. Expand each umbrella into the approved source-supported circumstances. |
 | Urgency and support-need filters | Use model outputs to help staff prioritise cases. Exact labels and thresholds are still to be agreed. |
 | Assigned to me | Show cases assigned to the signed-in support worker. Assignment comes from the case workflow. |
 | Manager assignment | Let managers allocate cases to support workers within the shared interface. |
-| Bulk actions | Let staff select multiple cases and act on them together. The initial action set is still to be defined. |
-| Case context | Show useful model results and the supporting signals alongside relevant customer information. |
+| Bulk actions | Single/bulk manager assignment and permitted status changes, with clear selection and reversible-action feedback. |
+| Compact case overview | Show minimal identity/context, assignment, status, supporting reported answers, recommendations and short notes in the right-side panel. Full profiles are owned by another teammate. |
 
-Recorded sensitive circumstances and model predictions have distinct roles: a vulnerability category such as domestic and family violence must come from an explicit record, while the model can help estimate support need and urgency. Staff retain decision authority.
+Recorded answers, illustrative support-area groupings, proposed staff actions and model predictions have distinct roles. Domestic violence and income loss are not established by the inspected source fields and are not included in the supported demo taxonomy. Historical survey answers retain their reporting periods. Staff review suggested actions.
 
 ## What comes back from the model
 
@@ -56,10 +73,11 @@ Assignment, “Assigned to me,” and bulk actions belong to the interface workf
 
 - Confirm the prediction target, urgency labels and the model's input/output contract with its owner.
 - Confirm the data sources, including when customer data is optional and how results link to customer or case records.
-- Settle the first screen's filters, manager permissions and supported bulk actions.
-- Use clearly labelled mock cases for the interface prototype, then connect the agreed data flow.
+- Confirm the proposed filter semantics and server-side manager/assigned-worker permissions during implementation.
+- Agree stable person IDs and the full-profile route with its owner.
+- Build through the five milestones, using the labelled fixture before connecting external model results.
 
-Source datasets and their schemas are still being verified. Generated demo customer records have been removed to avoid confusion with source data.
+The old root-level `customers.json` placeholder was removed to avoid confusion. The new fixture is deliberately synthetic, separately located under `data/synthetic/`, and explicitly requested for workflow testing. It uses verified ECA answer definitions without copying respondent profiles or joining unrelated source datasets.
 
 ## Visual references
 
