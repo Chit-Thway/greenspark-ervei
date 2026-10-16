@@ -1,0 +1,23 @@
+{
+  "name": "@greenspark/api",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "start": "tsx src/server.ts",
+    "reset": "tsx src/reset.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "tsx": "^4.23.15",
+    "vitest": "^5.0.5"
+  },
+  "dependencies": {
+    "express": "^5.3.0",
+    "zod": "^4.6.7",
+    "@greenspark/shared": "*"
+  }
+}

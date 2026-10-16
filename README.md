@@ -13,12 +13,13 @@ The approved direction as of **16 October 2026** is the bright green/mint theme 
 - [Scope, approved recommendations and five implementation milestones](docs/implementation-plan.md)
 - [Proposed data/API/model/profile contract](docs/data-contract.md)
 - [Workflow contract: assignment, bulk actions, versioning, Undo](docs/workflow-contract.md)
+- [Node API: run, reset, endpoints and errors](docs/api.md)
 - [Build progress by milestone](docs/progress.md)
 - [100-person synthetic development fixture](data/synthetic/case-queue.v1.json)
 - [Test-data instructions and limitations](data/synthetic/README.md)
 - [Clickable workflow, selected theme and overview references](docs/design/README.md)
 
-The React screen (Milestone 2) is built and reads the fixture through one adapter. The Node API and SQLite storage are not built yet, so assignment, status and notes are shown read-only. The contracts are proposals to agree with the model and profile teammates.
+The React screen (Milestone 2) and the Node API with SQLite storage (Milestone 3) are built. The screen still reads the fixture through its adapter; connecting it to the API is Milestone 4, so assignment, status and notes are read-only in the browser for now. The contracts are proposals to agree with the model and profile teammates.
 
 ## Run the app
 
@@ -26,7 +27,9 @@ Needs Node.js 22 or newer.
 
 ```sh
 npm install
-npm run dev        # http://localhost:5173
+npm run dev        # web, http://localhost:5173
+npm run dev:api    # API, http://localhost:3001 (see docs/api.md)
+npm run reset      # delete the workflow database
 npm test           # filter/sort/paging/follow-up unit tests
 npm run typecheck
 npm run build

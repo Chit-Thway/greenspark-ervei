@@ -4,7 +4,7 @@
 | --- | --- |
 | 1. Scope, contracts and synthetic test data | **Done**, pending teammate review of the model/profile boundary |
 | 2. React layout and selected green theme | **Done** (see below) |
-| 3. Node API and workflow storage | Not started |
+| 3. Node API and workflow storage | **Done** (see below) |
 | 4. Filters, assignment and bulk actions | Not started |
 | 5. Integration checks, usability and handoff | Not started |
 
@@ -35,3 +35,15 @@ Built in `web/` (React 19, TypeScript, Vite; npm workspace at the repo root).
 Deliberately not done yet (Milestones 3–4): assignment, bulk assign/status, status changes, notes, review and Undo. Those controls are visible but disabled. The New case form adds an in-memory case only.
 
 Known limit: the fixture is bundled into the page, so the build is over 500 kB until the API replaces it.
+
+## Milestone 3: Node API and workflow storage
+
+Built in `api/` (Express 5, TypeScript, zod, `node:sqlite`). Shared filter/sort/paging logic moved to `shared/` so the web app and the API use one definition of every filter. See [api.md](api.md).
+
+- All endpoints in the data contract, plus `/api/health`.
+- Roles enforced on the server: only managers assign; workers change status, notes and review on their own cases only; the actor comes from the server-side demo identity, never the request body.
+- Per-case versions, atomic bulk requests and guarded Undo as in [workflow-contract.md](workflow-contract.md).
+- SQLite persists across restarts; `npm run reset` restores the 100-case demo; the fixture file is never modified.
+- 25 API tests (permissions, stale versions, atomic bulk, undo conflicts and expiry, new case, persistence, reset, fixture unchanged). `npm test` runs shared, web and API tests; `npm run typecheck` covers all three.
+
+Choices to confirm: errors for bulk requests are always `422 bulk_validation_failed` with per-item reasons (including permission and stale-version failures); reviews and notes bump the version but are not logged as undoable actions; any signed-in user can create a case.
