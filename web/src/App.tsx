@@ -369,11 +369,7 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; o
 
         <main id="queue" className="main" tabIndex={-1}>
           <div className="page-head">
-            <div>
-              <p className="eyebrow">People first. Support that reaches.</p>
-              <h1>Case queue</h1>
-              <p className="sub">A clearer view of who needs support next.</p>
-            </div>
+            <h1>Case queue</h1>
             <button type="button" className="btn btn-primary" onClick={showNewCase}>
               + New case
             </button>
