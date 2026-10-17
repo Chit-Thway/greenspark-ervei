@@ -84,7 +84,7 @@ Use the same endpoints for one or many assignments rather than implementing two 
 
 The queue's case statuses are `new`, `in_progress`, `waiting` and `resolved`. The MVP permits moving between these valid statuses, including reopening a resolved case; it should not invent an approval process or extra transition restrictions. A resolved case displays no outstanding follow-up. A reopened case with no follow-up date displays Not scheduled rather than inventing a date.
 
-Proposed list query fields are `search`, `view`, `circumstanceIds`, `assistanceIds`, `priorityLabels`, `minPriorityScore`, `assessmentStatus`, `status`, `assignedToUserId`, `sort`, `page` and `pageSize`. Use explicit IDs from the catalogs, default to eight cases per page, and use one definition of each filter in the mock and live data adapters.
+Proposed list query fields are `search`, `view`, `circumstanceIds`, `assistanceIds`, `priorityLabels`, `minPriorityScore`, `assessmentStatus`, `status`, `assignedToUserId`, `sort`, `page` and `pageSize`. Use explicit IDs from the catalogs, default to 50 cases per page, and use one definition of each filter in the mock and live data adapters.
 
 The original three overview counters are global active-case shortcuts: Urgent cases counts ready urgent assessments on unresolved cases; Awaiting assignment counts unresolved cases with no assigned worker; My active cases counts unresolved cases assigned to the current user. Label their global scope if needed so users do not mistake them for filtered table totals. The table's result total and pagination reflect the active query. All cases initially includes all statuses, so all 100 fixture cases are accessible.
 

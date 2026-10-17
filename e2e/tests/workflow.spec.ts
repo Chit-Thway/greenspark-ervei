@@ -8,8 +8,8 @@ test.describe.serial("manager to worker workflow", () => {
   test("manager sees all 100 demo cases with counters and filter counts", async ({ page }) => {
     await openQueue(page);
     await expectTotal(page, 100);
-    await expect(page.locator("tbody tr")).toHaveCount(8);
-    await expect(page.getByText("Showing 1–8 of 100 cases")).toBeVisible();
+    await expect(page.locator("tbody tr")).toHaveCount(50);
+    await expect(page.getByText("Showing 1–50 of 100 cases")).toBeVisible();
     await expect(page.getByRole("button", { name: /^Unassigned/ })).toContainText("20");
     await expect(page.locator(".sidebar")).toContainText("Financial pressure");
     await expect(page.locator(".sidebar")).not.toContainText("Domestic violence");
@@ -43,21 +43,25 @@ test.describe.serial("manager to worker workflow", () => {
 
   test("selection survives paging and drops cases that stop matching a filter", async ({ page }) => {
     await openQueue(page);
+    const onPageOne = await page.locator("tbody tr").evaluateAll((rows) => rows.map((r) => r.getAttribute("data-case-id")!));
     await page.getByLabel("Select all cases on this page").check();
     await page.getByRole("button", { name: "Next" }).click();
-    await expect(page.getByText("Page 2 of 13")).toBeVisible();
-    await expect(page.locator(".bulkbar strong")).toHaveText("8 selected");
+    await expect(page.getByText("Page 2 of 2")).toBeVisible();
+    await expect(page.locator(".bulkbar strong")).toHaveText("50 selected");
     await page.locator(".sidebar").getByLabel("Case status").selectOption("resolved");
     await expectTotal(page, 10);
-    await expect(page.locator(".bulkbar")).toHaveCount(0); // none of the 8 selected cases was resolved
+    // Only selected cases that are also resolved may stay selected.
+    const resolved = new Set((await api(page, MANAGER, "GET", "/api/cases/ids?status=resolved")).body.ids as string[]);
+    const stillSelected = onPageOne.filter((id) => resolved.has(id)).length;
+    if (stillSelected === 0) await expect(page.locator(".bulkbar")).toHaveCount(0);
+    else await expect(page.locator(".bulkbar strong")).toHaveText(`${stillSelected} selected`);
   });
 
   test("the worker finds the assigned cases under Assigned to me and updates them", async ({ page }) => {
     await openQueue(page, "staff-alex");
     await page.getByRole("button", { name: /^Assigned to me/ }).click();
     expect(await total(page)).toBeGreaterThanOrEqual(2);
-    await page.getByRole("button", { name: "Next" }).click().catch(() => undefined);
-    await page.getByRole("button", { name: /^Assigned to me/ }).click();
+    for (const id of assigned) await expect(page.locator(`tr[data-case-id="${id}"]`)).toBeVisible(); // the two cases the manager assigned
     const first = page.locator("tbody tr").first();
     const caseId = (await first.getAttribute("data-case-id"))!;
     const startStatus = (await first.locator(".status").innerText()).trim(); // read before leaving the queue

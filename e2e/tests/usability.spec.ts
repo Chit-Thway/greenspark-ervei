@@ -83,9 +83,9 @@ test.describe("states and content rules", () => {
 test.describe("case pages", () => {
   test("each case has its own address; Back returns to the same queue view; unknown cases are explained", async ({ page }) => {
     await openQueue(page);
-    await page.getByPlaceholder("Search name, case ID or suburb…").fill("a");
+    await page.getByRole("combobox", { name: "Sort cases" }).selectOption("name");
     await page.getByRole("button", { name: "Next" }).click();
-    await expect(page.getByText(/Page 2 of/)).toBeVisible();
+    await expect(page.getByText("Page 2 of 2")).toBeVisible();
     const row = page.locator("tbody tr").nth(1);
     const id = (await row.getAttribute("data-case-id"))!;
     await row.locator(".name-link").click();
@@ -95,8 +95,8 @@ test.describe("case pages", () => {
     await expect(page.locator("#sidebar")).toHaveCount(0);
     await page.goBack();
     await expect(page).toHaveURL(/\/$/);
-    await expect(page.getByText(/Page 2 of/)).toBeVisible(); // same page of results
-    await expect(page.getByPlaceholder("Search name, case ID or suburb…")).toHaveValue("a");
+    await expect(page.getByText("Page 2 of 2")).toBeVisible(); // same page of results
+    await expect(page.getByRole("combobox", { name: "Sort cases" })).toHaveValue("name"); // and the same sort
     await page.goForward();
     await expect(page.locator(".case-page")).toBeVisible();
 

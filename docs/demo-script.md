@@ -10,7 +10,7 @@ npm run dev          # open http://localhost:5173
 
 The header **Demo view** menu switches user. It is a labelled stand-in for sign-in.
 
-1. **The shared queue (manager, Taylor Brooks).** 100 cases, eight per page. Point out the three counters (all unresolved cases, not filtered), the green "Synthetic demo data" badge, and "simulated" next to every model priority.
+1. **The shared queue (manager, Taylor Brooks).** 100 cases, 50 per page (two pages). Point out the three counters (all unresolved cases, not filtered), the green "Synthetic demo data" badge, and "simulated" next to every model priority.
 2. **Filters.** Expand *Heating, cooling & home comfort*, tick *Difficulty keeping warm*. The parent shows a partial state, a chip appears, counts update. Add *Status: Waiting*, then remove chips one by one. Show *Assistance reported* is separate from support areas, with "Current at report" apart from "Historical, past 12 months".
 3. **Why a case is flagged.** Click a person. Their case opens on its own page (`/cases/GS-…`) showing each circumstance, the reported answer, its source question and period, then suggested staff actions labelled "for staff review". Show an *Unknown / not recorded* answer versus a recorded *No*. Show a pending model result: "Assessment pending", not Routine. Use **Back to case queue** (or the browser Back button): your filters, page and selection are still there.
 4. **Bulk assignment.** Choose **Unassigned**, select two cases, assign to Alex Morgan. A message confirms it and offers **Undo**. Click Undo: both go back to Unassigned. Assign again.

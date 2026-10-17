@@ -60,7 +60,13 @@ describe("sorting, paging and counters", () => {
     expect(asc.slice(90).every((s) => s === null)).toBe(true);
   });
 
-  it("paginates eight per page and clamps the page", () => {
+  it("shows 50 cases per page by default", () => {
+    expect(DEFAULT_QUERY.pageSize).toBe(50);
+    const p = paginate(data.cases, 1, DEFAULT_QUERY.pageSize);
+    expect([p.items.length, p.pageCount, p.from, p.to]).toEqual([50, 2, 1, 50]);
+  });
+
+  it("paginates in other sizes and clamps the page", () => {
     const p = paginate(data.cases, 99, 8);
     expect(p.pageCount).toBe(13);
     expect(p.page).toBe(13);

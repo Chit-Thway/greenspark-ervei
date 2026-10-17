@@ -32,8 +32,14 @@ describe("identity and reads", () => {
 
   it("lists, filters and paginates", async () => {
     const r = await h.call(M, "GET", "/api/cases");
-    expect(r.body).toMatchObject({ total: 100, page: 1, pageSize: 8, pageCount: 13 });
-    expect(r.body.items).toHaveLength(8);
+    expect(r.body).toMatchObject({ total: 100, page: 1, pageSize: 50, pageCount: 2, from: 1, to: 50 }); // 50 per page by default
+    expect(r.body.items).toHaveLength(50);
+    const second = await h.call(M, "GET", "/api/cases?page=2");
+    expect(second.body.items).toHaveLength(50);
+    expect(second.body).toMatchObject({ from: 51, to: 100 });
+    const small = await h.call(M, "GET", "/api/cases?pageSize=8"); // other sizes still work
+    expect(small.body).toMatchObject({ pageSize: 8, pageCount: 13 });
+    expect(small.body.items).toHaveLength(8);
     expect(r.body.counters.awaitingAssignment).toBeGreaterThan(0);
     const warm = await h.call(M, "GET", "/api/cases?circumstanceIds=keeping_warm_difficulty&pageSize=100");
     expect(warm.body.total).toBe(r.body.facets.circumstances.keeping_warm_difficulty);

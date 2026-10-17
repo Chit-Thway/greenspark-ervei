@@ -25,7 +25,7 @@
 
 Built in `web/` (React 19, TypeScript, Vite; npm workspace at the repo root).
 
-- App shell, filter sidebar (views, support areas with parent/child checkboxes and an indeterminate state, assistance reported, simulated model priority, workflow), three overview counters, toolbar, table, pagination (8 per page), minimal New case panel and the compact right overview (440 px on wide screens, a slide-over on narrower ones).
+- App shell, filter sidebar (views, support areas with parent/child checkboxes and an indeterminate state, assistance reported, simulated model priority, workflow), three overview counters, toolbar, table, pagination (originally 8 per page; now 50), minimal New case panel and the compact right overview (440 px on wide screens, a slide-over on narrower ones).
 - The three support areas and nine circumstances come from the JSON catalogs; the old placeholder categories are gone.
 - Only `web/src/data/caseSource.ts` imports the fixture. Milestone 3 swaps it for API calls.
 - Filter, sort, paging, counters and follow-up wording are pure functions in `web/src/domain/` with 12 unit tests.

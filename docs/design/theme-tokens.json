@@ -40,7 +40,7 @@
     "contentPaddingPx": 24,
     "controlRadiusPx": 6,
     "panelRadiusPx": 10,
-    "defaultPageSize": 8
+    "defaultPageSize": 50
   },
   "notes": [
     "These are explicit starting tokens for implementation, not a claim that every pixel was extracted from the generated theme image.",

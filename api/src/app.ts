@@ -120,7 +120,7 @@ export function createApp(store: Store, options: AppOptions = {}) {
       circumstanceIds: csv(p.circumstanceIds), assistanceIds: csv(p.assistanceIds),
       priorityLabels: csv(p.priorityLabels).filter((l): l is QueueQuery["priorityLabels"][number] => (PRIORITY_LABELS as string[]).includes(l)),
       minPriorityScore: p.minPriorityScore ?? 0, assessmentStatus: p.assessmentStatus ?? "", status: p.status ?? "",
-      assignedToUserId: p.assignedToUserId ?? "", sort: p.sort ?? "priority_desc", page: p.page ?? 1, pageSize: p.pageSize ?? 8,
+      assignedToUserId: p.assignedToUserId ?? "", sort: p.sort ?? "priority_desc", page: p.page ?? 1, pageSize: p.pageSize ?? 50,
     };
   };
 
