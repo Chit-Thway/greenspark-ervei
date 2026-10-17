@@ -6,8 +6,9 @@ import { addSelection } from "./domain/selection";
 import { PRIORITY_TEXT, STATUS_LABELS } from "./domain/format";
 import { FilterSidebar } from "./components/FilterSidebar";
 import { CaseTable } from "./components/CaseTable";
-import { OverviewPanel } from "./components/OverviewPanel";
+import { CaseDetails } from "./components/CaseDetails";
 import { NewCasePanel, type NewCaseInput } from "./components/NewCasePanel";
+import { caseHref, isModifiedClick, useRoute } from "./route";
 
 interface Notice {
   kind: "success" | "error";
@@ -29,6 +30,7 @@ export function App() {
   const userRef = useRef(userId);
   userRef.current = userId;
   const client = useMemo(() => createApiClient(() => userRef.current), []);
+  const { caseId, navigate } = useRoute();
 
   const loadCatalog = useCallback(() => {
     setError(null);
@@ -45,13 +47,14 @@ export function App() {
   if (error) return <div className="state-screen" role="alert"><h1>We couldn’t load the case queue</h1><p>{error}</p><button className="btn" onClick={loadCatalog}>Try again</button></div>;
   if (!catalog) return <div className="state-screen" role="status"><p>Loading cases…</p></div>;
   const user = catalog.users.find((u) => u.id === userId) ?? catalog.users[0]!;
-  return <Workspace key={user.id} catalog={catalog} user={user} client={client} onSwitchUser={switchUser} />;
+  return <Workspace key={user.id} catalog={catalog} user={user} client={client} caseId={caseId} navigate={navigate} onSwitchUser={switchUser} />;
 }
 
 type Client = ReturnType<typeof createApiClient>;
 
-function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; onSwitchUser: (id: string) => void }) {
-  const { catalog, user, client } = props;
+function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; caseId: string | null; navigate: (to: string) => void; onSwitchUser: (id: string) => void }) {
+  const { catalog, user, client, navigate } = props;
+  const openCaseId = props.caseId;
   const [query, setQuery] = useState<QueueQuery>(DEFAULT_QUERY);
   const [searchText, setSearchText] = useState("");
   const [list, setList] = useState<CaseListResponse | null>(null);
@@ -70,9 +73,13 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; o
   const [busy, setBusy] = useState(false);
   const [bulkAssignee, setBulkAssignee] = useState("");
   const [bulkStatus, setBulkStatus] = useState<CaseStatus>("in_progress");
+  const [caseLoad, setCaseLoad] = useState<{ status: "loading" | "missing" | "error"; message?: string } | null>(null);
+  const [caseRetry, setCaseRetry] = useState(0);
   const returnFocus = useRef<HTMLElement | null>(null);
+  const lastOpened = useRef<string | null>(null);
   const noticeTimer = useRef<number | undefined>(undefined);
-  const overviewRequest = useRef(0);
+  // Bumped whenever the user opens another page or panel, so a slow "create case" never hijacks the screen.
+  const navToken = useRef(0);
   const isManager = user.role === "manager";
   const refresh = () => setRefreshTick((n) => n + 1);
   const filterKey = JSON.stringify({ ...query, page: 0, sort: "", pageSize: 0 });
@@ -84,10 +91,44 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; o
   const listPending = loading || loadedListKey !== listKey;
   const bulkDisabled = busy || listPending || selectionPending || searchText !== query.search || selected.size > MAX_BULK_ITEMS;
 
-  useEffect(() => () => {
-    overviewRequest.current += 1;
-    window.clearTimeout(noticeTimer.current);
-  }, []);
+  useEffect(() => () => window.clearTimeout(noticeTimer.current), []);
+
+  // Load the case for /cases/:caseId. It shows at once from the list when we have it, then refreshes from the server.
+  useEffect(() => {
+    if (!openCaseId) {
+      setOpenItem(null);
+      setCaseLoad(null);
+      return;
+    }
+    let current = true;
+    setCaseLoad({ status: "loading" });
+    setOpenItem((o) => (o?.case.id === openCaseId ? o : list?.items.find((i) => i.case.id === openCaseId) ?? null));
+    client.overview(openCaseId).then(
+      (fresh) => {
+        if (!current) return;
+        setOpenItem((o) => (o?.case.id === openCaseId && o.case.version > fresh.case.version ? o : fresh));
+        setCaseLoad(null);
+      },
+      (e: unknown) => {
+        if (!current) return;
+        setOpenItem((o) => (e instanceof ApiClientError && e.status === 404 ? null : o));
+        setCaseLoad(e instanceof ApiClientError && e.status === 404 ? { status: "missing" } : { status: "error", message: errorText(e) });
+      },
+    );
+    return () => { current = false; };
+  }, [client, openCaseId, caseRetry]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Going back to the queue puts keyboard focus on the case you came from.
+  useEffect(() => {
+    if (openCaseId) { lastOpened.current = openCaseId; return; }
+    const id = lastOpened.current;
+    lastOpened.current = null;
+    if (id) document.querySelector<HTMLElement>(`[data-case-link="${CSS.escape(id)}"]`)?.focus();
+  }, [openCaseId]);
+
+  useEffect(() => {
+    document.title = openItem && openCaseId ? `${openItem.case.id} · ${catalogNameFor(openItem)} · GreenSpark Ervei` : "Case queue · GreenSpark Ervei";
+  }, [openItem, openCaseId]);
 
   // Debounce the search box so we don't query on every keystroke.
   useEffect(() => {
@@ -158,30 +199,19 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; o
   const change = (patch: Partial<QueueQuery>) => setQuery((q) => ({ ...q, ...patch, page: "page" in patch ? patch.page! : 1 }));
   const reset = () => { setSearchText(""); setQuery({ ...DEFAULT_QUERY }); };
 
-  const open = async (id: string) => {
-    const request = ++overviewRequest.current;
-    returnFocus.current = document.activeElement as HTMLElement | null;
+  const open = (id: string) => {
+    navToken.current += 1;
     setNewCaseOpen(false);
-    const fromList = list?.items.find((i) => i.case.id === id);
-    setOpenItem(fromList ?? null);
-    try {
-      const fresh = await client.overview(id);
-      if (request !== overviewRequest.current) return;
-      setOpenItem((o) => o?.case.id === id && o.case.version > fresh.case.version ? o : fresh);
-    } catch (e) {
-      if (request === overviewRequest.current && !fromList) say({ kind: "error", message: errorText(e) });
-    }
+    navigate(caseHref(id));
   };
-  const close = () => {
-    overviewRequest.current += 1;
-    setOpenItem(null);
+  const closeNewCase = () => {
+    navToken.current += 1;
     setNewCaseOpen(false);
     returnFocus.current?.focus();
   };
   const showNewCase = () => {
-    overviewRequest.current += 1;
+    navToken.current += 1;
     returnFocus.current = document.activeElement as HTMLElement;
-    setOpenItem(null);
     setNewCaseOpen(true);
   };
 
@@ -304,13 +334,14 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; o
   }
 
   async function createCase(input: NewCaseInput) {
-    const request = overviewRequest.current;
+    const token = navToken.current;
     setBusy(true);
     try {
       const item = await client.createCase(input);
-      if (request === overviewRequest.current) {
+      if (token === navToken.current) {
         setNewCaseOpen(false);
         setOpenItem(item);
+        navigate(caseHref(item.case.id));
       }
       say({ kind: "success", message: `Added ${input.displayName} as ${item.case.id}.` });
       refresh();
@@ -323,7 +354,6 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; o
 
   const rows = list?.items ?? [];
   const filterCount = activeFilterCount({ ...query, search: searchText });
-  const panelOpen = openItem !== null || newCaseOpen;
   const addSelected = (items: { caseId: string; expectedVersion: number }[]) => {
     const result = addSelection(selected, items);
     setSelected(result.selected);
@@ -342,7 +372,7 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; o
   };
 
   return (
-    <div className={`app${panelOpen ? " has-panel" : ""}`}>
+    <div className={`app${newCaseOpen && !openCaseId ? " has-panel" : ""}`}>
       <a className="skip" href="#queue">Skip to case queue</a>
       <header className="topbar">
         <div className="brand">
@@ -359,6 +389,31 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; o
         </label>
       </header>
 
+      {openCaseId ? (
+        <main id="queue" className="detail-main" tabIndex={-1}>
+          <a
+            className="back-link"
+            href="/"
+            onClick={(e) => {
+              if (isModifiedClick(e)) return;
+              e.preventDefault();
+              navigate("/");
+            }}
+          >
+            ← Back to case queue
+          </a>
+          <NoticeBar notice={notice} busy={busy} onUndo={undo} onDismiss={() => say(null)} />
+          {openItem ? (
+            <CaseDetails key={openItem.case.id} data={catalog} item={openItem} user={user} busy={busy} actions={actions} />
+          ) : caseLoad?.status === "missing" ? (
+            <div className="empty" role="alert"><h1>Case not found</h1><p>There is no case with the ID {openCaseId}. It may have been mistyped.</p></div>
+          ) : caseLoad?.status === "error" ? (
+            <div className="empty" role="alert"><h1>We couldn’t load this case</h1><p>{caseLoad.message}</p><button type="button" className="btn" onClick={() => setCaseRetry((n) => n + 1)}>Try again</button></div>
+          ) : (
+            <div className="empty" role="status"><p>Loading case…</p></div>
+          )}
+        </main>
+      ) : (
       <div className="shell">
         <button type="button" className="btn filters-toggle" aria-expanded={filtersOpen} aria-controls="sidebar" onClick={() => setFiltersOpen((v) => !v)}>
           Filters{filterCount ? ` (${filterCount})` : ""}
@@ -451,7 +506,7 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; o
               <div className="empty"><h3>No cases match</h3><p>Try removing a filter or changing the search.</p><button type="button" className="btn" onClick={reset}>Reset filters</button></div>
             ) : (
               <CaseTable
-                data={catalog} rows={rows} currentUserId={user.id} selectedIds={new Set(selected.keys())} openCaseId={openItem?.case.id ?? null}
+                data={catalog} rows={rows} currentUserId={user.id} selectedIds={new Set(selected.keys())}
                 selectionDisabled={bulkDisabled}
                 onToggleRow={toggleRow} onTogglePage={togglePage} onOpen={open}
               />
@@ -471,11 +526,15 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; o
           <footer className="foot"><span>All people and case details are fictional.</span><span>Demo date {catalog.asOf}</span></footer>
         </main>
 
-        {openItem ? <OverviewPanel key={openItem.case.id} data={catalog} item={openItem} user={user} busy={busy} actions={actions} onClose={close} /> : null}
-        {newCaseOpen ? <NewCasePanel busy={busy} onSubmit={createCase} onClose={close} /> : null}
+        {newCaseOpen ? <NewCasePanel busy={busy} onSubmit={createCase} onClose={closeNewCase} /> : null}
       </div>
+      )}
     </div>
   );
+}
+
+function catalogNameFor(item: CaseItem): string {
+  return item.person?.displayName ?? "Unknown person";
 }
 
 function errorText(e: unknown): string {

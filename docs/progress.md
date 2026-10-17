@@ -87,3 +87,14 @@ Known gaps: the profile link and model adapter are still placeholders (Milestone
 3. Node API and storage: done.
 4. Filters, assignment, bulk actions: done.
 5. Integration checks and handoff: done, apart from the teammate agreements above.
+
+## Update: case details on their own page
+
+Case details no longer open in a right-hand panel. Each case has its own address, `/cases/<caseId>`:
+
+- Clicking a person (or **View case**) opens the page; a Ctrl/Cmd/middle click opens it in a new tab, and the address can be bookmarked or shared.
+- **Back to case queue** and the browser Back button return to the queue with the same filters, search, page and selection.
+- An unknown case ID shows "Case not found"; the page works as a direct link when hosted (the server falls back to the app for non-API paths).
+- Keyboard: the page starts at its heading, and going back returns focus to the case you came from.
+- The New case form is still a side panel; creating a case takes you to its new page.
+- Browser tests grew to 15 and cover the address, Back/Forward, direct and unknown links, and open-in-new-tab.

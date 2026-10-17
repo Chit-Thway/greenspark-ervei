@@ -39,22 +39,27 @@ test.describe("states and content rules", () => {
     await page.getByRole("button", { name: "Reset", exact: true }).click();
 
     // The highest-priority case explains why it is flagged, with staff-review suggestions and the profile link.
-    await page.locator("tbody tr").first().locator(".name-btn").click();
-    const panel = page.locator(".overview");
+    await page.locator("tbody tr").first().locator(".name-link").click();
+    const panel = page.locator(".case-page");
     await expect(panel).toContainText("Support areas and why");
     await expect(panel).toContainText("Suggested for staff review");
     await expect(panel).toContainText("Assistance already reported");
     await expect(panel).toContainText("simulated");
     expect(await panel.locator("a", { hasText: "Open full profile" }).getAttribute("href")).toMatch(/^https:\/\/profiles\.example\/people\/demo-person-\d+$/);
-    await page.keyboard.press("Escape");
+    await page.getByRole("link", { name: /Back to case queue/ }).click();
+    await expect(page.locator(".case-table")).toBeVisible();
 
     // A case with an unknown answer shows Unknown, never No.
     await page.getByRole("combobox", { name: "Sort cases" }).selectOption("name");
     let found = false;
     for (let i = 0; i < 8 && !found; i++) {
-      await page.locator("tbody tr").nth(i).locator(".name-btn").click();
+      await page.locator("tbody tr").nth(i).locator(".name-link").click();
+      await expect(panel).toBeVisible();
       found = (await panel.locator(".answer-unknown").count()) > 0;
-      if (!found) await page.keyboard.press("Escape");
+      if (!found) {
+        await page.getByRole("link", { name: /Back to case queue/ }).click();
+        await expect(page.locator(".case-table")).toBeVisible();
+      }
     }
     expect(found).toBe(true);
     await expect(panel.locator(".answer-unknown").first()).toContainText(/Unknown|Not asked/);
@@ -71,17 +76,62 @@ test.describe("states and content rules", () => {
   });
 });
 
-test.describe("keyboard and accessibility", () => {
-  test("a case can be opened, used and closed from the keyboard, restoring focus", async ({ page }) => {
+test.describe("case pages", () => {
+  test("each case has its own address; Back returns to the same queue view; unknown cases are explained", async ({ page }) => {
     await openQueue(page);
-    const nameBtn = page.locator("tbody tr").first().locator(".name-btn");
-    await nameBtn.focus();
+    await page.getByPlaceholder("Search name, case ID or suburb…").fill("a");
+    await page.getByRole("button", { name: "Next" }).click();
+    await expect(page.getByText(/Page 2 of/)).toBeVisible();
+    const row = page.locator("tbody tr").nth(1);
+    const id = (await row.getAttribute("data-case-id"))!;
+    await row.locator(".name-link").click();
+    await expect(page).toHaveURL(new RegExp(`/cases/${id}$`));
+    await expect(page.locator(".case-page")).toContainText(id);
+    await expect(page.locator("#queue")).not.toContainText("Support areas Filters"); // no sidebar on a case page
+    await expect(page.locator("#sidebar")).toHaveCount(0);
+    await page.goBack();
+    await expect(page).toHaveURL(/\/$/);
+    await expect(page.getByText(/Page 2 of/)).toBeVisible(); // same page of results
+    await expect(page.getByPlaceholder("Search name, case ID or suburb…")).toHaveValue("a");
+    await page.goForward();
+    await expect(page.locator(".case-page")).toBeVisible();
+
+    // The address works directly (a bookmark or a shared link) and for unknown cases.
+    await page.goto(`/cases/${id}`);
+    await expect(page.locator("#case-title")).toBeVisible();
+    await expect(page.locator(".case-page")).toContainText(id);
+    await page.goto("/cases/GS-9999");
+    await expect(page.getByRole("heading", { name: "Case not found" })).toBeVisible();
+    await page.getByRole("link", { name: /Back to case queue/ }).click();
+    await expect(page.locator(".case-table")).toBeVisible();
+  });
+
+  test("a modified click leaves the browser to open the case in a new tab", async ({ page, context }) => {
+    await openQueue(page);
+    const link = page.locator("tbody tr").first().locator(".name-link");
+    const href = await link.getAttribute("href");
+    const [popup] = await Promise.all([context.waitForEvent("page"), link.click({ modifiers: ["Control"] })]);
+    await popup.waitForURL(/\/cases\/GS-\d+$/);
+    expect(new URL(popup.url()).pathname).toBe(href);
+    await expect(popup.locator(".case-page")).toBeVisible();
+    await expect(page.locator(".case-table")).toBeVisible(); // this tab stayed on the queue
+  });
+});
+
+test.describe("keyboard and accessibility", () => {
+  test("a case page can be opened and left from the keyboard, restoring focus", async ({ page }) => {
+    await openQueue(page);
+    const nameLink = page.locator("tbody tr").first().locator(".name-link");
+    await nameLink.focus();
     await page.keyboard.press("Enter");
-    await expect(page.locator(".overview")).toBeVisible();
-    expect(await page.evaluate(() => document.activeElement?.closest(".overview") !== null)).toBe(true);
-    await page.keyboard.press("Escape");
-    await expect(page.locator(".overview")).toHaveCount(0);
-    await expect(nameBtn).toBeFocused();
+    await expect(page.locator(".case-page")).toBeVisible();
+    await expect(page).toHaveURL(/\/cases\/GS-\d+$/);
+    await expect(page.locator("#case-title")).toBeFocused(); // a new page starts at its heading
+    const back = page.getByRole("link", { name: /Back to case queue/ });
+    await back.focus();
+    await page.keyboard.press("Enter");
+    await expect(page.locator(".case-page")).toHaveCount(0);
+    await expect(nameLink).toBeFocused();
   });
 
   test("filters work with the keyboard", async ({ page }) => {
@@ -98,11 +148,11 @@ test.describe("keyboard and accessibility", () => {
     await expect(page.getByRole("checkbox", { name: /^Heating, cooling/ })).toHaveJSProperty("indeterminate", true);
   });
 
-  test("queue and overview have no serious or critical WCAG A/AA violations", async ({ page }) => {
+  test("queue and case page have no serious or critical WCAG A/AA violations", async ({ page }) => {
     await openQueue(page);
     expect(await seriousViolations(page)).toEqual([]);
-    await page.locator("tbody tr").first().locator(".name-btn").click();
-    await expect(page.locator(".overview")).toBeVisible();
+    await page.locator("tbody tr").first().locator(".name-link").click();
+    await expect(page.locator(".case-page")).toBeVisible();
     expect(await seriousViolations(page)).toEqual([]);
   });
 });
@@ -110,7 +160,7 @@ test.describe("keyboard and accessibility", () => {
 test.describe("small screen", () => {
   test.use({ viewport: { width: 390, height: 800 } });
 
-  test("no page-level horizontal scrolling; filters behind a button; overview is usable", async ({ page }) => {
+  test("no page-level horizontal scrolling; filters behind a button; the case page is usable", async ({ page }) => {
     await openQueue(page);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     await expect(page.locator("#sidebar")).toBeHidden();
@@ -120,14 +170,13 @@ test.describe("small screen", () => {
     await page.getByRole("checkbox", { name: /^Difficulty keeping warm/ }).check();
     await expectTotal(page, 20);
     await page.getByRole("button", { name: /^Filters/ }).click();
-    await page.locator("tbody tr").first().locator(".name-btn").click();
-    const panel = page.locator(".overview");
+    await page.locator("tbody tr").first().locator(".name-link").click();
+    const panel = page.locator(".case-page");
     await expect(panel).toBeVisible();
-    const box = (await panel.boundingBox())!;
-    expect(box.x).toBeGreaterThanOrEqual(0);
-    expect(box.x + box.width).toBeLessThanOrEqual(390.5);
-    await page.getByRole("button", { name: "Close overview" }).click();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    await page.getByRole("link", { name: /Back to case queue/ }).click();
     await expect(panel).toHaveCount(0);
+    await expectTotal(page, 20); // the filter is still applied
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   });
 });

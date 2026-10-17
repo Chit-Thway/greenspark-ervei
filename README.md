@@ -8,7 +8,7 @@ Help essential-service teams identify customers who may need support, understand
 
 The current focus is **planning the first interface and preparing clearly labelled synthetic test data**. The planned stack is React + TypeScript + Vite for the interface and Node.js + TypeScript + Express for the API. Managers and support workers share the same interface with role-appropriate actions.
 
-The approved direction as of **16 October 2026** is the bright green/mint theme and the existing case-queue workflow, including the compact right-side overview. Another teammate owns the prediction model, and another owns full individual cards/profiles.
+The approved direction as of **16 October 2026** is the bright green/mint theme and the existing case-queue workflow, including the compact case overview, which now opens as its own page (see below). Another teammate owns the prediction model, and another owns full individual cards/profiles.
 
 - [Scope, approved recommendations and five implementation milestones](docs/implementation-plan.md)
 - [Proposed data/API/model/profile contract](docs/data-contract.md)
@@ -79,7 +79,7 @@ The first screen is a shared staff workspace with a case list, a filter panel on
 | Assigned to me | Show cases assigned to the signed-in support worker. Assignment comes from the case workflow. |
 | Manager assignment | Let managers allocate cases to support workers within the shared interface. |
 | Bulk actions | Single/bulk manager assignment and permitted status changes, with clear selection and reversible-action feedback. |
-| Compact case overview | Show minimal identity/context, assignment, status, supporting reported answers, recommendations and short notes in the right-side panel. Full profiles are owned by another teammate. |
+| Case page | Each case opens on its own page at `/cases/<caseId>` (it can be bookmarked or opened in a new tab; Back returns to the queue with filters, page and selection kept). It shows minimal identity/context, assignment, status, supporting reported answers, recommendations and short notes. Full profiles are owned by another teammate. |
 
 Recorded answers, illustrative support-area groupings, proposed staff actions and model predictions have distinct roles. Domestic violence and income loss are not established by the inspected source fields and are not included in the supported demo taxonomy. Historical survey answers retain their reporting periods. Staff review suggested actions.
 

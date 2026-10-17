@@ -14,14 +14,14 @@ function answerText(c: QueueCase, fieldId: string): { text: string; tone: "yes" 
   return { text: v, tone: v === "No" ? "no" : "yes" };
 }
 
-export interface OverviewActions {
+export interface CaseActions {
   onAssign: (userId: string | null) => Promise<boolean>;
   onStatus: (status: CaseStatus) => Promise<boolean>;
   onReview: (next: ReviewStatus) => Promise<boolean>;
   onNote: (text: string) => Promise<boolean>;
 }
 
-export function OverviewPanel(props: { data: Catalog; item: CaseItem; user: StaffUser; busy: boolean; actions: OverviewActions; onClose: () => void }) {
+export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffUser; busy: boolean; actions: CaseActions }) {
   const { data, item, user } = props;
   const c = item.case;
   const person = item.person ?? undefined;
@@ -40,7 +40,7 @@ export function OverviewPanel(props: { data: Catalog; item: CaseItem; user: Staf
     setStatus((draft) => draft === previous.status ? c.workflow.status : draft);
     previousWorkflow.current = c.workflow;
   }, [c.version]); // eslint-disable-line react-hooks/exhaustive-deps
-  const ref = useRef<HTMLElement>(null);
+  const heading = useRef<HTMLHeadingElement>(null);
   const field = (id: string) => data.evidenceFields.find((f) => f.id === id);
   const assignedUser = data.users.find((u) => u.id === c.workflow.assignedToUserId);
   const userName = (id: string) => data.users.find((u) => u.id === id)?.displayName ?? id;
@@ -49,34 +49,25 @@ export function OverviewPanel(props: { data: Catalog; item: CaseItem; user: Staf
   const link = person && data.profileUrlTemplate ? data.profileUrlTemplate.replace("{personId}", encodeURIComponent(person.id)) : null;
   const a = c.modelAssessment;
 
-  useEffect(() => {
-    ref.current?.focus();
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && props.onClose();
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [c.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  // A new page should start at its heading for keyboard and screen-reader users.
+  useEffect(() => { heading.current?.focus(); }, [c.id]);
 
   const history = c.assistance.reportedHistory;
   return (
-    <aside className="overview" role="dialog" aria-modal="false" aria-labelledby="ov-title" tabIndex={-1} ref={ref}>
-      <header className="ov-head">
+    <article className="case-page" aria-labelledby="case-title">
+      <header className="case-head">
         <span className="eyebrow">Case details · {c.id}</span>
-        <button type="button" className="icon-btn" aria-label="Close overview" onClick={props.onClose}>✕</button>
+        <h1 id="case-title" tabIndex={-1} ref={heading}>{person?.displayName ?? "Unknown person"}</h1>
+        <p className="sub">{person?.suburb}, {person?.state} · {c.personId}</p>
+        <div className="ov-row">
+          <PriorityBadge c={c} />
+          <span className={`sub follow-${fu.tone}`}>{fu.text}</span>
+        </div>
       </header>
 
-      <div className="ov-person">
-        <div>
-          <h2 id="ov-title">{person?.displayName ?? "Unknown person"}</h2>
-          <p className="sub">{person?.suburb}, {person?.state} · {c.personId}</p>
-        </div>
-      </div>
-
-      <div className="ov-row">
-        <PriorityBadge c={c} />
-        <span className={`sub follow-${fu.tone}`}>{fu.text}</span>
-      </div>
-
-      <dl className="facts">
+      <div className="case-grid">
+      <div className="case-col">
+      <dl className="facts case-card">
         <div><dt>Assigned worker</dt><dd>{assignedUser ? assignedUser.displayName : "Unassigned"}</dd></div>
         <div><dt>Household</dt><dd>{person?.householdSummary}</dd></div>
         <div><dt>Case status</dt><dd>{STATUS_LABELS[c.workflow.status]}</dd></div>
@@ -89,7 +80,7 @@ export function OverviewPanel(props: { data: Catalog; item: CaseItem; user: Staf
         <p className="hint">Full profile link appears when the profile route is configured.</p>
       )}
 
-      <section className="ov-section model" aria-labelledby="ov-model">
+      <section className="case-card model" aria-labelledby="ov-model">
         <h3 id="ov-model">Model assessment <span className="sim">simulated · {a.provider}</span></h3>
         {a.status === "ready" && a.priority ? (
           <>
@@ -101,7 +92,7 @@ export function OverviewPanel(props: { data: Catalog; item: CaseItem; user: Staf
         )}
       </section>
 
-      <section className="ov-section" aria-labelledby="ov-support">
+      <section className="case-card" aria-labelledby="ov-support">
         <h3 id="ov-support">Support areas and why</h3>
         {c.circumstances.length === 0 ? <p className="muted">No circumstances flagged from the reported answers.</p> : null}
         {data.supportAreas.filter((area) => c.supportAreaIds.includes(area.id)).map((area) => (
@@ -138,7 +129,7 @@ export function OverviewPanel(props: { data: Catalog; item: CaseItem; user: Staf
         ))}
       </section>
 
-      <section className="ov-section" aria-labelledby="ov-assist">
+      <section className="case-card" aria-labelledby="ov-assist">
         <h3 id="ov-assist">Assistance already reported</h3>
         <p className="hint">Separate from support needs. Past support is not a current plan.</p>
         <ul className="evidence">
@@ -153,7 +144,9 @@ export function OverviewPanel(props: { data: Catalog; item: CaseItem; user: Staf
         )}
       </section>
 
-      <section className="ov-section" aria-labelledby="ov-review">
+      </div>
+      <div className="case-col">
+      <section className="case-card" aria-labelledby="ov-review">
         <h3 id="ov-review">Worker review</h3>
         <p>{c.workflow.reviewStatus === "reviewed" ? "Suggestions reviewed by staff." : "Suggestions awaiting worker review."}</p>
         <div className="actions">
@@ -167,7 +160,7 @@ export function OverviewPanel(props: { data: Catalog; item: CaseItem; user: Staf
         {!canEdit ? <p className="hint">Only the assigned worker or a manager can change this case.</p> : null}
       </section>
 
-      <section className="ov-section" aria-labelledby="ov-progress">
+      <section className="case-card" aria-labelledby="ov-progress">
         <h3 id="ov-progress">Case progress</h3>
         <label className="field">
           <span>Assigned worker</span>
@@ -196,7 +189,7 @@ export function OverviewPanel(props: { data: Catalog; item: CaseItem; user: Staf
         </div>
       </section>
 
-      <section className="ov-section" aria-labelledby="ov-notes">
+      <section className="case-card" aria-labelledby="ov-notes">
         <h3 id="ov-notes">Case notes</h3>
         {c.workflow.notes.length === 0 ? <p className="muted">No notes added yet.</p> : (
           <ul className="notes">
@@ -222,6 +215,8 @@ export function OverviewPanel(props: { data: Catalog; item: CaseItem; user: Staf
           </div>
         </form>
       </section>
-    </aside>
+      </div>
+      </div>
+    </article>
   );
 }

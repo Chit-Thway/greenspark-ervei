@@ -60,8 +60,10 @@ test.describe.serial("manager to worker workflow", () => {
     await page.getByRole("button", { name: /^Assigned to me/ }).click();
     const first = page.locator("tbody tr").first();
     const caseId = (await first.getAttribute("data-case-id"))!;
-    await first.locator(".name-btn").click();
-    const panel = page.locator(".overview");
+    const startStatus = (await first.locator(".status").innerText()).trim(); // read before leaving the queue
+    await first.locator(".name-link").click();
+    await expect(page).toHaveURL(new RegExp(`/cases/${caseId}$`));
+    const panel = page.locator(".case-page");
     await expect(panel).toBeVisible();
     await expect(panel.getByLabel("Assigned worker")).toBeDisabled();
     await expect(panel).toContainText("Only managers can assign cases");
@@ -71,7 +73,7 @@ test.describe.serial("manager to worker workflow", () => {
     await expect(page.locator(".notice-success")).toContainText("Note added");
     await expect(panel.locator(".notes")).toContainText("Called and left a message.");
 
-    const status = (await first.locator(".status").innerText()).trim() === "Waiting" ? "in_progress" : "waiting";
+    const status = startStatus === "Waiting" ? "in_progress" : "waiting";
     await panel.getByLabel("Case status").selectOption(status);
     await panel.getByRole("button", { name: "Save status" }).click();
     await expect(page.locator(".notice-success")).toContainText("Status set to");
@@ -108,10 +110,13 @@ test.describe.serial("manager to worker workflow", () => {
     await page.getByRole("textbox", { name: "Suburb" }).fill("Perth");
     await page.getByRole("button", { name: "Create case" }).click();
     await expect(page.locator(".notice-success")).toContainText("Added Jordan Newcase");
-    await expect(page.locator("#ov-title")).toHaveText("Jordan Newcase");
-    await expect(page.locator(".overview")).toContainText("Assessment pending");
-    await expect(page.locator(".overview")).toContainText("No circumstances flagged");
-    await page.reload();
+    await expect(page.locator("#case-title")).toHaveText("Jordan Newcase");
+    await expect(page.locator(".case-page")).toContainText("Assessment pending");
+    await expect(page.locator(".case-page")).toContainText("No circumstances flagged");
+    await expect(page).toHaveURL(/\/cases\/GS-\d+$/);
+    await page.reload(); // the new case's own page survives a reload
+    await expect(page.locator("#case-title")).toHaveText("Jordan Newcase");
+    await page.getByRole("link", { name: /Back to case queue/ }).click();
     await expectTotal(page, 101);
     await page.getByPlaceholder("Search name, case ID or suburb…").fill("Jordan Newcase");
     await expectTotal(page, 1);
