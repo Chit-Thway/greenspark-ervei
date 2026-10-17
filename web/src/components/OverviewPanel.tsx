@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { CaseStatus, QueueCase, ReviewStatus, StaffUser } from "../domain/types";
 import type { CaseItem, Catalog } from "../data/api";
-import { describeFollowUp, formatDateTime, initials, PERIOD_TEXT, STATUS_LABELS } from "../domain/format";
+import { describeFollowUp, formatDateTime, PERIOD_TEXT, STATUS_LABELS } from "../domain/format";
 import { isResolved } from "../domain/query";
 import { PriorityBadge } from "./Primitives";
 
@@ -65,7 +65,6 @@ export function OverviewPanel(props: { data: Catalog; item: CaseItem; user: Staf
       </header>
 
       <div className="ov-person">
-        <span className="avatar avatar-lg" aria-hidden="true">{initials(person?.displayName ?? "?")}</span>
         <div>
           <h2 id="ov-title">{person?.displayName ?? "Unknown person"}</h2>
           <p className="sub">{person?.suburb}, {person?.state} · {c.personId}</p>

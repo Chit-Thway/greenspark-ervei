@@ -91,8 +91,6 @@ select, input[type="search"], input:not([type]), input[type="text"], textarea { 
 .col-check { width: 36px; } .col-check input { width: 16px; height: 16px; accent-color: var(--brand); }
 .col-action { width: 1%; white-space: nowrap; }
 .person { display: flex; gap: 10px; align-items: center; }
-.avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--selected); color: var(--brand-hover); display: grid; place-items: center; font-size: 11px; font-weight: 700; flex: none; }
-.avatar-lg { width: 52px; height: 52px; font-size: 16px; }
 .name-btn { background: none; border: 0; padding: 0; font-weight: 600; cursor: pointer; display: block; text-align: left; }
 .name-btn:hover { color: var(--brand-hover); text-decoration: underline; }
 .unassigned { color: var(--high); }

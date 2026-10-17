@@ -31,10 +31,6 @@ export function describeFollowUp(followUpAt: string | null, resolved: boolean, a
   return { text: `${shortDate(followUpAt)} · ${clock(followUpAt)}`, tone: "future" };
 }
 
-export function initials(name: string): string {
-  return name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]!.toUpperCase()).join("");
-}
-
 export function shortName(name: string): string {
   const [first, ...rest] = name.split(/\s+/);
   return rest.length ? `${first} ${rest[rest.length - 1]![0]}.` : first!;

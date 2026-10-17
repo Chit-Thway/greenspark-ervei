@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import type { Catalog, CaseItem } from "../data/api";
-import { describeFollowUp, initials, shortName, STATUS_LABELS } from "../domain/format";
+import { describeFollowUp, shortName, STATUS_LABELS } from "../domain/format";
 import { isResolved } from "../domain/query";
 import { PriorityBadge } from "./Primitives";
 
@@ -72,7 +72,6 @@ export function CaseTable(props: {
                 </td>
                 <td>
                   <div className="person">
-                    <span className="avatar" aria-hidden="true">{initials(person?.displayName ?? "?")}</span>
                     <span>
                       <button
                         type="button"
