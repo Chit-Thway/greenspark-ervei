@@ -25,7 +25,7 @@ Each person also has invented contact details, shown on the case page as "Custom
 
 | Field | Notes |
 | --- | --- |
-| `gender` | Woman, Man, Non-binary or Prefer not to say. Assigned independently of the name on purpose; nothing infers gender from a name. |
+| `gender` | Female, Male, Non-binary or Prefer not to say. For these invented people it follows the invented first name, apart from a few deliberate Non-binary and Prefer not to say records so every value is exercised. This is a fixture convention only: the app never infers anyone's gender from a name. |
 | `preferredName` | The first name, or a short form for some people (for example Liv for Olivia). |
 | `address` | `line1`, optional `line2` (for example `Unit 4`) and `postcode`; the suburb and `WA` are on the person. Street names are invented. |
 | `mobile`, `phone`, `email` | May be null, which the app shows as "Not recorded". The stated contact preference always has a matching detail, and everyone has at least one way to be contacted. |

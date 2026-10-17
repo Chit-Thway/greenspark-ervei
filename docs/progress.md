@@ -113,3 +113,7 @@ Added invented gender, preferred name, address (lines 1 and 2, postcode), mobile
 ## Update: bigger note box, no length limit
 
 The note boxes (adding and editing) are taller, and the 500-character limit is gone, along with the "0/500" counter. Line breaks in notes are now kept when shown. The only remaining cap is the request-size limit of about 100 KB (roughly 100,000 characters), which returns a clear message instead of an error.
+
+## Update: gender values
+
+Gender now reads Female or Male (previously Woman or Man). For the invented people it follows the invented first name, with 9 Non-binary and 5 Prefer not to say records mixed in so every value is shown. Nothing else in the data changed. This is a convention for the fictional fixture only; the app does not infer gender from names. Local databases need `npm run reset` to pick the new values up.
