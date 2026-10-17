@@ -127,7 +127,7 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; c
   }, [openCaseId]);
 
   useEffect(() => {
-    document.title = openItem && openCaseId ? `${openItem.case.id} · ${catalogNameFor(openItem)} · GreenSpark Ervei` : "Case queue · GreenSpark Ervei";
+    document.title = openItem && openCaseId ? `${openItem.case.id} · ${catalogNameFor(openItem)} · ERVEI` : "Case queue · ERVEI";
   }, [openItem, openCaseId]);
 
   // Debounce the search box so we don't query on every keystroke.
@@ -393,7 +393,7 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; c
         <a
           className="brand"
           href="/"
-          aria-label="GreenSpark Ervei casework: go to the case queue"
+          aria-label="ERVEI casework: go to the case queue"
           onClick={(e) => {
             if (isModifiedClick(e)) return; // let the browser open a new tab
             e.preventDefault();
@@ -401,7 +401,7 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; c
           }}
         >
           <span className="logo" aria-hidden="true">🌱</span>
-          <span><strong>GreenSpark</strong><span className="brand-sub">ERVEI · CASEWORK</span></span>
+          <span><strong>ERVEI</strong><span className="brand-sub">GREENSPARK · CASEWORK</span></span>
         </a>
         <span className="tagline">Community support workspace</span>
         <span className="demo-pill">Synthetic demo data</span>

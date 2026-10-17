@@ -118,7 +118,10 @@ test.describe("case pages", () => {
 
   test("the GreenSpark logo and name lead back to the case queue", async ({ page }) => {
     await openQueue(page);
-    const brand = page.getByRole("link", { name: /GreenSpark Ervei casework/ });
+    const brand = page.getByRole("link", { name: /ERVEI casework/ });
+    await expect(brand.locator("strong")).toHaveText("ERVEI"); // ERVEI is the main name, with GreenSpark beneath it
+    await expect(brand).toContainText("GREENSPARK · CASEWORK");
+    await expect(page).toHaveTitle(/ERVEI/);
     await expect(brand).toHaveAttribute("href", "/");
     const id = (await page.locator("tbody tr").first().getAttribute("data-case-id"))!;
     await page.locator("tbody tr").first().locator(".name-link").click();
