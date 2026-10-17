@@ -86,6 +86,11 @@ test.describe("keyboard and accessibility", () => {
 
   test("filters work with the keyboard", async ({ page }) => {
     await openQueue(page);
+    const toggle = page.getByRole("button", { name: /^(Expand|Collapse) Heating, cooling/ }); // its name flips when toggled
+    await expect(page.getByRole("checkbox", { name: /^Difficulty keeping warm/ })).toHaveCount(0); // areas start collapsed
+    await toggle.focus();
+    await page.keyboard.press("Enter");
+    await expect(toggle).toHaveAttribute("aria-expanded", "true");
     const box = page.getByRole("checkbox", { name: /^Difficulty keeping warm/ });
     await box.focus();
     await page.keyboard.press("Space");
@@ -111,6 +116,7 @@ test.describe("small screen", () => {
     await expect(page.locator("#sidebar")).toBeHidden();
     await page.getByRole("button", { name: /^Filters/ }).click();
     await expect(page.locator("#sidebar")).toBeVisible();
+    await page.getByRole("button", { name: "Expand Heating, cooling & home comfort" }).click();
     await page.getByRole("checkbox", { name: /^Difficulty keeping warm/ }).check();
     await expectTotal(page, 20);
     await page.getByRole("button", { name: /^Filters/ }).click();
