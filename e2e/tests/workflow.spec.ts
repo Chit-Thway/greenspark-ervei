@@ -77,6 +77,20 @@ test.describe.serial("manager to worker workflow", () => {
     await panel.getByRole("button", { name: "Add note" }).click();
     await expect(page.locator(".notice-success")).toContainText("Note added");
     await expect(panel.locator(".notes")).toContainText("Called and left a message.");
+    await expect(panel.locator(".notes li").last().locator(".sub")).toContainText(/\d{1,2} \w{3} 20\d\d · \d{1,2}:\d{2} (am|pm)/); // year and the full time
+
+    // The author can correct their note; it is marked as edited and keeps its place.
+    await panel.getByRole("button", { name: /^Edit note from/ }).last().click();
+    await panel.getByLabel("Edit note").fill("Called and spoke to the customer.");
+    await panel.getByRole("button", { name: "Save note" }).click();
+    await expect(page.locator(".notice-success")).toContainText("Note updated");
+    const edited = panel.locator(".notes li").last();
+    await expect(edited).toContainText("Called and spoke to the customer.");
+    await expect(edited).not.toContainText("left a message");
+    await expect(edited.locator(".sub")).toContainText(/edited \d{1,2} \w{3} 20\d\d/);
+    await panel.getByRole("button", { name: /^Edit note from/ }).last().click();
+    await panel.getByRole("button", { name: "Cancel" }).click(); // cancelling changes nothing
+    await expect(edited).toContainText("Called and spoke to the customer.");
 
     const status = startStatus === "Waiting" ? "in_progress" : "waiting";
     await panel.getByLabel("Case status").selectOption(status);

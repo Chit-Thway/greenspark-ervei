@@ -73,6 +73,9 @@ export interface CaseNote {
   text: string;
   authorUserId: string;
   createdAt: string;
+  /** Set once a note has been edited. Earlier wording is kept on the server as an audit record. */
+  editedAt?: string | null;
+  editedByUserId?: string | null;
 }
 
 export interface ModelAssessment {

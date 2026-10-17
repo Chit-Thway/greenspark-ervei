@@ -102,3 +102,10 @@ Case details no longer open in a right-hand panel. Each case has its own address
 ## Update: customer contact details
 
 Added invented gender, preferred name, address (lines 1 and 2, postcode), mobile, phone and email to every person, and a "Customer details" card on the case page. Existing generated values were not changed (the new fields come from a separate hash, not the random stream). The generator's check enforces reserved phone ranges, `example.com` emails, postcodes that match suburbs, and a contact detail for each person's stated contact preference. People added in the queue show "Not recorded". Local databases created earlier need `npm run reset` to pick the fields up.
+
+## Update: case notes
+
+- Note times show the year and the full time, for example "15 Oct 2026 · 11:00 am".
+- On the case page the notes card now sits directly under the person and customer details.
+- Notes can be edited: a note's author, or a manager, can change it (`PATCH /api/cases/:id/notes/:noteId`). Edited notes show "edited" with who and when, and the earlier wording is kept in a `note_edits` table for audit (not shown in the app). Databases created earlier gain the new columns automatically on start.
+- Still true: notes cannot be deleted, and note changes are not undoable.

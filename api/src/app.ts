@@ -185,6 +185,11 @@ export function createApp(store: Store, options: AppOptions = {}) {
     res.status(201).json({ case: await enrichOne(service.addNote(actor(res), String(req.params.caseId), b.text, b.expectedVersion)) });
   });
 
+  app.patch("/api/cases/:caseId/notes/:noteId", async (req, res) => {
+    const b = parse(noteBody, req.body);
+    res.json({ case: await enrichOne(service.editNote(actor(res), String(req.params.caseId), String(req.params.noteId), b.text, b.expectedVersion)) });
+  });
+
   app.patch("/api/cases/:caseId/review", async (req, res) => {
     const b = parse(reviewBody, req.body);
     res.json(await enrichResult(service.setReview(actor(res), String(req.params.caseId), b.reviewStatus, b.expectedVersion)));

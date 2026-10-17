@@ -36,8 +36,15 @@ export function shortName(name: string): string {
   return rest.length ? `${first} ${rest[rest.length - 1]![0]}.` : first!;
 }
 
+/** Always hours and minutes, for example "11:00 am". */
+function clockFull(iso: string): string {
+  const [h, m] = iso.slice(11, 16).split(":").map(Number);
+  return `${h % 12 === 0 ? 12 : h % 12}:${String(m).padStart(2, "0")} ${h < 12 ? "am" : "pm"}`;
+}
+
+/** Date with year and the full time, for example "15 Oct 2026 · 11:00 am". Used for notes. */
 export function formatDateTime(iso: string): string {
-  return `${shortDate(iso)} · ${clock(iso)}`;
+  return `${shortDate(iso)} ${iso.slice(0, 4)} · ${clockFull(iso)}`;
 }
 
 export const STATUS_LABELS = {

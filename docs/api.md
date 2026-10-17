@@ -46,7 +46,8 @@ Every `/api` route except `/api/health` needs an `X-Demo-User` header naming a f
 | `POST /api/cases/bulk/assignment` | Manager only. `{assigneeUserId \| null, items:[{caseId, expectedVersion}]}` |
 | `POST /api/cases/bulk/status` | `{status, items}`; workers only for their own cases |
 | `PATCH /api/cases/:id/status` | `{status, expectedVersion}` |
-| `POST /api/cases/:id/notes` | `{text (1–500), expectedVersion}`, append-only |
+| `POST /api/cases/:id/notes` | `{text (1–500), expectedVersion}` |
+| `PATCH /api/cases/:id/notes/:noteId` | `{text (1–500), expectedVersion}`: author or manager only; keeps the earlier wording as an audit record |
 | `PATCH /api/cases/:id/review` | `{reviewStatus, expectedVersion}` |
 | `POST /api/workflow-actions/:actionId/undo` | Assignment/status actions only |
 

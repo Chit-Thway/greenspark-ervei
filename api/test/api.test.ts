@@ -178,6 +178,66 @@ describe("status, notes and review permissions", () => {
     expect((await h.call("staff-sarah", "POST", `/api/cases/${c.id}/notes`, { text: "Not mine", expectedVersion: ok.body.case.version })).status).toBe(403);
   });
 
+  describe("editing notes", () => {
+    async function caseWithNotes() {
+      const c = (await allCases(h)).find((x) => x.workflow.assignedToUserId === "staff-alex")!;
+      const mine = await h.call("staff-alex", "POST", `/api/cases/${c.id}/notes`, { text: "Alex's first wording", expectedVersion: c.version });
+      const managers = await h.call(M, "POST", `/api/cases/${c.id}/notes`, { text: "Manager's note", expectedVersion: mine.body.case.version });
+      const notes = managers.body.case.workflow.notes;
+      return { id: c.id, version: managers.body.case.version as number, alexNote: notes.at(-2), managerNote: notes.at(-1) };
+    }
+
+    it("lets an author edit their note, records who and when, and keeps the earlier wording", async () => {
+      const t = await caseWithNotes();
+      const r = await h.call("staff-alex", "PATCH", `/api/cases/${t.id}/notes/${t.alexNote.id}`, { text: "  Alex's corrected wording ", expectedVersion: t.version });
+      expect(r.status).toBe(200);
+      const edited = r.body.case.workflow.notes.find((n: any) => n.id === t.alexNote.id);
+      expect(edited).toMatchObject({ text: "Alex's corrected wording", authorUserId: "staff-alex", editedByUserId: "staff-alex", createdAt: t.alexNote.createdAt });
+      expect(edited.editedAt).toEqual(expect.stringMatching(/\+08:00$/));
+      expect(r.body.case.version).toBe(t.version + 1);
+      expect(t.alexNote.editedAt).toBeUndefined(); // never edited before
+      const history = h.store.db.prepare("SELECT previous_text, edited_by FROM note_edits WHERE note_id = ?").all(t.alexNote.id) as any[];
+      expect(history).toEqual([{ previous_text: "Alex's first wording", edited_by: "staff-alex" }]);
+      expect(r.body.case.workflow.notes.find((n: any) => n.id === t.managerNote.id).text).toBe("Manager's note"); // others untouched
+    });
+
+    it("lets a manager edit any note but not a worker edit someone else's", async () => {
+      const t = await caseWithNotes();
+      const no = await h.call("staff-alex", "PATCH", `/api/cases/${t.id}/notes/${t.managerNote.id}`, { text: "Hijacked", expectedVersion: t.version });
+      expect(no.status).toBe(403);
+      const yes = await h.call(M, "PATCH", `/api/cases/${t.id}/notes/${t.alexNote.id}`, { text: "Edited by the manager", expectedVersion: t.version });
+      expect(yes.body.case.workflow.notes.find((n: any) => n.id === t.alexNote.id)).toMatchObject({ text: "Edited by the manager", authorUserId: "staff-alex", editedByUserId: M });
+      const other = await h.call("staff-sarah", "PATCH", `/api/cases/${t.id}/notes/${t.alexNote.id}`, { text: "Not my case", expectedVersion: yes.body.case.version });
+      expect(other.status).toBe(403);
+    });
+
+    it("validates the text, the note, the version and no-op edits", async () => {
+      const t = await caseWithNotes();
+      const url = `/api/cases/${t.id}/notes/${t.alexNote.id}`;
+      expect((await h.call("staff-alex", "PATCH", url, { text: "   ", expectedVersion: t.version })).status).toBe(422);
+      expect((await h.call("staff-alex", "PATCH", url, { text: "x".repeat(501), expectedVersion: t.version })).status).toBe(422);
+      expect((await h.call("staff-alex", "PATCH", url, { text: "ok", expectedVersion: t.version, authorUserId: M })).status).toBe(422);
+      expect((await h.call("staff-alex", "PATCH", `/api/cases/${t.id}/notes/note-missing`, { text: "ok", expectedVersion: t.version })).status).toBe(404);
+      expect((await h.call("staff-alex", "PATCH", "/api/cases/GS-9999/notes/x", { text: "ok", expectedVersion: 1 })).status).toBe(404);
+      const stale = await h.call("staff-alex", "PATCH", url, { text: "ok", expectedVersion: t.version - 1 });
+      expect(stale.status).toBe(409);
+      expect(stale.body.error.code).toBe("version_conflict");
+      const same = await h.call("staff-alex", "PATCH", url, { text: "Alex's first wording", expectedVersion: t.version });
+      expect(same.status).toBe(200);
+      expect(same.body.case.version).toBe(t.version); // identical wording: no new version, no edit record
+      expect(same.body.case.workflow.notes.find((n: any) => n.id === t.alexNote.id).editedAt).toBeUndefined();
+    });
+
+    it("lets managers and the assigned worker edit seeded notes where they are the author or manager", async () => {
+      const cases = await allCases(h);
+      const seeded = cases.find((c) => c.workflow.notes.length > 0 && c.workflow.notes[0].authorUserId === c.workflow.assignedToUserId && c.workflow.assignedToUserId)!;
+      const note = seeded.workflow.notes[0];
+      const r = await h.call(note.authorUserId, "PATCH", `/api/cases/${seeded.id}/notes/${note.id}`, { text: "Updated seeded note", expectedVersion: seeded.version });
+      expect(r.status).toBe(200);
+      expect(r.body.case.workflow.notes[0]).toMatchObject({ text: "Updated seeded note", editedByUserId: note.authorUserId });
+    });
+  });
+
   it("records review state for the assigned worker and manager only", async () => {
     const c = (await allCases(h)).find((x) => x.workflow.assignedToUserId === "staff-alex" && x.workflow.reviewStatus === "needs_review")!;
     expect((await h.call("staff-sarah", "PATCH", `/api/cases/${c.id}/review`, { reviewStatus: "reviewed", expectedVersion: c.version })).status).toBe(403);

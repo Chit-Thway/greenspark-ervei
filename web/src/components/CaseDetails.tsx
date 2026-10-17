@@ -24,6 +24,7 @@ export interface CaseActions {
   onStatus: (status: CaseStatus) => Promise<boolean>;
   onReview: (next: ReviewStatus) => Promise<boolean>;
   onNote: (text: string) => Promise<boolean>;
+  onEditNote: (noteId: string, text: string) => Promise<boolean>;
 }
 
 export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffUser; busy: boolean; actions: CaseActions }) {
@@ -37,6 +38,8 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
   const [assignee, setAssignee] = useState(c.workflow.assignedToUserId ?? "");
   const [status, setStatus] = useState<CaseStatus>(c.workflow.status);
   const [note, setNote] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editText, setEditText] = useState("");
   const previousWorkflow = useRef(c.workflow);
   // Refresh server values without discarding a deliberate, unsaved choice on conflict.
   useEffect(() => {
@@ -102,6 +105,75 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
           <div><dt>Phone</dt><dd>{notRecorded(person?.phone)}</dd></div>
           <div className="wide"><dt>Email</dt><dd>{notRecorded(person?.email)}</dd></div>
         </dl>
+      </section>
+
+      <section className="case-card" aria-labelledby="ov-notes">
+        <h3 id="ov-notes">Case notes</h3>
+        {c.workflow.notes.length === 0 ? <p className="muted">No notes added yet.</p> : (
+          <ul className="notes">
+            {c.workflow.notes.map((n) => {
+              const mayEdit = canEdit && (isManager || n.authorUserId === user.id);
+              return (
+                <li key={n.id}>
+                  {editingId === n.id ? (
+                    <form
+                      onSubmit={async (e) => {
+                        e.preventDefault();
+                        if (!editText.trim() || editText.trim() === n.text) return;
+                        if (await props.actions.onEditNote(n.id, editText.trim())) setEditingId(null);
+                      }}
+                    >
+                      <label className="field">
+                        <span>Edit note</span>
+                        <textarea rows={3} maxLength={500} value={editText} disabled={props.busy} autoFocus onChange={(e) => setEditText(e.target.value)} />
+                      </label>
+                      <div className="actions">
+                        <button type="submit" className="btn btn-primary btn-small" disabled={props.busy || !editText.trim() || editText.trim() === n.text}>Save note</button>
+                        <button type="button" className="btn btn-small" disabled={props.busy} onClick={() => setEditingId(null)}>Cancel</button>
+                        <span className="hint">{editText.length}/500</span>
+                      </div>
+                    </form>
+                  ) : (
+                    <>
+                      <p>{n.text}</p>
+                      <span className="sub">
+                        {userName(n.authorUserId)} · {formatDateTime(n.createdAt)}
+                        {n.editedAt ? ` · edited${n.editedByUserId && n.editedByUserId !== n.authorUserId ? ` by ${userName(n.editedByUserId)}` : ""} ${formatDateTime(n.editedAt)}` : ""}
+                      </span>
+                      {mayEdit ? (
+                        <button
+                          type="button"
+                          className="link-btn note-edit"
+                          disabled={props.busy}
+                          aria-label={`Edit note from ${formatDateTime(n.createdAt)}`}
+                          onClick={() => { setEditingId(n.id); setEditText(n.text); }}
+                        >
+                          Edit
+                        </button>
+                      ) : null}
+                    </>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+        <form
+          onSubmit={async (e) => {
+            e.preventDefault();
+            if (!note.trim()) return;
+            if (await props.actions.onNote(note.trim())) setNote("");
+          }}
+        >
+          <label className="field">
+            <span>Add a case note</span>
+            <textarea rows={3} maxLength={500} value={note} disabled={!canEdit || props.busy} onChange={(e) => setNote(e.target.value)} placeholder="Record a check-in, referral or next step…" />
+          </label>
+          <div className="actions">
+            <button type="submit" className="btn btn-primary" disabled={!canEdit || props.busy || !note.trim()}>Add note</button>
+            <span className="hint">{note.length}/500</span>
+          </div>
+        </form>
       </section>
 
       {link ? <a className="link-btn" href={link} target="_blank" rel="noreferrer">Open full profile</a> : (
@@ -217,32 +289,6 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
         </div>
       </section>
 
-      <section className="case-card" aria-labelledby="ov-notes">
-        <h3 id="ov-notes">Case notes</h3>
-        {c.workflow.notes.length === 0 ? <p className="muted">No notes added yet.</p> : (
-          <ul className="notes">
-            {c.workflow.notes.map((n) => (
-              <li key={n.id}><p>{n.text}</p><span className="sub">{userName(n.authorUserId)} · {formatDateTime(n.createdAt)}</span></li>
-            ))}
-          </ul>
-        )}
-        <form
-          onSubmit={async (e) => {
-            e.preventDefault();
-            if (!note.trim()) return;
-            if (await props.actions.onNote(note.trim())) setNote("");
-          }}
-        >
-          <label className="field">
-            <span>Add a case note</span>
-            <textarea rows={3} maxLength={500} value={note} disabled={!canEdit || props.busy} onChange={(e) => setNote(e.target.value)} placeholder="Record a check-in, referral or next step…" />
-          </label>
-          <div className="actions">
-            <button type="submit" className="btn btn-primary" disabled={!canEdit || props.busy || !note.trim()}>Add note</button>
-            <span className="hint">{note.length}/500</span>
-          </div>
-        </form>
-      </section>
       </div>
       </div>
     </article>

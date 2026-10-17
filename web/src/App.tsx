@@ -293,6 +293,21 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; c
       run(() => client.setStatus(status, [versioned(openItem!.case)]), () => `Status set to ${STATUS_LABELS[status]}.`),
     onReview: (next: ReviewStatus) =>
       run(() => client.setReview(openItem!.case.id, next, openItem!.case.version), () => (next === "reviewed" ? "Marked as reviewed." : "Marked as needs review.")),
+    onEditNote: async (noteId: string, text: string) => {
+      setBusy(true);
+      try {
+        const updated = await client.editNote(openItem!.case.id, noteId, text, openItem!.case.version);
+        applyUpdated({ actionId: null, updated: [updated], unchanged: [] });
+        say({ kind: "success", message: "Note updated." });
+        refresh();
+        return true;
+      } catch (e) {
+        await handleError(e);
+        return false;
+      } finally {
+        setBusy(false);
+      }
+    },
     onNote: async (text: string) => {
       setBusy(true);
       try {
