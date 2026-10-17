@@ -106,6 +106,6 @@ Added invented gender, preferred name, address (lines 1 and 2, postcode), mobile
 ## Update: case notes
 
 - Note times show the year and the full time, for example "15 Oct 2026 · 11:00 am".
-- On the case page the notes card now sits directly under the person and customer details.
+- Inside each note, the author and date line now comes first with the note text underneath. (The notes card itself stays in the right-hand column, below Case progress.)
 - Notes can be edited: a note's author, or a manager, can change it (`PATCH /api/cases/:id/notes/:noteId`). Edited notes show "edited" with who and when, and the earlier wording is kept in a `note_edits` table for audit (not shown in the app). Databases created earlier gain the new columns automatically on start.
 - Still true: notes cannot be deleted, and note changes are not undoable.

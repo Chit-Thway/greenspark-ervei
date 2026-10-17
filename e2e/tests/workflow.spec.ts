@@ -78,6 +78,10 @@ test.describe.serial("manager to worker workflow", () => {
     await expect(page.locator(".notice-success")).toContainText("Note added");
     await expect(panel.locator(".notes")).toContainText("Called and left a message.");
     await expect(panel.locator(".notes li").last().locator(".sub")).toContainText(/\d{1,2} \w{3} 20\d\d · \d{1,2}:\d{2} (am|pm)/); // year and the full time
+    // Who and when come first, with the note text underneath.
+    const noteLine = panel.locator(".notes li").last();
+    const [whoY, textY] = [(await noteLine.locator(".sub").boundingBox())!.y, (await noteLine.locator("p").boundingBox())!.y];
+    expect(whoY).toBeLessThan(textY);
 
     // The author can correct their note; it is marked as edited and keeps its place.
     await panel.getByRole("button", { name: /^Edit note from/ }).last().click();
