@@ -390,10 +390,19 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; c
     <div className={`app${newCaseOpen && !openCaseId ? " has-panel" : ""}`}>
       <a className="skip" href="#queue">Skip to case queue</a>
       <header className="topbar">
-        <div className="brand">
+        <a
+          className="brand"
+          href="/"
+          aria-label="GreenSpark Ervei casework: go to the case queue"
+          onClick={(e) => {
+            if (isModifiedClick(e)) return; // let the browser open a new tab
+            e.preventDefault();
+            navigate("/");
+          }}
+        >
           <span className="logo" aria-hidden="true">🌱</span>
           <span><strong>GreenSpark</strong><span className="brand-sub">ERVEI · CASEWORK</span></span>
-        </div>
+        </a>
         <span className="tagline">Community support workspace</span>
         <span className="demo-pill">Synthetic demo data</span>
         <label className="whoami">

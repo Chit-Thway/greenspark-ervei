@@ -116,6 +116,22 @@ test.describe("case pages", () => {
     await expect(page.locator(".case-table")).toBeVisible();
   });
 
+  test("the GreenSpark logo and name lead back to the case queue", async ({ page }) => {
+    await openQueue(page);
+    const brand = page.getByRole("link", { name: /GreenSpark Ervei casework/ });
+    await expect(brand).toHaveAttribute("href", "/");
+    const id = (await page.locator("tbody tr").first().getAttribute("data-case-id"))!;
+    await page.locator("tbody tr").first().locator(".name-link").click();
+    await expect(page).toHaveURL(new RegExp(`/cases/${id}$`));
+    await brand.click();
+    await expect(page).toHaveURL(/\/$/);
+    await expect(page.locator(".case-table")).toBeVisible();
+    await expect(page.locator(".case-page")).toHaveCount(0);
+    await brand.focus(); // keyboard users can use it too
+    await page.keyboard.press("Enter");
+    await expect(page.locator(".case-table")).toBeVisible();
+  });
+
   test("a modified click leaves the browser to open the case in a new tab", async ({ page, context }) => {
     await openQueue(page);
     const link = page.locator("tbody tr").first().locator(".name-link");
