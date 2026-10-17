@@ -217,10 +217,12 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
                     })}
                   </ul>
                   {recs.length ? (
-                    <p className="suggest">
-                      <span className="sim">Suggested for staff review</span>{" "}
-                      {recs.map((r) => data.recommendations.find((d) => d.id === r.recommendationId)?.label).join(" · ")}
-                    </p>
+                    <div className="suggest">
+                      <span className="sim">Suggested for staff review</span>
+                      <ul className="suggest-list">
+                        {recs.map((r) => <li key={r.recommendationId}>{data.recommendations.find((d) => d.id === r.recommendationId)?.label ?? r.recommendationId}</li>)}
+                      </ul>
+                    </div>
                   ) : null}
                 </div>
               );
