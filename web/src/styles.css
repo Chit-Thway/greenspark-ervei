@@ -140,6 +140,8 @@ a.btn { display: inline-block; text-decoration: none; color: inherit; }
 .suggest-list li { padding: 1px 0; }
 .plain li { padding: 2px 0; }
 .notes li { padding: 8px 0; border-bottom: 1px solid var(--border); }
+.note-input { min-height: 180px; }
+.notes li p { white-space: pre-wrap; overflow-wrap: anywhere; } /* keep line breaks in longer notes */
 .notes li .note-edit { padding-left: 0; font-size: 12px; }
 .actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
 .error { color: var(--urgent); font-size: 12px; }

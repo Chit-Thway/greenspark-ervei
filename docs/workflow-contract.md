@@ -53,7 +53,7 @@ Statuses are `new`, `in_progress`, `waiting`, `resolved`; any to any is allowed 
 
 ## Notes and review
 
-- `POST /api/cases/:caseId/notes` body `{ "text": "...", "expectedVersion": n }`. Text is trimmed, 1–500 characters. Author and time are set by the server. Notes are never deleted.
+- `POST /api/cases/:caseId/notes` body `{ "text": "...", "expectedVersion": n }`. Text is trimmed and must not be empty. There is no character limit; only the 100 KB request-size limit applies (about 100,000 characters), and an oversize request returns `422` with an explanation. Author and time are set by the server. Notes are never deleted.
 - `PATCH /api/cases/:caseId/review` body `{ "reviewStatus": "reviewed" | "needs_review", "expectedVersion": n }`. Staff review is of the suggestions; it does not confirm eligibility.
 - `PATCH /api/cases/:caseId/notes/:noteId` body `{ "text": "...", "expectedVersion": n }` edits a note. The note's author can edit it, and a manager can edit any note; either must also be allowed to change the case (a manager, or the assigned worker). The note keeps its original author and created time and gains `editedAt` and `editedByUserId`. The previous wording is kept on the server (`note_edits`) as an audit record and is not shown in the app yet. An edit bumps the case version; sending identical text changes nothing and does not bump it. Unknown notes return `404`.
 - Notes and review changes are **not undoable**.

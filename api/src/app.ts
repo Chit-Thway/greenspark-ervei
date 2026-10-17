@@ -21,7 +21,8 @@ const items = z.array(item).min(1).max(MAX_BULK_ITEMS).refine((a) => new Set(a.m
 const assignBody = z.object({ assigneeUserId: z.string().min(1).nullable(), items }).strict();
 const bulkStatusBody = z.object({ status: z.enum(STATUSES), items }).strict();
 const statusBody = z.object({ status: z.enum(STATUSES), expectedVersion: z.number().int().min(1) }).strict();
-const noteBody = z.object({ text: z.string().trim().min(1).max(500), expectedVersion: z.number().int().min(1) }).strict();
+// Notes have no character limit; the 100 KB request-size limit below is the only cap.
+const noteBody = z.object({ text: z.string().trim().min(1), expectedVersion: z.number().int().min(1) }).strict();
 const reviewBody = z.object({ reviewStatus: z.enum(["needs_review", "reviewed"]), expectedVersion: z.number().int().min(1) }).strict();
 const newCaseBody = z.union([
   z.object({ personId: z.string().min(1) }).strict(),
@@ -213,6 +214,10 @@ export function createApp(store: Store, options: AppOptions = {}) {
       return;
     }
     const bad = err as { type?: string; status?: number };
+    if (bad.type === "entity.too.large") {
+      res.status(422).json({ error: { code: "validation_failed", message: "That is too much text for one request (the limit is about 100 KB, roughly 100,000 characters).", details: [] } });
+      return;
+    }
     if (bad.type === "entity.parse.failed") {
       res.status(422).json({ error: { code: "validation_failed", message: "The request body is not valid JSON.", details: [] } });
       return;

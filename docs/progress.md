@@ -109,3 +109,7 @@ Added invented gender, preferred name, address (lines 1 and 2, postcode), mobile
 - Inside each note, the author and date line now comes first with the note text underneath. (The notes card itself stays in the right-hand column, below Case progress.)
 - Notes can be edited: a note's author, or a manager, can change it (`PATCH /api/cases/:id/notes/:noteId`). Edited notes show "edited" with who and when, and the earlier wording is kept in a `note_edits` table for audit (not shown in the app). Databases created earlier gain the new columns automatically on start.
 - Still true: notes cannot be deleted, and note changes are not undoable.
+
+## Update: bigger note box, no length limit
+
+The note boxes (adding and editing) are taller, and the 500-character limit is gone, along with the "0/500" counter. Line breaks in notes are now kept when shown. The only remaining cap is the request-size limit of about 100 KB (roughly 100,000 characters), which returns a clear message instead of an error.

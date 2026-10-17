@@ -241,12 +241,11 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
                     >
                       <label className="field">
                         <span>Edit note</span>
-                        <textarea rows={3} maxLength={500} value={editText} disabled={props.busy} autoFocus onChange={(e) => setEditText(e.target.value)} />
+                        <textarea className="note-input" rows={8} value={editText} disabled={props.busy} autoFocus onChange={(e) => setEditText(e.target.value)} />
                       </label>
                       <div className="actions">
                         <button type="submit" className="btn btn-primary btn-small" disabled={props.busy || !editText.trim() || editText.trim() === n.text}>Save note</button>
                         <button type="button" className="btn btn-small" disabled={props.busy} onClick={() => setEditingId(null)}>Cancel</button>
-                        <span className="hint">{editText.length}/500</span>
                       </div>
                     </form>
                   ) : (
@@ -283,11 +282,10 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
         >
           <label className="field">
             <span>Add a case note</span>
-            <textarea rows={3} maxLength={500} value={note} disabled={!canEdit || props.busy} onChange={(e) => setNote(e.target.value)} placeholder="Record a check-in, referral or next step…" />
+            <textarea className="note-input" rows={8} value={note} disabled={!canEdit || props.busy} onChange={(e) => setNote(e.target.value)} placeholder="Record a check-in, referral or next step…" />
           </label>
           <div className="actions">
             <button type="submit" className="btn btn-primary" disabled={!canEdit || props.busy || !note.trim()}>Add note</button>
-            <span className="hint">{note.length}/500</span>
           </div>
         </form>
       </section>

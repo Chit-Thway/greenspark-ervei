@@ -96,6 +96,18 @@ test.describe.serial("manager to worker workflow", () => {
     await panel.getByRole("button", { name: "Cancel" }).click(); // cancelling changes nothing
     await expect(edited).toContainText("Called and spoke to the customer.");
 
+    // The note box is tall, and there is no length limit: a 700-character note is saved whole.
+    const box = panel.getByLabel("Add a case note");
+    expect((await box.boundingBox())!.height).toBeGreaterThanOrEqual(160);
+    expect(await box.getAttribute("maxlength")).toBeNull();
+    await expect(panel).not.toContainText("/500");
+    const longNote = `Line one.\nLine two. ${"More detail. ".repeat(50)}`.trim();
+    await box.fill(longNote);
+    await panel.getByRole("button", { name: "Add note" }).click();
+    await expect(page.locator(".notice-success")).toContainText("Note added");
+    await expect(panel.locator(".notes li").last().locator("p")).toContainText("More detail. More detail.");
+    expect((await panel.locator(".notes li").last().locator("p").innerText()).length).toBeGreaterThan(600);
+
     const status = startStatus === "Waiting" ? "in_progress" : "waiting";
     await panel.getByLabel("Case status").selectOption(status);
     await panel.getByRole("button", { name: "Save status" }).click();

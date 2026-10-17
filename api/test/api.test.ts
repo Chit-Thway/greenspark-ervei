@@ -174,7 +174,15 @@ describe("status, notes and review permissions", () => {
     expect(notes.at(-1)).toMatchObject({ text: "Called and left a message.", authorUserId: "staff-alex" });
     expect(ok.body.case.version).toBe(c.version + 1);
     expect((await h.call("staff-alex", "POST", `/api/cases/${c.id}/notes`, { text: "   ", expectedVersion: ok.body.case.version })).status).toBe(422);
-    expect((await h.call("staff-alex", "POST", `/api/cases/${c.id}/notes`, { text: "x".repeat(501), expectedVersion: ok.body.case.version })).status).toBe(422);
+    // There is no 500-character limit any more: long notes are saved whole.
+    const long = "Long note. ".repeat(2000).trim(); // about 22,000 characters
+    const big = await h.call("staff-alex", "POST", `/api/cases/${c.id}/notes`, { text: long, expectedVersion: ok.body.case.version });
+    expect(big.status).toBe(201);
+    expect(big.body.case.workflow.notes.at(-1).text).toBe(long);
+    // Only the 100 KB request-size limit applies, and it is explained rather than failing with a server error.
+    const huge = await h.call("staff-alex", "POST", `/api/cases/${c.id}/notes`, { text: "x".repeat(150_000), expectedVersion: big.body.case.version });
+    expect(huge.status).toBe(422);
+    expect(huge.body.error.message).toMatch(/too much text/);
     expect((await h.call("staff-sarah", "POST", `/api/cases/${c.id}/notes`, { text: "Not mine", expectedVersion: ok.body.case.version })).status).toBe(403);
   });
 
@@ -211,11 +219,17 @@ describe("status, notes and review permissions", () => {
       expect(other.status).toBe(403);
     });
 
+    it("has no 500-character limit when editing", async () => {
+      const t = await caseWithNotes();
+      const r = await h.call("staff-alex", "PATCH", `/api/cases/${t.id}/notes/${t.alexNote.id}`, { text: "y".repeat(5000), expectedVersion: t.version });
+      expect(r.status).toBe(200);
+      expect(r.body.case.workflow.notes.find((n: any) => n.id === t.alexNote.id).text).toHaveLength(5000);
+    });
+
     it("validates the text, the note, the version and no-op edits", async () => {
       const t = await caseWithNotes();
       const url = `/api/cases/${t.id}/notes/${t.alexNote.id}`;
       expect((await h.call("staff-alex", "PATCH", url, { text: "   ", expectedVersion: t.version })).status).toBe(422);
-      expect((await h.call("staff-alex", "PATCH", url, { text: "x".repeat(501), expectedVersion: t.version })).status).toBe(422);
       expect((await h.call("staff-alex", "PATCH", url, { text: "ok", expectedVersion: t.version, authorUserId: M })).status).toBe(422);
       expect((await h.call("staff-alex", "PATCH", `/api/cases/${t.id}/notes/note-missing`, { text: "ok", expectedVersion: t.version })).status).toBe(404);
       expect((await h.call("staff-alex", "PATCH", "/api/cases/GS-9999/notes/x", { text: "ok", expectedVersion: 1 })).status).toBe(404);
