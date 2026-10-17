@@ -8,14 +8,14 @@ Help essential-service teams identify customers who may need support, understand
 
 The current focus is **planning the first interface and preparing clearly labelled synthetic test data**. The planned stack is React + TypeScript + Vite for the interface and Node.js + TypeScript + Express for the API. Managers and support workers share the same interface with role-appropriate actions.
 
-The approved direction as of **16 October 2026** is the bright green/mint theme and the existing case-queue workflow, including the compact right-side overview. Another teammate owns the prediction model, and another owns full individual cards/profiles.
+The approved direction as of **16 October 2026** is the bright green/mint theme and the existing case-queue workflow, including the compact case overview, which now opens as its own page (see below). Another teammate owns the prediction model, and another owns full individual cards/profiles.
 
 - [Scope, approved recommendations and five implementation milestones](docs/implementation-plan.md)
 - [Proposed data/API/model/profile contract](docs/data-contract.md)
 - [Workflow contract: assignment, bulk actions, versioning, Undo](docs/workflow-contract.md)
 - [Node API: run, reset, endpoints and errors](docs/api.md)
 - [Demo script](docs/demo-script.md)
-- [Model/profile integration boundaries](docs/integration.md)
+- [Model integration boundary](docs/integration.md)
 - [Build progress by milestone](docs/progress.md)
 - [100-person synthetic development fixture](data/synthetic/case-queue.v1.json)
 - [Test-data instructions and limitations](data/synthetic/README.md)
@@ -40,14 +40,14 @@ npm run build
 npm run check:fixture
 ```
 
-Use the **Demo view** menu in the header to switch between the manager and support workers. It is a labelled stand-in, not sign-in. Changes are saved in the local SQLite file and persist across restarts; run `npm run reset` to restore the original 100 cases. The profile link stays hidden until the API is started with `GREENSPARK_PROFILE_URL_TEMPLATE` (for example `https://profiles.example/people/{personId}`). The first `npm run test:e2e` needs a Chromium browser: run `npx playwright install chromium`, or set `PW_CHROMIUM_PATH`.
+Use the **Demo view** menu in the header to switch between the manager and support workers. It is a labelled stand-in, not sign-in. Changes are saved in the local SQLite file and persist across restarts; run `npm run reset` to restore the original 100 cases. The first `npm run test:e2e` needs a Chromium browser: run `npx playwright install chromium`, or set `PW_CHROMIUM_PATH`.
 
 ## Start from milestone 1
 
 1. Read [the implementation plan](docs/implementation-plan.md), then [the data contract](docs/data-contract.md).
 2. Inspect [the design references](docs/design/README.md). Open `docs/design/workflow-reference.html` in a browser to try the approved interactions; the selected green image defines the visual direction.
 3. Run `node scripts/generate-synthetic-cases.mjs --check` from the repository root. This checks the existing 100-person fixture without npm packages, a backend or source-data downloads.
-4. Review the proposed person/model integration boundaries, then build milestones 2-5. External model/profile work can remain behind the documented mock adapters while this queue is implemented.
+4. Review the proposed person/model integration boundaries, then build milestones 2-5. External model work can remain behind the documented mock adapter while this queue is implemented.
 
 The original preview's illustrative categories and counts are superseded by the current plan and JSON catalogs. The new app should use the versioned synthetic fixture, not the preview's embedded example cases.
 
@@ -79,7 +79,7 @@ The first screen is a shared staff workspace with a case list, a filter panel on
 | Assigned to me | Show cases assigned to the signed-in support worker. Assignment comes from the case workflow. |
 | Manager assignment | Let managers allocate cases to support workers within the shared interface. |
 | Bulk actions | Single/bulk manager assignment and permitted status changes, with clear selection and reversible-action feedback. |
-| Compact case overview | Show minimal identity/context, assignment, status, supporting reported answers, recommendations and short notes in the right-side panel. Full profiles are owned by another teammate. |
+| Case page | Each case opens on its own page at `/cases/<caseId>` (it can be bookmarked or opened in a new tab; Back returns to the queue with filters, page and selection kept). It shows minimal identity/context, assignment, status, supporting reported answers, recommendations and short notes. There is no separate full-profile page. |
 
 Recorded answers, illustrative support-area groupings, proposed staff actions and model predictions have distinct roles. Domestic violence and income loss are not established by the inspected source fields and are not included in the supported demo taxonomy. Historical survey answers retain their reporting periods. Staff review suggested actions.
 
@@ -98,7 +98,6 @@ Assignment, “Assigned to me,” and bulk actions belong to the interface workf
 - Confirm the prediction target, urgency labels and the model's input/output contract with its owner.
 - Confirm the data sources, including when customer data is optional and how results link to customer or case records.
 - Confirm the proposed filter semantics and server-side manager/assigned-worker permissions during implementation.
-- Agree stable person IDs and the full-profile route with its owner.
 - Build through the five milestones, using the labelled fixture before connecting external model results.
 
 The old root-level `customers.json` placeholder was removed to avoid confusion. The new fixture is deliberately synthetic, separately located under `data/synthetic/`, and explicitly requested for workflow testing. It uses verified ECA answer definitions without copying respondent profiles or joining unrelated source datasets.

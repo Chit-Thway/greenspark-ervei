@@ -1,7 +1,8 @@
 import { useEffect, useRef } from "react";
 import type { Catalog, CaseItem } from "../data/api";
-import { describeFollowUp, initials, shortName, STATUS_LABELS } from "../domain/format";
+import { describeFollowUp, shortName, STATUS_LABELS } from "../domain/format";
 import { isResolved } from "../domain/query";
+import { caseHref, isModifiedClick } from "../route";
 import { PriorityBadge } from "./Primitives";
 
 export function CaseTable(props: {
@@ -9,7 +10,6 @@ export function CaseTable(props: {
   rows: CaseItem[];
   currentUserId: string;
   selectedIds: Set<string>;
-  openCaseId: string | null;
   selectionDisabled: boolean;
   onToggleRow: (id: string, on: boolean) => void;
   onTogglePage: (on: boolean) => void;
@@ -40,11 +40,10 @@ export function CaseTable(props: {
               />
             </th>
             <th scope="col">Person / case</th>
-            <th scope="col">Support needs</th>
             <th scope="col">Priority <span className="sim">simulated</span></th>
+            <th scope="col">Support needs</th>
             <th scope="col">Assigned to</th>
             <th scope="col">Status / follow-up</th>
-            <th scope="col" className="col-action"><span className="sr-only">Open overview</span></th>
           </tr>
         </thead>
         <tbody>
@@ -57,7 +56,7 @@ export function CaseTable(props: {
             return (
               <tr
                 key={c.id}
-                className={`${selectedIds.has(c.id) ? "is-selected " : ""}${props.openCaseId === c.id ? "is-open" : ""}`}
+                className={selectedIds.has(c.id) ? "is-selected" : undefined}
                 data-case-id={c.id}
                 onClick={() => props.onOpen(c.id)}
               >
@@ -72,22 +71,26 @@ export function CaseTable(props: {
                 </td>
                 <td>
                   <div className="person">
-                    <span className="avatar" aria-hidden="true">{initials(person?.displayName ?? "?")}</span>
                     <span>
-                      <button
-                        type="button"
-                        className="name-btn"
-                        aria-haspopup="dialog"
+                      <a
+                        className="name-link"
+                        href={caseHref(c.id)}
+                        data-case-link={c.id}
                         onClick={(e) => {
                           e.stopPropagation();
+                          if (isModifiedClick(e)) return; // let the browser open a new tab or window
+                          e.preventDefault();
                           props.onOpen(c.id);
                         }}
                       >
                         {person?.displayName ?? "Unknown person"}
-                      </button>
+                      </a>
                       <span className="sub">{c.id} · {person?.suburb}</span>
                     </span>
                   </div>
+                </td>
+                <td data-label="Priority">
+                  <PriorityBadge c={c} />
                 </td>
                 <td data-label="Support needs">
                   {labels.length ? (
@@ -98,9 +101,6 @@ export function CaseTable(props: {
                   ) : (
                     <span className="muted">No circumstances flagged</span>
                   )}
-                </td>
-                <td data-label="Priority">
-                  <PriorityBadge c={c} />
                 </td>
                 <td data-label="Assigned to">
                   {assignee ? (
@@ -115,16 +115,6 @@ export function CaseTable(props: {
                 <td data-label="Status">
                   <span className={`status status-${c.workflow.status}`}>{STATUS_LABELS[c.workflow.status]}</span>
                   <span className={`sub follow-${fu.tone}`}>{fu.text}</span>
-                </td>
-                <td className="col-action" onClick={(e) => e.stopPropagation()}>
-                  <button
-                    type="button"
-                    className="btn btn-small"
-                    aria-label={`Open overview for ${person?.displayName ?? c.id}`}
-                    onClick={() => props.onOpen(c.id)}
-                  >
-                    Overview
-                  </button>
                 </td>
               </tr>
             );

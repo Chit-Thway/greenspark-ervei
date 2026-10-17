@@ -1,6 +1,6 @@
 # Integration boundaries and open agreements
 
-This team's screen works without the prediction model and without the full profile. Both connect through small, replaceable boundaries. **Nothing here is agreed with the model or profile owners yet.**
+This team's screen works without the prediction model, which connects through a small, replaceable boundary. **Nothing here is agreed with the model or profile owners yet.**
 
 ## Shared identity
 
@@ -25,11 +25,9 @@ interface ModelAdapter {
 
 To agree with the model owner: case/person identifiers sent, score range and label bands (the demo uses urgent/high/moderate/routine from fixture conventions, not calibrated), trend values, refresh timing, caching for 100+ cases per request, and error behaviour. Do not send downstream outcome labels into a prediction request.
 
-## Full profile link (profile owner)
+## Full profile
 
-Set `GREENSPARK_PROFILE_URL_TEMPLATE` when starting the API, for example `https://profiles.example/people/{personId}`. The overview then shows "Open full profile" and opens it in a new tab. Unset, the link is hidden. The queue never builds profile content itself.
-
-To agree with the profile owner: the route shape, whether it needs sign-in hand-off, and whether it should also receive `caseId`.
+There is no separate full-profile page. The case page is where staff see a person, so the app has no profile link and no profile setting. (`fullProfilePath` remains in the fixture as an unused, always-null field.)
 
 ## Identity and sign-in
 

@@ -12,7 +12,8 @@ CREATE TABLE IF NOT EXISTS cases (
   version INTEGER NOT NULL, status TEXT NOT NULL, assigned_to TEXT, follow_up_at TEXT,
   review_status TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL
 );
-CREATE TABLE IF NOT EXISTS notes (seq INTEGER PRIMARY KEY AUTOINCREMENT, id TEXT UNIQUE NOT NULL, case_id TEXT NOT NULL, author_id TEXT NOT NULL, text TEXT NOT NULL, created_at TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS notes (seq INTEGER PRIMARY KEY AUTOINCREMENT, id TEXT UNIQUE NOT NULL, case_id TEXT NOT NULL, author_id TEXT NOT NULL, text TEXT NOT NULL, created_at TEXT NOT NULL, edited_at TEXT, edited_by TEXT);
+CREATE TABLE IF NOT EXISTS note_edits (seq INTEGER PRIMARY KEY AUTOINCREMENT, note_id TEXT NOT NULL, previous_text TEXT NOT NULL, edited_by TEXT NOT NULL, edited_at TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS workflow_actions (id TEXT PRIMARY KEY, type TEXT NOT NULL, actor_id TEXT NOT NULL, created_at TEXT NOT NULL, undone_at TEXT, undone_by TEXT);
 CREATE TABLE IF NOT EXISTS workflow_action_items (action_id TEXT NOT NULL, case_id TEXT NOT NULL, before_doc TEXT NOT NULL, after_doc TEXT NOT NULL, resulting_version INTEGER NOT NULL, PRIMARY KEY (action_id, case_id));
 `;
@@ -37,6 +38,9 @@ export class Store {
     this.db = new DatabaseSync(dbPath);
     this.db.exec("PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;");
     this.db.exec(SCHEMA);
+    // Databases created before notes could be edited lack the edit columns.
+    const noteColumns = (this.db.prepare("PRAGMA table_info(notes)").all() as Row[]).map((c) => c.name);
+    if (!noteColumns.includes("edited_at")) this.db.exec("ALTER TABLE notes ADD COLUMN edited_at TEXT; ALTER TABLE notes ADD COLUMN edited_by TEXT;");
     if (!this.getMeta("seeded_dataset")) this.seed(raw);
   }
 
@@ -101,7 +105,10 @@ export class Store {
     const m = new Map<string, CaseNote[]>();
     for (const r of rows) {
       const list = m.get(r.case_id as string) ?? [];
-      list.push({ id: r.id as string, text: r.text as string, authorUserId: r.author_id as string, createdAt: r.created_at as string });
+      list.push({
+        id: r.id as string, text: r.text as string, authorUserId: r.author_id as string, createdAt: r.created_at as string,
+        ...(r.edited_at ? { editedAt: r.edited_at as string, editedByUserId: r.edited_by as string | null } : {}),
+      });
       m.set(r.case_id as string, list);
     }
     return m;
@@ -169,6 +176,17 @@ export class Store {
 
   addNote(n: CaseNote & { caseId: string }) {
     this.db.prepare("INSERT INTO notes (id, case_id, author_id, text, created_at) VALUES (?,?,?,?,?)").run(n.id, n.caseId, n.authorUserId, n.text, n.createdAt);
+  }
+
+  getNote(caseId: string, noteId: string): CaseNote | null {
+    return this.notesByCase(caseId).get(caseId)?.find((n) => n.id === noteId) ?? null;
+  }
+
+  /** Replaces a note's text, keeping the previous wording in note_edits. */
+  updateNote(noteId: string, text: string, editorId: string, at: string) {
+    const prev = this.db.prepare("SELECT text FROM notes WHERE id = ?").get(noteId) as Row;
+    this.db.prepare("INSERT INTO note_edits (note_id, previous_text, edited_by, edited_at) VALUES (?,?,?,?)").run(noteId, prev.text as string, editorId, at);
+    this.db.prepare("UPDATE notes SET text = ?, edited_at = ?, edited_by = ? WHERE id = ?").run(text, at, editorId, noteId);
   }
 
   noteCount(): number {

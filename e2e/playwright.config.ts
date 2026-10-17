@@ -25,7 +25,7 @@ export default defineConfig({
       cwd: "..",
       url: `http://localhost:${API_PORT}/api/health`,
       reuseExistingServer: false,
-      env: { PORT: String(API_PORT), GREENSPARK_DB: `${RUNTIME}/e2e.sqlite`, GREENSPARK_PROFILE_URL_TEMPLATE: "https://profiles.example/people/{personId}" },
+      env: { PORT: String(API_PORT), GREENSPARK_DB: `${RUNTIME}/e2e.sqlite` },
     },
     {
       command: `npm run dev -w web -- --port ${WEB_PORT} --strictPort`,

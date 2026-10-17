@@ -58,7 +58,7 @@ export function FilterSidebar(props: {
           const children = data.circumstances.filter((c) => c.supportAreaId === area.id);
           const selected = children.filter((c) => query.circumstanceIds.includes(c.id));
           const all = selected.length === children.length;
-          const open = expanded[area.id] ?? true;
+          const open = expanded[area.id] ?? false; // areas start collapsed
           return (
             <div key={area.id} className="area">
               <div className="area-row">

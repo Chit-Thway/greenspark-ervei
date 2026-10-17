@@ -36,7 +36,7 @@ No native Figma URL was supplied during this planning conversation. The user ref
 - Open the compact overview on the right without navigating away or losing filters, sort, page or selected IDs.
 - Keep the overview around 430-440 px on desktop; make it usable at narrow widths. Full individual profiles belong to the other teammate.
 - Keep manager assignment, Assigned to me, row selection, page selection, bulk status/assignment and Undo feedback recognizable from the preview.
-- Start at eight cases per page, matching the original prototype; totals are calculated from the new fixture and current data.
+- Show 50 cases per page (the original prototype used eight; this was changed on request); totals are calculated from the new fixture and current data.
 - Use readable typography, labelled controls, visible focus, text labels alongside urgency colors and keyboard-operable panels.
 
 ## Selected theme

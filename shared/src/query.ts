@@ -19,7 +19,7 @@ export const DEFAULT_QUERY: QueueQuery = {
   assignedToUserId: "",
   sort: "priority_desc",
   page: 1,
-  pageSize: 8,
+  pageSize: 50,
 };
 
 export const PRIORITY_LABELS: PriorityLabel[] = ["urgent", "high", "moderate", "routine"];

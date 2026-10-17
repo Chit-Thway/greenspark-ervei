@@ -7,8 +7,6 @@ export const FIXTURE_PATH = process.env.GREENSPARK_FIXTURE ?? `${root}data/synth
 export const DB_PATH = process.env.GREENSPARK_DB ?? `${root}data/runtime/greenspark.sqlite`;
 export const PORT = Number(process.env.PORT ?? 3001);
 
-// Optional link to the teammate-owned full profile, e.g. https://profiles.example/people/{personId}
-export const PROFILE_URL_TEMPLATE = process.env.GREENSPARK_PROFILE_URL_TEMPLATE || null;
 
 // Built web app, served by this process when present (single-process hosting, e.g. Render).
 const webDist = process.env.GREENSPARK_WEB_DIST ?? `${root}web/dist`;

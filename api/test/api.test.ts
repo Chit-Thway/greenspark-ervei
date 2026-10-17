@@ -32,8 +32,14 @@ describe("identity and reads", () => {
 
   it("lists, filters and paginates", async () => {
     const r = await h.call(M, "GET", "/api/cases");
-    expect(r.body).toMatchObject({ total: 100, page: 1, pageSize: 8, pageCount: 13 });
-    expect(r.body.items).toHaveLength(8);
+    expect(r.body).toMatchObject({ total: 100, page: 1, pageSize: 50, pageCount: 2, from: 1, to: 50 }); // 50 per page by default
+    expect(r.body.items).toHaveLength(50);
+    const second = await h.call(M, "GET", "/api/cases?page=2");
+    expect(second.body.items).toHaveLength(50);
+    expect(second.body).toMatchObject({ from: 51, to: 100 });
+    const small = await h.call(M, "GET", "/api/cases?pageSize=8"); // other sizes still work
+    expect(small.body).toMatchObject({ pageSize: 8, pageCount: 13 });
+    expect(small.body.items).toHaveLength(8);
     expect(r.body.counters.awaitingAssignment).toBeGreaterThan(0);
     const warm = await h.call(M, "GET", "/api/cases?circumstanceIds=keeping_warm_difficulty&pageSize=100");
     expect(warm.body.total).toBe(r.body.facets.circumstances.keeping_warm_difficulty);
@@ -55,6 +61,10 @@ describe("identity and reads", () => {
     const ov = await h.call(M, "GET", "/api/cases/GS-2001/overview");
     expect(ov.body.case.id).toBe("GS-2001");
     expect(ov.body.person.id).toBe(ov.body.case.personId);
+    expect(ov.body.person).toMatchObject({ gender: expect.any(String), preferredName: expect.any(String), address: { line1: expect.any(String), postcode: expect.stringMatching(/^\d{4}$/) } });
+    expect(ov.body.person.email === null || ov.body.person.email.endsWith("@example.com")).toBe(true);
+    expect(ov.body.person.mobile === null || /^0491 57\d \d{3}$/.test(ov.body.person.mobile)).toBe(true);
+    expect(ov.body.person.phone === null || /^\(08\) 5550 \d{4}$/.test(ov.body.person.phone)).toBe(true);
   });
 });
 
@@ -164,8 +174,82 @@ describe("status, notes and review permissions", () => {
     expect(notes.at(-1)).toMatchObject({ text: "Called and left a message.", authorUserId: "staff-alex" });
     expect(ok.body.case.version).toBe(c.version + 1);
     expect((await h.call("staff-alex", "POST", `/api/cases/${c.id}/notes`, { text: "   ", expectedVersion: ok.body.case.version })).status).toBe(422);
-    expect((await h.call("staff-alex", "POST", `/api/cases/${c.id}/notes`, { text: "x".repeat(501), expectedVersion: ok.body.case.version })).status).toBe(422);
+    // There is no 500-character limit any more: long notes are saved whole.
+    const long = "Long note. ".repeat(2000).trim(); // about 22,000 characters
+    const big = await h.call("staff-alex", "POST", `/api/cases/${c.id}/notes`, { text: long, expectedVersion: ok.body.case.version });
+    expect(big.status).toBe(201);
+    expect(big.body.case.workflow.notes.at(-1).text).toBe(long);
+    // Only the 100 KB request-size limit applies, and it is explained rather than failing with a server error.
+    const huge = await h.call("staff-alex", "POST", `/api/cases/${c.id}/notes`, { text: "x".repeat(150_000), expectedVersion: big.body.case.version });
+    expect(huge.status).toBe(422);
+    expect(huge.body.error.message).toMatch(/too much text/);
     expect((await h.call("staff-sarah", "POST", `/api/cases/${c.id}/notes`, { text: "Not mine", expectedVersion: ok.body.case.version })).status).toBe(403);
+  });
+
+  describe("editing notes", () => {
+    async function caseWithNotes() {
+      const c = (await allCases(h)).find((x) => x.workflow.assignedToUserId === "staff-alex")!;
+      const mine = await h.call("staff-alex", "POST", `/api/cases/${c.id}/notes`, { text: "Alex's first wording", expectedVersion: c.version });
+      const managers = await h.call(M, "POST", `/api/cases/${c.id}/notes`, { text: "Manager's note", expectedVersion: mine.body.case.version });
+      const notes = managers.body.case.workflow.notes;
+      return { id: c.id, version: managers.body.case.version as number, alexNote: notes.at(-2), managerNote: notes.at(-1) };
+    }
+
+    it("lets an author edit their note, records who and when, and keeps the earlier wording", async () => {
+      const t = await caseWithNotes();
+      const r = await h.call("staff-alex", "PATCH", `/api/cases/${t.id}/notes/${t.alexNote.id}`, { text: "  Alex's corrected wording ", expectedVersion: t.version });
+      expect(r.status).toBe(200);
+      const edited = r.body.case.workflow.notes.find((n: any) => n.id === t.alexNote.id);
+      expect(edited).toMatchObject({ text: "Alex's corrected wording", authorUserId: "staff-alex", editedByUserId: "staff-alex", createdAt: t.alexNote.createdAt });
+      expect(edited.editedAt).toEqual(expect.stringMatching(/\+08:00$/));
+      expect(r.body.case.version).toBe(t.version + 1);
+      expect(t.alexNote.editedAt).toBeUndefined(); // never edited before
+      const history = h.store.db.prepare("SELECT previous_text, edited_by FROM note_edits WHERE note_id = ?").all(t.alexNote.id) as any[];
+      expect(history).toEqual([{ previous_text: "Alex's first wording", edited_by: "staff-alex" }]);
+      expect(r.body.case.workflow.notes.find((n: any) => n.id === t.managerNote.id).text).toBe("Manager's note"); // others untouched
+    });
+
+    it("lets a manager edit any note but not a worker edit someone else's", async () => {
+      const t = await caseWithNotes();
+      const no = await h.call("staff-alex", "PATCH", `/api/cases/${t.id}/notes/${t.managerNote.id}`, { text: "Hijacked", expectedVersion: t.version });
+      expect(no.status).toBe(403);
+      const yes = await h.call(M, "PATCH", `/api/cases/${t.id}/notes/${t.alexNote.id}`, { text: "Edited by the manager", expectedVersion: t.version });
+      expect(yes.body.case.workflow.notes.find((n: any) => n.id === t.alexNote.id)).toMatchObject({ text: "Edited by the manager", authorUserId: "staff-alex", editedByUserId: M });
+      const other = await h.call("staff-sarah", "PATCH", `/api/cases/${t.id}/notes/${t.alexNote.id}`, { text: "Not my case", expectedVersion: yes.body.case.version });
+      expect(other.status).toBe(403);
+    });
+
+    it("has no 500-character limit when editing", async () => {
+      const t = await caseWithNotes();
+      const r = await h.call("staff-alex", "PATCH", `/api/cases/${t.id}/notes/${t.alexNote.id}`, { text: "y".repeat(5000), expectedVersion: t.version });
+      expect(r.status).toBe(200);
+      expect(r.body.case.workflow.notes.find((n: any) => n.id === t.alexNote.id).text).toHaveLength(5000);
+    });
+
+    it("validates the text, the note, the version and no-op edits", async () => {
+      const t = await caseWithNotes();
+      const url = `/api/cases/${t.id}/notes/${t.alexNote.id}`;
+      expect((await h.call("staff-alex", "PATCH", url, { text: "   ", expectedVersion: t.version })).status).toBe(422);
+      expect((await h.call("staff-alex", "PATCH", url, { text: "ok", expectedVersion: t.version, authorUserId: M })).status).toBe(422);
+      expect((await h.call("staff-alex", "PATCH", `/api/cases/${t.id}/notes/note-missing`, { text: "ok", expectedVersion: t.version })).status).toBe(404);
+      expect((await h.call("staff-alex", "PATCH", "/api/cases/GS-9999/notes/x", { text: "ok", expectedVersion: 1 })).status).toBe(404);
+      const stale = await h.call("staff-alex", "PATCH", url, { text: "ok", expectedVersion: t.version - 1 });
+      expect(stale.status).toBe(409);
+      expect(stale.body.error.code).toBe("version_conflict");
+      const same = await h.call("staff-alex", "PATCH", url, { text: "Alex's first wording", expectedVersion: t.version });
+      expect(same.status).toBe(200);
+      expect(same.body.case.version).toBe(t.version); // identical wording: no new version, no edit record
+      expect(same.body.case.workflow.notes.find((n: any) => n.id === t.alexNote.id).editedAt).toBeUndefined();
+    });
+
+    it("lets managers and the assigned worker edit seeded notes where they are the author or manager", async () => {
+      const cases = await allCases(h);
+      const seeded = cases.find((c) => c.workflow.notes.length > 0 && c.workflow.notes[0].authorUserId === c.workflow.assignedToUserId && c.workflow.assignedToUserId)!;
+      const note = seeded.workflow.notes[0];
+      const r = await h.call(note.authorUserId, "PATCH", `/api/cases/${seeded.id}/notes/${note.id}`, { text: "Updated seeded note", expectedVersion: seeded.version });
+      expect(r.status).toBe(200);
+      expect(r.body.case.workflow.notes[0]).toMatchObject({ text: "Updated seeded note", editedByUserId: note.authorUserId });
+    });
   });
 
   it("records review state for the assigned worker and manager only", async () => {
@@ -189,6 +273,7 @@ describe("new case", () => {
     expect(Object.values(c.reportedAnswers).every((v) => v === null)).toBe(true);
     expect(Object.values(c.answerAvailability).every((v) => v === "unknown")).toBe(true);
     expect(r.body.person).toMatchObject({ displayName: "Jordan Test", suburb: "Perth" });
+    expect(r.body.person).toMatchObject({ gender: null, preferredName: null, address: null, mobile: null, phone: null, email: null }); // not recorded
     expect((await h.call(M, "GET", "/api/cases")).body.total).toBe(101);
   });
 
