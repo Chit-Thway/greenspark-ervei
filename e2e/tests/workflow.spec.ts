@@ -8,6 +8,7 @@ test.describe.serial("manager to worker workflow", () => {
   test("manager sees all 100 demo cases with counters and filter counts", async ({ page }) => {
     await openQueue(page);
     await expectTotal(page, 100);
+    await expect(page.locator("thead th")).toContainText(["", "Person / case", "Priority simulated", "Support needs", "Assigned to", "Status / follow-up", "Open case"]); // Priority comes before Support needs
     await expect(page.locator("tbody tr")).toHaveCount(50);
     await expect(page.getByText("Showing 1–50 of 100 cases")).toBeVisible();
     await expect(page.getByRole("button", { name: /^Unassigned/ })).toContainText("20");

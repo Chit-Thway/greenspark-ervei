@@ -40,8 +40,8 @@ export function CaseTable(props: {
               />
             </th>
             <th scope="col">Person / case</th>
-            <th scope="col">Support needs</th>
             <th scope="col">Priority <span className="sim">simulated</span></th>
+            <th scope="col">Support needs</th>
             <th scope="col">Assigned to</th>
             <th scope="col">Status / follow-up</th>
             <th scope="col" className="col-action"><span className="sr-only">Open case</span></th>
@@ -90,6 +90,9 @@ export function CaseTable(props: {
                     </span>
                   </div>
                 </td>
+                <td data-label="Priority">
+                  <PriorityBadge c={c} />
+                </td>
                 <td data-label="Support needs">
                   {labels.length ? (
                     <>
@@ -99,9 +102,6 @@ export function CaseTable(props: {
                   ) : (
                     <span className="muted">No circumstances flagged</span>
                   )}
-                </td>
-                <td data-label="Priority">
-                  <PriorityBadge c={c} />
                 </td>
                 <td data-label="Assigned to">
                   {assignee ? (
