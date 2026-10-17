@@ -18,7 +18,6 @@ Needs Node.js 22 or newer. SQLite uses Node's built-in `node:sqlite`, so there i
 | `GREENSPARK_DB` | `data/runtime/greenspark.sqlite` (git-ignored) |
 | `GREENSPARK_FIXTURE` | `data/synthetic/case-queue.v1.json` |
 | `PORT` | `3001` |
-| `GREENSPARK_PROFILE_URL_TEMPLATE` | unset (profile link hidden); e.g. `https://profiles.example/people/{personId}` |
 
 ## Persistence and reset
 

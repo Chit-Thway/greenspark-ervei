@@ -9,7 +9,6 @@ The API can also serve the built web app, so the whole demo runs as **one Node w
 | Start command | `npm run start -w api` |
 | Health check path | `/api/health` |
 | `GREENSPARK_BASIC_AUTH` | `user:password`. Optional but recommended: the demo has no real sign-in, so without it anyone with the link can act as the manager. Health checks are exempt. Remove the variable to open the site up. |
-| `GREENSPARK_PROFILE_URL_TEMPLATE` | Optional full-profile link, e.g. `https://profiles.example/people/{personId}` |
 
 Render supplies `PORT`; the server listens on it.
 

@@ -121,3 +121,7 @@ Gender now reads Female or Male (previously Woman or Man). For the invented peop
 ## Update: queue rows
 
 The separate **View case** button is gone from the case queue. A case opens from its name (a real link, so Ctrl/Cmd-click opens a new tab) or by clicking the row.
+
+## Update: no full profile page
+
+There is not going to be a full profile page, so the "Full profile link appears when the profile route is configured." message is gone, along with the link itself and its `GREENSPARK_PROFILE_URL_TEMPLATE` setting (web, API, tests and deployment notes). The case page stays the one place to see a person. Older notes in this file and in the implementation plan that mention a profile owner or profile route are history. The always-null `fullProfilePath` field is left in the fixture.

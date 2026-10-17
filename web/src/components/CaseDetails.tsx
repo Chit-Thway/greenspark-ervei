@@ -53,8 +53,6 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
   const assignedUser = data.users.find((u) => u.id === c.workflow.assignedToUserId);
   const userName = (id: string) => data.users.find((u) => u.id === id)?.displayName ?? id;
   const fu = describeFollowUp(c.workflow.followUpAt, isResolved(c), data.asOf);
-  // The full profile belongs to another team; the link shows only when its route is configured on the server.
-  const link = person && data.profileUrlTemplate ? data.profileUrlTemplate.replace("{personId}", encodeURIComponent(person.id)) : null;
   const a = c.modelAssessment;
 
   // A new page should start at its heading for keyboard and screen-reader users.
@@ -107,10 +105,6 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
         </dl>
       </section>
 
-
-      {link ? <a className="link-btn" href={link} target="_blank" rel="noreferrer">Open full profile</a> : (
-        <p className="hint">Full profile link appears when the profile route is configured.</p>
-      )}
 
       <section className="case-card model" aria-labelledby="ov-model">
         <h3 id="ov-model">Model assessment <span className="sim">simulated · {a.provider}</span></h3>

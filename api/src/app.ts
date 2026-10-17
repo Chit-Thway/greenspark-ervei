@@ -50,8 +50,6 @@ function parse<T>(schema: z.ZodType<T>, data: unknown): T {
 export interface AppOptions {
   clock?: Clock;
   modelAdapter?: ModelAdapter;
-  /** Where the teammate-owned full profile lives, e.g. "https://profiles.example/people/{personId}". Null hides the link. */
-  profileUrlTemplate?: string | null;
   /** Directory of the built web app. When set, this server also serves the pages (single-process hosting). */
   staticDir?: string | null;
   /** Optional "user:password" for HTTP Basic auth in front of everything except /api/health. For shared demo hosting. */
@@ -61,7 +59,6 @@ export interface AppOptions {
 export function createApp(store: Store, options: AppOptions = {}) {
   const clock = options.clock ?? (() => new Date());
   const model = options.modelAdapter ?? new SyntheticModelAdapter(store);
-  const profileUrlTemplate = options.profileUrlTemplate ?? null;
   const service = new WorkflowService(store, clock);
   const enrich = (cases: QueueCase[]) => withAssessments(model, cases);
   const enrichOne = async (c: QueueCase) => (await enrich([c]))[0]!;
@@ -103,7 +100,7 @@ export function createApp(store: Store, options: AppOptions = {}) {
     res.json({
       supportAreas: c.supportAreas, circumstances: c.circumstances, evidenceFields: c.evidenceFields,
       recommendations: c.recommendations, assistanceOptions: ASSISTANCE_OPTIONS, priorityLabels: PRIORITY_LABELS,
-      statuses: STATUSES, asOf: c.asOf, profileUrlTemplate,
+      statuses: STATUSES, asOf: c.asOf,
     });
   });
 

@@ -38,7 +38,7 @@ test.describe("states and content rules", () => {
     await expectTotal(page, 90);
     await page.getByRole("button", { name: "Reset", exact: true }).click();
 
-    // The highest-priority case explains why it is flagged, with staff-review suggestions and the profile link.
+    // The highest-priority case explains why it is flagged, with staff-review suggestions.
     await page.locator("tbody tr").first().locator(".name-link").click();
     const panel = page.locator(".case-page");
     await expect(panel).toContainText("Support areas and why");
@@ -55,7 +55,7 @@ test.describe("states and content rules", () => {
     expect(await suggestions.evaluate((el) => !!el.firstElementChild?.matches(".sim") && el.lastElementChild?.tagName === "UL")).toBe(true); // badge first, then the list
     await expect(panel).toContainText("Assistance already reported");
     await expect(panel).toContainText("simulated");
-    expect(await panel.locator("a", { hasText: "Open full profile" }).getAttribute("href")).toMatch(/^https:\/\/profiles\.example\/people\/demo-person-\d+$/);
+    await expect(panel).not.toContainText(/full profile/i); // there is no separate profile page, so nothing mentions one
     await page.getByRole("link", { name: /Back to case queue/ }).click();
     await expect(page.locator(".case-table")).toBeVisible();
 

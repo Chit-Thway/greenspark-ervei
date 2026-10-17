@@ -9,7 +9,6 @@ export interface Catalog {
   evidenceFields: EvidenceFieldDefinition[];
   recommendations: RecommendationDefinition[];
   asOf: string;
-  profileUrlTemplate: string | null;
   users: StaffUser[];
   assignableUserIds: string[];
 }
