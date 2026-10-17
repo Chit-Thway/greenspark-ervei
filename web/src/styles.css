@@ -84,12 +84,10 @@ select, input[type="search"], input:not([type]), input[type="text"], textarea { 
 .case-table th { text-align: left; font-size: 12px; color: var(--muted); font-weight: 600; padding: 10px 12px; background: #fafbfc; border-bottom: 1px solid var(--border); white-space: nowrap; }
 .case-table td { padding: 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
 .case-table tbody tr { cursor: pointer; }
-.has-panel .col-action { display: none; } /* the name button and row click still open the overview */
 .has-panel .case-table { min-width: 0; }
 .case-table tbody tr:hover { background: #f9fcfa; }
 .case-table tr.is-selected { background: var(--selected); }
 .col-check { width: 36px; } .col-check input { width: 16px; height: 16px; accent-color: var(--brand); }
-.col-action { width: 1%; white-space: nowrap; }
 .person { display: flex; gap: 10px; align-items: center; }
 .name-link { color: inherit; font-weight: 600; text-decoration: none; display: block; }
 .name-link:hover { color: var(--brand-hover); text-decoration: underline; }
@@ -189,8 +187,6 @@ textarea { resize: vertical; }
   .case-table td[data-label]::before { content: attr(data-label) ": "; font-size: 11px; color: var(--muted); }
   .case-table td[data-label] > * { display: inline; }
   .case-table td[data-label] .sub { display: block; }
-  .has-panel .col-action { display: none; }
-  .col-action { display: none; }
 }
 
 /* Case page: one case per page at /cases/:caseId. */

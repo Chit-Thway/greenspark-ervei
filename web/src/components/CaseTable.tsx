@@ -44,7 +44,6 @@ export function CaseTable(props: {
             <th scope="col">Support needs</th>
             <th scope="col">Assigned to</th>
             <th scope="col">Status / follow-up</th>
-            <th scope="col" className="col-action"><span className="sr-only">Open case</span></th>
           </tr>
         </thead>
         <tbody>
@@ -116,20 +115,6 @@ export function CaseTable(props: {
                 <td data-label="Status">
                   <span className={`status status-${c.workflow.status}`}>{STATUS_LABELS[c.workflow.status]}</span>
                   <span className={`sub follow-${fu.tone}`}>{fu.text}</span>
-                </td>
-                <td className="col-action" onClick={(e) => e.stopPropagation()}>
-                  <a
-                    className="btn btn-small"
-                    href={caseHref(c.id)}
-                    aria-label={`Open case for ${person?.displayName ?? c.id}`}
-                    onClick={(e) => {
-                      if (isModifiedClick(e)) return;
-                      e.preventDefault();
-                      props.onOpen(c.id);
-                    }}
-                  >
-                    View case
-                  </a>
                 </td>
               </tr>
             );

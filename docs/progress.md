@@ -92,7 +92,7 @@ Known gaps: the profile link and model adapter are still placeholders (Milestone
 
 Case details no longer open in a right-hand panel. Each case has its own address, `/cases/<caseId>`:
 
-- Clicking a person (or **View case**) opens the page; a Ctrl/Cmd/middle click opens it in a new tab, and the address can be bookmarked or shared.
+- Clicking a person's name (or anywhere on their row) opens the page; a Ctrl/Cmd/middle click opens it in a new tab, and the address can be bookmarked or shared.
 - **Back to case queue** and the browser Back button return to the queue with the same filters, search, page and selection.
 - An unknown case ID shows "Case not found"; the page works as a direct link when hosted (the server falls back to the app for non-API paths).
 - Keyboard: the page starts at its heading, and going back returns focus to the case you came from.
@@ -117,3 +117,7 @@ The note boxes (adding and editing) are taller, and the 500-character limit is g
 ## Update: gender values
 
 Gender now reads Female or Male (previously Woman or Man). For the invented people it follows the invented first name, with 9 Non-binary and 5 Prefer not to say records mixed in so every value is shown. Nothing else in the data changed. This is a convention for the fictional fixture only; the app does not infer gender from names. Local databases need `npm run reset` to pick the new values up.
+
+## Update: queue rows
+
+The separate **View case** button is gone from the case queue. A case opens from its name (a real link, so Ctrl/Cmd-click opens a new tab) or by clicking the row.
