@@ -98,3 +98,7 @@ Case details no longer open in a right-hand panel. Each case has its own address
 - Keyboard: the page starts at its heading, and going back returns focus to the case you came from.
 - The New case form is still a side panel; creating a case takes you to its new page.
 - Browser tests grew to 15 and cover the address, Back/Forward, direct and unknown links, and open-in-new-tab.
+
+## Update: customer contact details
+
+Added invented gender, preferred name, address (lines 1 and 2, postcode), mobile, phone and email to every person, and a "Customer details" card on the case page. Existing generated values were not changed (the new fields come from a separate hash, not the random stream). The generator's check enforces reserved phone ranges, `example.com` emails, postcodes that match suburbs, and a contact detail for each person's stated contact preference. People added in the queue show "Not recorded". Local databases created earlier need `npm run reset` to pick the fields up.

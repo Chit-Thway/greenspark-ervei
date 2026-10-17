@@ -55,6 +55,10 @@ describe("identity and reads", () => {
     const ov = await h.call(M, "GET", "/api/cases/GS-2001/overview");
     expect(ov.body.case.id).toBe("GS-2001");
     expect(ov.body.person.id).toBe(ov.body.case.personId);
+    expect(ov.body.person).toMatchObject({ gender: expect.any(String), preferredName: expect.any(String), address: { line1: expect.any(String), postcode: expect.stringMatching(/^\d{4}$/) } });
+    expect(ov.body.person.email === null || ov.body.person.email.endsWith("@example.com")).toBe(true);
+    expect(ov.body.person.mobile === null || /^0491 57\d \d{3}$/.test(ov.body.person.mobile)).toBe(true);
+    expect(ov.body.person.phone === null || /^\(08\) 5550 \d{4}$/.test(ov.body.person.phone)).toBe(true);
   });
 });
 
@@ -189,6 +193,7 @@ describe("new case", () => {
     expect(Object.values(c.reportedAnswers).every((v) => v === null)).toBe(true);
     expect(Object.values(c.answerAvailability).every((v) => v === "unknown")).toBe(true);
     expect(r.body.person).toMatchObject({ displayName: "Jordan Test", suburb: "Perth" });
+    expect(r.body.person).toMatchObject({ gender: null, preferredName: null, address: null, mobile: null, phone: null, email: null }); // not recorded
     expect((await h.call(M, "GET", "/api/cases")).body.total).toBe(101);
   });
 

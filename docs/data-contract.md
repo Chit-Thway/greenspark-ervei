@@ -19,6 +19,20 @@ Version: 1.0.0 draft. This is a development proposal for this team's interface, 
 
 The JSON is an envelope rather than a bare array so every consumer receives the synthetic-data declaration and the shared catalogs.
 
+## Customer contact details (fictional)
+
+Each person also has invented contact details, shown on the case page as "Customer details". They are demo display fields, not claims about any survey source.
+
+| Field | Notes |
+| --- | --- |
+| `gender` | Woman, Man, Non-binary or Prefer not to say. Assigned independently of the name on purpose; nothing infers gender from a name. |
+| `preferredName` | The first name, or a short form for some people (for example Liv for Olivia). |
+| `address` | `line1`, optional `line2` (for example `Unit 4`) and `postcode`; the suburb and `WA` are on the person. Street names are invented. |
+| `mobile`, `phone`, `email` | May be null, which the app shows as "Not recorded". The stated contact preference always has a matching detail, and everyone has at least one way to be contacted. |
+| `contactDetailsProvenance` | `fictional_demo_contact_details` |
+
+Safety: landlines are in the `(08) 5550 xxxx` block and mobiles come from a short list of `0491 57x xxx` numbers, which Australia's communications regulator (ACMA) sets aside for fiction. Emails use `example.com`. People created in the queue start with all of these null. The fixture schema version is 1.1.0.
+
 ## Identity and ownership
 
 Use stable `personId` and `case.id` strings. The fixture has one case per person, but the IDs remain separate to allow multiple cases per person later.

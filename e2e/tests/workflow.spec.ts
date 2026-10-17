@@ -113,6 +113,8 @@ test.describe.serial("manager to worker workflow", () => {
     await expect(page.locator("#case-title")).toHaveText("Jordan Newcase");
     await expect(page.locator(".case-page")).toContainText("Assessment pending");
     await expect(page.locator(".case-page")).toContainText("No circumstances flagged");
+    // A person added in the queue has no contact details yet, which reads as not recorded rather than blank.
+    await expect(page.locator(".details dd", { hasText: "Not recorded" })).toHaveCount(6);
     await expect(page).toHaveURL(/\/cases\/GS-\d+$/);
     await page.reload(); // the new case's own page survives a reload
     await expect(page.locator("#case-title")).toHaveText("Jordan Newcase");

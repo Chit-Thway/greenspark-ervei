@@ -51,6 +51,7 @@ export class WorkflowService {
           id: `demo-person-${String(this.store.nextPersonNumber()).padStart(3, "0")}`,
           displayName: input.displayName!, suburb: input.suburb!, state: "WA",
           householdSummary: "Not recorded", contactPreference: null, fullProfilePath: null,
+          gender: null, preferredName: null, address: null, mobile: null, phone: null, email: null,
         };
         this.store.insertPerson(person);
       }

@@ -42,6 +42,10 @@ test.describe("states and content rules", () => {
     await page.locator("tbody tr").first().locator(".name-link").click();
     const panel = page.locator(".case-page");
     await expect(panel).toContainText("Support areas and why");
+    await expect(panel.getByRole("heading", { name: /Customer details/ })).toBeVisible();
+    for (const label of ["Preferred name", "Gender", "Address", "Mobile", "Phone", "Email"]) await expect(panel.locator("dt", { hasText: new RegExp(`^${label}$`) })).toBeVisible();
+    await expect(panel.locator("address")).toContainText(/\b\d{4}\b/); // the postcode is shown
+    await expect(panel).toContainText(/@example\.com|Not recorded/);
     await expect(panel).toContainText("Suggested for staff review");
     await expect(panel).toContainText("Assistance already reported");
     await expect(panel).toContainText("simulated");

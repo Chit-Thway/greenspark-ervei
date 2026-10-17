@@ -5,6 +5,11 @@ import { describeFollowUp, formatDateTime, PERIOD_TEXT, STATUS_LABELS } from "..
 import { isResolved } from "../domain/query";
 import { PriorityBadge } from "./Primitives";
 
+/** A missing contact detail is shown as not recorded, so it is never mistaken for "none". */
+function notRecorded(v: string | null | undefined): string {
+  return v && v.trim() ? v : "Not recorded";
+}
+
 function answerText(c: QueueCase, fieldId: string): { text: string; tone: "yes" | "no" | "unknown" } {
   const v = c.reportedAnswers[fieldId];
   if (v === null || v === undefined) {
@@ -76,6 +81,29 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
           <dd>{person?.contactPreference ? `${person.contactPreference.channel}, ${person.contactPreference.preferredWindow}` : "Not recorded"}</dd>
         </div>
       </dl>
+      <section className="case-card" aria-labelledby="ov-contact">
+        <h3 id="ov-contact">Customer details <span className="sim">fictional</span></h3>
+        <dl className="details">
+          <div><dt>Preferred name</dt><dd>{notRecorded(person?.preferredName)}</dd></div>
+          <div><dt>Gender</dt><dd>{notRecorded(person?.gender)}</dd></div>
+          <div className="wide">
+            <dt>Address</dt>
+            <dd>
+              {person?.address ? (
+                <address>
+                  {person.address.line1}<br />
+                  {person.address.line2 ? <>{person.address.line2}<br /></> : null}
+                  {person.suburb} {person.state} {person.address.postcode}
+                </address>
+              ) : "Not recorded"}
+            </dd>
+          </div>
+          <div><dt>Mobile</dt><dd>{notRecorded(person?.mobile)}</dd></div>
+          <div><dt>Phone</dt><dd>{notRecorded(person?.phone)}</dd></div>
+          <div className="wide"><dt>Email</dt><dd>{notRecorded(person?.email)}</dd></div>
+        </dl>
+      </section>
+
       {link ? <a className="link-btn" href={link} target="_blank" rel="noreferrer">Open full profile</a> : (
         <p className="hint">Full profile link appears when the profile route is configured.</p>
       )}
