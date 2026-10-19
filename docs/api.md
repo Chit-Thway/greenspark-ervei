@@ -18,7 +18,6 @@ Needs Node.js 22 or newer. SQLite uses Node's built-in `node:sqlite`, so there i
 | `GREENSPARK_DB` | `data/runtime/greenspark.sqlite` (git-ignored) |
 | `GREENSPARK_FIXTURE` | `data/synthetic/case-queue.v1.json` |
 | `PORT` | `3001` |
-| `GREENSPARK_PROFILE_URL_TEMPLATE` | unset (profile link hidden); e.g. `https://profiles.example/people/{personId}` |
 
 ## Persistence and reset
 
@@ -46,7 +45,8 @@ Every `/api` route except `/api/health` needs an `X-Demo-User` header naming a f
 | `POST /api/cases/bulk/assignment` | Manager only. `{assigneeUserId \| null, items:[{caseId, expectedVersion}]}` |
 | `POST /api/cases/bulk/status` | `{status, items}`; workers only for their own cases |
 | `PATCH /api/cases/:id/status` | `{status, expectedVersion}` |
-| `POST /api/cases/:id/notes` | `{text (1–500), expectedVersion}`, append-only |
+| `POST /api/cases/:id/notes` | `{text (not empty, no character limit), expectedVersion}`; requests over about 100 KB return 422 |
+| `PATCH /api/cases/:id/notes/:noteId` | `{text (not empty, no character limit), expectedVersion}`: author or manager only; keeps the earlier wording as an audit record |
 | `PATCH /api/cases/:id/review` | `{reviewStatus, expectedVersion}` |
 | `POST /api/workflow-actions/:actionId/undo` | Assignment/status actions only |
 

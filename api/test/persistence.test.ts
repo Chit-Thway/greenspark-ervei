@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { DatabaseSync } from "node:sqlite";
 import { describe, expect, it } from "vitest";
 import { FIXTURE_PATH } from "../src/config";
 import { allCases, start } from "./helpers";
@@ -40,6 +41,27 @@ describe("persistence and reset", () => {
       expect(fresh.find((x) => x.id === c.id)!.workflow.assignedToUserId).toBeNull();
       await h.stop();
       expect(hash()).toBe(before);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("databases from before notes could be edited", () => {
+  it("gain the edit columns on start and keep working", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "gs-old-"));
+    const db = join(dir, "old.sqlite");
+    try {
+      const old = new DatabaseSync(db);
+      old.exec("CREATE TABLE notes (seq INTEGER PRIMARY KEY AUTOINCREMENT, id TEXT UNIQUE NOT NULL, case_id TEXT NOT NULL, author_id TEXT NOT NULL, text TEXT NOT NULL, created_at TEXT NOT NULL);");
+      old.close();
+      const h = await start(db);
+      const cases = await allCases(h);
+      const c = cases.find((x) => x.workflow.notes.length > 0 && x.workflow.assignedToUserId === x.workflow.notes[0].authorUserId)!;
+      const n = c.workflow.notes[0];
+      const r = await h.call(n.authorUserId, "PATCH", `/api/cases/${c.id}/notes/${n.id}`, { text: "Edited after the upgrade", expectedVersion: c.version });
+      expect(r.status).toBe(200);
+      await h.stop();
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }

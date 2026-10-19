@@ -9,7 +9,6 @@ export interface Catalog {
   evidenceFields: EvidenceFieldDefinition[];
   recommendations: RecommendationDefinition[];
   asOf: string;
-  profileUrlTemplate: string | null;
   users: StaffUser[];
   assignableUserIds: string[];
 }
@@ -50,6 +49,7 @@ export interface ApiClient {
   assign(assigneeUserId: string | null, items: VersionedId[]): Promise<MutationResult>;
   setStatus(status: CaseStatus, items: VersionedId[]): Promise<MutationResult>;
   addNote(caseId: string, text: string, expectedVersion: number): Promise<QueueCase>;
+  editNote(caseId: string, noteId: string, text: string, expectedVersion: number): Promise<QueueCase>;
   setReview(caseId: string, reviewStatus: ReviewStatus, expectedVersion: number): Promise<MutationResult>;
   undo(actionId: string): Promise<MutationResult>;
 }
@@ -113,6 +113,7 @@ export function createApiClient(getUser: () => string, base = ""): ApiClient {
         ? req("PATCH", `/api/cases/${encodeURIComponent(items[0]!.caseId)}/status`, { status, expectedVersion: items[0]!.expectedVersion })
         : req("POST", "/api/cases/bulk/status", { status, items }),
     addNote: async (id, text, expectedVersion) => (await req<{ case: QueueCase }>("POST", `/api/cases/${encodeURIComponent(id)}/notes`, { text, expectedVersion })).case,
+    editNote: async (id, noteId, text, expectedVersion) => (await req<{ case: QueueCase }>("PATCH", `/api/cases/${encodeURIComponent(id)}/notes/${encodeURIComponent(noteId)}`, { text, expectedVersion })).case,
     setReview: (id, reviewStatus, expectedVersion) => req("PATCH", `/api/cases/${encodeURIComponent(id)}/review`, { reviewStatus, expectedVersion }),
     undo: (actionId) => req("POST", `/api/workflow-actions/${encodeURIComponent(actionId)}/undo`),
   };

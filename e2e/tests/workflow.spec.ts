@@ -8,8 +8,11 @@ test.describe.serial("manager to worker workflow", () => {
   test("manager sees all 100 demo cases with counters and filter counts", async ({ page }) => {
     await openQueue(page);
     await expectTotal(page, 100);
-    await expect(page.locator("tbody tr")).toHaveCount(8);
-    await expect(page.getByText("Showing 1–8 of 100 cases")).toBeVisible();
+    await expect(page.locator("thead th")).toContainText(["", "Person / case", "Priority simulated", "Support needs", "Assigned to", "Status / follow-up"]); // Priority comes before Support needs
+    await expect(page.locator("thead th")).toHaveCount(6);
+    await expect(page.getByText("View case")).toHaveCount(0); // no separate button; the name opens the case
+    await expect(page.locator("tbody tr")).toHaveCount(50);
+    await expect(page.getByText("Showing 1–50 of 100 cases")).toBeVisible();
     await expect(page.getByRole("button", { name: /^Unassigned/ })).toContainText("20");
     await expect(page.locator(".sidebar")).toContainText("Financial pressure");
     await expect(page.locator(".sidebar")).not.toContainText("Domestic violence");
@@ -43,25 +46,31 @@ test.describe.serial("manager to worker workflow", () => {
 
   test("selection survives paging and drops cases that stop matching a filter", async ({ page }) => {
     await openQueue(page);
+    const onPageOne = await page.locator("tbody tr").evaluateAll((rows) => rows.map((r) => r.getAttribute("data-case-id")!));
     await page.getByLabel("Select all cases on this page").check();
     await page.getByRole("button", { name: "Next" }).click();
-    await expect(page.getByText("Page 2 of 13")).toBeVisible();
-    await expect(page.locator(".bulkbar strong")).toHaveText("8 selected");
+    await expect(page.getByText("Page 2 of 2")).toBeVisible();
+    await expect(page.locator(".bulkbar strong")).toHaveText("50 selected");
     await page.locator(".sidebar").getByLabel("Case status").selectOption("resolved");
     await expectTotal(page, 10);
-    await expect(page.locator(".bulkbar")).toHaveCount(0); // none of the 8 selected cases was resolved
+    // Only selected cases that are also resolved may stay selected.
+    const resolved = new Set((await api(page, MANAGER, "GET", "/api/cases/ids?status=resolved")).body.ids as string[]);
+    const stillSelected = onPageOne.filter((id) => resolved.has(id)).length;
+    if (stillSelected === 0) await expect(page.locator(".bulkbar")).toHaveCount(0);
+    else await expect(page.locator(".bulkbar strong")).toHaveText(`${stillSelected} selected`);
   });
 
   test("the worker finds the assigned cases under Assigned to me and updates them", async ({ page }) => {
     await openQueue(page, "staff-alex");
     await page.getByRole("button", { name: /^Assigned to me/ }).click();
     expect(await total(page)).toBeGreaterThanOrEqual(2);
-    await page.getByRole("button", { name: "Next" }).click().catch(() => undefined);
-    await page.getByRole("button", { name: /^Assigned to me/ }).click();
+    for (const id of assigned) await expect(page.locator(`tr[data-case-id="${id}"]`)).toBeVisible(); // the two cases the manager assigned
     const first = page.locator("tbody tr").first();
     const caseId = (await first.getAttribute("data-case-id"))!;
-    await first.locator(".name-btn").click();
-    const panel = page.locator(".overview");
+    const startStatus = (await first.locator(".status").innerText()).trim(); // read before leaving the queue
+    await first.locator(".name-link").click();
+    await expect(page).toHaveURL(new RegExp(`/cases/${caseId}$`));
+    const panel = page.locator(".case-page");
     await expect(panel).toBeVisible();
     await expect(panel.getByLabel("Assigned worker")).toBeDisabled();
     await expect(panel).toContainText("Only managers can assign cases");
@@ -70,8 +79,38 @@ test.describe.serial("manager to worker workflow", () => {
     await panel.getByRole("button", { name: "Add note" }).click();
     await expect(page.locator(".notice-success")).toContainText("Note added");
     await expect(panel.locator(".notes")).toContainText("Called and left a message.");
+    await expect(panel.locator(".notes li").last().locator(".sub")).toContainText(/\d{1,2} \w{3} 20\d\d · \d{1,2}:\d{2} (am|pm)/); // year and the full time
+    // Who and when come first, with the note text underneath.
+    const noteLine = panel.locator(".notes li").last();
+    const [whoY, textY] = [(await noteLine.locator(".sub").boundingBox())!.y, (await noteLine.locator("p").boundingBox())!.y];
+    expect(whoY).toBeLessThan(textY);
 
-    const status = (await first.locator(".status").innerText()).trim() === "Waiting" ? "in_progress" : "waiting";
+    // The author can correct their note; it is marked as edited and keeps its place.
+    await panel.getByRole("button", { name: /^Edit note from/ }).last().click();
+    await panel.getByLabel("Edit note").fill("Called and spoke to the customer.");
+    await panel.getByRole("button", { name: "Save note" }).click();
+    await expect(page.locator(".notice-success")).toContainText("Note updated");
+    const edited = panel.locator(".notes li").last();
+    await expect(edited).toContainText("Called and spoke to the customer.");
+    await expect(edited).not.toContainText("left a message");
+    await expect(edited.locator(".sub")).toContainText(/edited \d{1,2} \w{3} 20\d\d/);
+    await panel.getByRole("button", { name: /^Edit note from/ }).last().click();
+    await panel.getByRole("button", { name: "Cancel" }).click(); // cancelling changes nothing
+    await expect(edited).toContainText("Called and spoke to the customer.");
+
+    // The note box is tall, and there is no length limit: a 700-character note is saved whole.
+    const box = panel.getByLabel("Add a case note");
+    expect((await box.boundingBox())!.height).toBeGreaterThanOrEqual(160);
+    expect(await box.getAttribute("maxlength")).toBeNull();
+    await expect(panel).not.toContainText("/500");
+    const longNote = `Line one.\nLine two. ${"More detail. ".repeat(50)}`.trim();
+    await box.fill(longNote);
+    await panel.getByRole("button", { name: "Add note" }).click();
+    await expect(page.locator(".notice-success")).toContainText("Note added");
+    await expect(panel.locator(".notes li").last().locator("p")).toContainText("More detail. More detail.");
+    expect((await panel.locator(".notes li").last().locator("p").innerText()).length).toBeGreaterThan(600);
+
+    const status = startStatus === "Waiting" ? "in_progress" : "waiting";
     await panel.getByLabel("Case status").selectOption(status);
     await panel.getByRole("button", { name: "Save status" }).click();
     await expect(page.locator(".notice-success")).toContainText("Status set to");
@@ -108,10 +147,15 @@ test.describe.serial("manager to worker workflow", () => {
     await page.getByRole("textbox", { name: "Suburb" }).fill("Perth");
     await page.getByRole("button", { name: "Create case" }).click();
     await expect(page.locator(".notice-success")).toContainText("Added Jordan Newcase");
-    await expect(page.locator("#ov-title")).toHaveText("Jordan Newcase");
-    await expect(page.locator(".overview")).toContainText("Assessment pending");
-    await expect(page.locator(".overview")).toContainText("No circumstances flagged");
-    await page.reload();
+    await expect(page.locator("#case-title")).toHaveText("Jordan Newcase");
+    await expect(page.locator(".case-page")).toContainText("Assessment pending");
+    await expect(page.locator(".case-page")).toContainText("No circumstances flagged");
+    // A person added in the queue has no contact details yet, which reads as not recorded rather than blank.
+    await expect(page.locator(".details dd", { hasText: "Not recorded" })).toHaveCount(6);
+    await expect(page).toHaveURL(/\/cases\/GS-\d+$/);
+    await page.reload(); // the new case's own page survives a reload
+    await expect(page.locator("#case-title")).toHaveText("Jordan Newcase");
+    await page.getByRole("link", { name: /Back to case queue/ }).click();
     await expectTotal(page, 101);
     await page.getByPlaceholder("Search name, case ID or suburb…").fill("Jordan Newcase");
     await expectTotal(page, 1);

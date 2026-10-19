@@ -25,7 +25,7 @@
 
 Built in `web/` (React 19, TypeScript, Vite; npm workspace at the repo root).
 
-- App shell, filter sidebar (views, support areas with parent/child checkboxes and an indeterminate state, assistance reported, simulated model priority, workflow), three overview counters, toolbar, table, pagination (8 per page), minimal New case panel and the compact right overview (440 px on wide screens, a slide-over on narrower ones).
+- App shell, filter sidebar (views, support areas with parent/child checkboxes and an indeterminate state, assistance reported, simulated model priority, workflow), three overview counters, toolbar, table, pagination (originally 8 per page; now 50), minimal New case panel and the compact right overview (440 px on wide screens, a slide-over on narrower ones).
 - The three support areas and nine circumstances come from the JSON catalogs; the old placeholder categories are gone.
 - Only `web/src/data/caseSource.ts` imports the fixture. Milestone 3 swaps it for API calls.
 - Filter, sort, paging, counters and follow-up wording are pure functions in `web/src/domain/` with 12 unit tests.
@@ -87,3 +87,41 @@ Known gaps: the profile link and model adapter are still placeholders (Milestone
 3. Node API and storage: done.
 4. Filters, assignment, bulk actions: done.
 5. Integration checks and handoff: done, apart from the teammate agreements above.
+
+## Update: case details on their own page
+
+Case details no longer open in a right-hand panel. Each case has its own address, `/cases/<caseId>`:
+
+- Clicking a person's name (or anywhere on their row) opens the page; a Ctrl/Cmd/middle click opens it in a new tab, and the address can be bookmarked or shared.
+- **Back to case queue** and the browser Back button return to the queue with the same filters, search, page and selection.
+- An unknown case ID shows "Case not found"; the page works as a direct link when hosted (the server falls back to the app for non-API paths).
+- Keyboard: the page starts at its heading, and going back returns focus to the case you came from.
+- The New case form is still a side panel; creating a case takes you to its new page.
+- Browser tests grew to 15 and cover the address, Back/Forward, direct and unknown links, and open-in-new-tab.
+
+## Update: customer contact details
+
+Added invented gender, preferred name, address (lines 1 and 2, postcode), mobile, phone and email to every person, and a "Customer details" card on the case page. Existing generated values were not changed (the new fields come from a separate hash, not the random stream). The generator's check enforces reserved phone ranges, `example.com` emails, postcodes that match suburbs, and a contact detail for each person's stated contact preference. People added in the queue show "Not recorded". Local databases created earlier need `npm run reset` to pick the fields up.
+
+## Update: case notes
+
+- Note times show the year and the full time, for example "15 Oct 2026 · 11:00 am".
+- Inside each note, the author and date line now comes first with the note text underneath. (The notes card itself stays in the right-hand column, below Case progress.)
+- Notes can be edited: a note's author, or a manager, can change it (`PATCH /api/cases/:id/notes/:noteId`). Edited notes show "edited" with who and when, and the earlier wording is kept in a `note_edits` table for audit (not shown in the app). Databases created earlier gain the new columns automatically on start.
+- Still true: notes cannot be deleted, and note changes are not undoable.
+
+## Update: bigger note box, no length limit
+
+The note boxes (adding and editing) are taller, and the 500-character limit is gone, along with the "0/500" counter. Line breaks in notes are now kept when shown. The only remaining cap is the request-size limit of about 100 KB (roughly 100,000 characters), which returns a clear message instead of an error.
+
+## Update: gender values
+
+Gender now reads Female or Male (previously Woman or Man). For the invented people it follows the invented first name, with 9 Non-binary and 5 Prefer not to say records mixed in so every value is shown. Nothing else in the data changed. This is a convention for the fictional fixture only; the app does not infer gender from names. Local databases need `npm run reset` to pick the new values up.
+
+## Update: queue rows
+
+The separate **View case** button is gone from the case queue. A case opens from its name (a real link, so Ctrl/Cmd-click opens a new tab) or by clicking the row.
+
+## Update: no full profile page
+
+There is not going to be a full profile page, so the "Full profile link appears when the profile route is configured." message is gone, along with the link itself and its `GREENSPARK_PROFILE_URL_TEMPLATE` setting (web, API, tests and deployment notes). The case page stays the one place to see a person. Older notes in this file and in the implementation plan that mention a profile owner or profile route are history. The always-null `fullProfilePath` field is left in the fixture.

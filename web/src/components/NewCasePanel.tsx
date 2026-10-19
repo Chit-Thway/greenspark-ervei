@@ -25,7 +25,7 @@ export function NewCasePanel(props: { busy: boolean; onSubmit: (input: NewCaseIn
         <button type="button" className="icon-btn" aria-label="Close new case" onClick={props.onClose}>✕</button>
       </header>
       <h2 id="nc-title">Add a person to the queue</h2>
-      <p className="hint">Minimal queue details only. Evidence and model results start as unknown and pending; the full profile belongs to the profile team.</p>
+      <p className="hint">Minimal queue details only. Evidence and model results start as unknown and pending.</p>
       <form
         noValidate
         onSubmit={(e) => {

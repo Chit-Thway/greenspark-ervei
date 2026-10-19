@@ -21,7 +21,8 @@ const items = z.array(item).min(1).max(MAX_BULK_ITEMS).refine((a) => new Set(a.m
 const assignBody = z.object({ assigneeUserId: z.string().min(1).nullable(), items }).strict();
 const bulkStatusBody = z.object({ status: z.enum(STATUSES), items }).strict();
 const statusBody = z.object({ status: z.enum(STATUSES), expectedVersion: z.number().int().min(1) }).strict();
-const noteBody = z.object({ text: z.string().trim().min(1).max(500), expectedVersion: z.number().int().min(1) }).strict();
+// Notes have no character limit; the 100 KB request-size limit below is the only cap.
+const noteBody = z.object({ text: z.string().trim().min(1), expectedVersion: z.number().int().min(1) }).strict();
 const reviewBody = z.object({ reviewStatus: z.enum(["needs_review", "reviewed"]), expectedVersion: z.number().int().min(1) }).strict();
 const newCaseBody = z.union([
   z.object({ personId: z.string().min(1) }).strict(),
@@ -49,8 +50,6 @@ function parse<T>(schema: z.ZodType<T>, data: unknown): T {
 export interface AppOptions {
   clock?: Clock;
   modelAdapter?: ModelAdapter;
-  /** Where the teammate-owned full profile lives, e.g. "https://profiles.example/people/{personId}". Null hides the link. */
-  profileUrlTemplate?: string | null;
   /** Directory of the built web app. When set, this server also serves the pages (single-process hosting). */
   staticDir?: string | null;
   /** Optional "user:password" for HTTP Basic auth in front of everything except /api/health. For shared demo hosting. */
@@ -60,7 +59,6 @@ export interface AppOptions {
 export function createApp(store: Store, options: AppOptions = {}) {
   const clock = options.clock ?? (() => new Date());
   const model = options.modelAdapter ?? new SyntheticModelAdapter(store);
-  const profileUrlTemplate = options.profileUrlTemplate ?? null;
   const service = new WorkflowService(store, clock);
   const enrich = (cases: QueueCase[]) => withAssessments(model, cases);
   const enrichOne = async (c: QueueCase) => (await enrich([c]))[0]!;
@@ -102,7 +100,7 @@ export function createApp(store: Store, options: AppOptions = {}) {
     res.json({
       supportAreas: c.supportAreas, circumstances: c.circumstances, evidenceFields: c.evidenceFields,
       recommendations: c.recommendations, assistanceOptions: ASSISTANCE_OPTIONS, priorityLabels: PRIORITY_LABELS,
-      statuses: STATUSES, asOf: c.asOf, profileUrlTemplate,
+      statuses: STATUSES, asOf: c.asOf,
     });
   });
 
@@ -120,7 +118,7 @@ export function createApp(store: Store, options: AppOptions = {}) {
       circumstanceIds: csv(p.circumstanceIds), assistanceIds: csv(p.assistanceIds),
       priorityLabels: csv(p.priorityLabels).filter((l): l is QueueQuery["priorityLabels"][number] => (PRIORITY_LABELS as string[]).includes(l)),
       minPriorityScore: p.minPriorityScore ?? 0, assessmentStatus: p.assessmentStatus ?? "", status: p.status ?? "",
-      assignedToUserId: p.assignedToUserId ?? "", sort: p.sort ?? "priority_desc", page: p.page ?? 1, pageSize: p.pageSize ?? 8,
+      assignedToUserId: p.assignedToUserId ?? "", sort: p.sort ?? "priority_desc", page: p.page ?? 1, pageSize: p.pageSize ?? 50,
     };
   };
 
@@ -185,6 +183,11 @@ export function createApp(store: Store, options: AppOptions = {}) {
     res.status(201).json({ case: await enrichOne(service.addNote(actor(res), String(req.params.caseId), b.text, b.expectedVersion)) });
   });
 
+  app.patch("/api/cases/:caseId/notes/:noteId", async (req, res) => {
+    const b = parse(noteBody, req.body);
+    res.json({ case: await enrichOne(service.editNote(actor(res), String(req.params.caseId), String(req.params.noteId), b.text, b.expectedVersion)) });
+  });
+
   app.patch("/api/cases/:caseId/review", async (req, res) => {
     const b = parse(reviewBody, req.body);
     res.json(await enrichResult(service.setReview(actor(res), String(req.params.caseId), b.reviewStatus, b.expectedVersion)));
@@ -208,6 +211,10 @@ export function createApp(store: Store, options: AppOptions = {}) {
       return;
     }
     const bad = err as { type?: string; status?: number };
+    if (bad.type === "entity.too.large") {
+      res.status(422).json({ error: { code: "validation_failed", message: "That is too much text for one request (the limit is about 100 KB, roughly 100,000 characters).", details: [] } });
+      return;
+    }
     if (bad.type === "entity.parse.failed") {
       res.status(422).json({ error: { code: "validation_failed", message: "The request body is not valid JSON.", details: [] } });
       return;

@@ -53,15 +53,11 @@ describe("model adapter boundary", () => {
     await h.stop();
   });
 
-  it("applies the model adapter to mutation responses and exposes the profile template", async () => {
-    const h = await start(":memory:", new TestClock(), { profileUrlTemplate: "https://profiles.example/people/{personId}" });
-    expect((await h.call(M, "GET", "/api/catalogs")).body.profileUrlTemplate).toBe("https://profiles.example/people/{personId}");
+  it("applies the model adapter to mutation responses", async () => {
+    const h = await start();
     const c = (await h.call(M, "GET", "/api/cases/GS-2001/overview")).body.case;
     const r = await h.call(M, "POST", "/api/cases/bulk/assignment", { assigneeUserId: "staff-alex", items: [{ caseId: c.id, expectedVersion: c.version }] });
     expect(r.body.updated[0].modelAssessment.status).toBe("ready");
     await h.stop();
-    const h2 = await start();
-    expect((await h2.call(M, "GET", "/api/catalogs")).body.profileUrlTemplate).toBeNull();
-    await h2.stop();
   });
 });

@@ -19,6 +19,20 @@ Version: 1.0.0 draft. This is a development proposal for this team's interface, 
 
 The JSON is an envelope rather than a bare array so every consumer receives the synthetic-data declaration and the shared catalogs.
 
+## Customer contact details (fictional)
+
+Each person also has invented contact details, shown on the case page as "Customer details". They are demo display fields, not claims about any survey source.
+
+| Field | Notes |
+| --- | --- |
+| `gender` | Female, Male, Non-binary or Prefer not to say. For these invented people it follows the invented first name, apart from a few deliberate Non-binary and Prefer not to say records so every value is exercised. This is a fixture convention only: the app never infers anyone's gender from a name. |
+| `preferredName` | The first name, or a short form for some people (for example Liv for Olivia). |
+| `address` | `line1`, optional `line2` (for example `Unit 4`) and `postcode`; the suburb and `WA` are on the person. Street names are invented. |
+| `mobile`, `phone`, `email` | May be null, which the app shows as "Not recorded". The stated contact preference always has a matching detail, and everyone has at least one way to be contacted. |
+| `contactDetailsProvenance` | `fictional_demo_contact_details` |
+
+Safety: landlines are in the `(08) 5550 xxxx` block and mobiles come from a short list of `0491 57x xxx` numbers, which Australia's communications regulator (ACMA) sets aside for fiction. Emails use `example.com`. People created in the queue start with all of these null. The fixture schema version is 1.1.0.
+
 ## Identity and ownership
 
 Use stable `personId` and `case.id` strings. The fixture has one case per person, but the IDs remain separate to allow multiple cases per person later.
@@ -70,7 +84,7 @@ Use the same endpoints for one or many assignments rather than implementing two 
 
 The queue's case statuses are `new`, `in_progress`, `waiting` and `resolved`. The MVP permits moving between these valid statuses, including reopening a resolved case; it should not invent an approval process or extra transition restrictions. A resolved case displays no outstanding follow-up. A reopened case with no follow-up date displays Not scheduled rather than inventing a date.
 
-Proposed list query fields are `search`, `view`, `circumstanceIds`, `assistanceIds`, `priorityLabels`, `minPriorityScore`, `assessmentStatus`, `status`, `assignedToUserId`, `sort`, `page` and `pageSize`. Use explicit IDs from the catalogs, default to eight cases per page, and use one definition of each filter in the mock and live data adapters.
+Proposed list query fields are `search`, `view`, `circumstanceIds`, `assistanceIds`, `priorityLabels`, `minPriorityScore`, `assessmentStatus`, `status`, `assignedToUserId`, `sort`, `page` and `pageSize`. Use explicit IDs from the catalogs, default to 50 cases per page, and use one definition of each filter in the mock and live data adapters.
 
 The original three overview counters are global active-case shortcuts: Urgent cases counts ready urgent assessments on unresolved cases; Awaiting assignment counts unresolved cases with no assigned worker; My active cases counts unresolved cases assigned to the current user. Label their global scope if needed so users do not mistake them for filtered table totals. The table's result total and pagination reflect the active query. All cases initially includes all statuses, so all 100 fixture cases are accessible.
 

@@ -51,6 +51,7 @@ export class WorkflowService {
           id: `demo-person-${String(this.store.nextPersonNumber()).padStart(3, "0")}`,
           displayName: input.displayName!, suburb: input.suburb!, state: "WA",
           householdSummary: "Not recorded", contactPreference: null, fullProfilePath: null,
+          gender: null, preferredName: null, address: null, mobile: null, phone: null, email: null,
         };
         this.store.insertPerson(person);
       }
@@ -138,6 +139,23 @@ export class WorkflowService {
       if (err) throw err;
       const now = this.now();
       this.store.addNote({ id: `note-${randomUUID()}`, caseId, authorUserId: actor.id, text, createdAt: now });
+      this.store.updateWorkflow(caseId, {}, now);
+      return this.store.getCase(caseId)!;
+    });
+  }
+
+  /** Authors can edit their own notes and managers any note; both need to be allowed to change the case. */
+  editNote(actor: StaffUser, caseId: string, noteId: string, text: string, expectedVersion: number): QueueCase {
+    return this.store.transaction(() => {
+      this.requireCase(caseId);
+      const err = this.checkEditable(actor, { caseId, expectedVersion });
+      if (err) throw err;
+      const note = this.store.getNote(caseId, noteId);
+      if (!note) throw new ApiError("not_found", `Note ${noteId} was not found on case ${caseId}.`);
+      if (actor.role !== "manager" && note.authorUserId !== actor.id) throw new ApiError("forbidden", "You can only edit your own notes.");
+      if (note.text === text) return this.store.getCase(caseId)!; // nothing changed, so no new version
+      const now = this.now();
+      this.store.updateNote(noteId, text, actor.id, now);
       this.store.updateWorkflow(caseId, {}, now);
       return this.store.getCase(caseId)!;
     });

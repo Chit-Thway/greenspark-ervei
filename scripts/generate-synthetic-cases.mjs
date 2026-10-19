@@ -82,6 +82,38 @@ const firstNames = ['Olivia', 'Noah', 'Amelia', 'Ethan', 'Isla', 'Leo', 'Mia', '
 const lastNames = ['Bennett', 'Williams', 'Brooks', 'Cooper', 'Mitchell', 'Parker', 'Thompson', 'Evans', 'Harrison', 'Turner', 'Collins', 'Anderson', 'Walker', 'Roberts', 'Hayes', 'Foster', 'Phillips', 'Hughes', 'Spencer', 'Ross'];
 const names = shuffle(firstNames.flatMap(first => lastNames.map(last => `${first} ${last}`)));
 const suburbs = ['Midland', 'Armadale', 'Belmont', 'Fremantle', 'Gosnells', 'Joondalup', 'Rockingham', 'Victoria Park', 'Morley', 'Maylands', 'Balga', 'Cannington', 'Mandurah', 'Bayswater', 'Ellenbrook'];
+// Contact details are derived from a hash of the person's position, NOT from the seeded random stream,
+// so adding them leaves every other generated value unchanged.
+const hash = (i, salt) => { let h = (Math.imul(i + 1, 2654435761) ^ Math.imul(salt + 1, 40503)) >>> 0; h = Math.imul(h ^ (h >>> 15), 2246822519) >>> 0; h = Math.imul(h ^ (h >>> 13), 3266489917) >>> 0; return (h ^ (h >>> 16)) >>> 0; };
+const postcodes = { Midland: '6056', Armadale: '6112', Belmont: '6104', Fremantle: '6160', Gosnells: '6110', Joondalup: '6027', Rockingham: '6168', 'Victoria Park': '6100', Morley: '6062', Maylands: '6051', Balga: '6061', Cannington: '6107', Mandurah: '6210', Bayswater: '6053', Ellenbrook: '6069' };
+const genders = ['Female', 'Male', 'Non-binary', 'Prefer not to say'];
+// Fictional people only: gender follows the invented first name, except for a few deliberate Non-binary and
+// Prefer not to say records so the screen is tested with every value. (Real people's gender must never be guessed from a name.)
+const nameGender = { Olivia: 'Female', Noah: 'Male', Amelia: 'Female', Ethan: 'Male', Isla: 'Female', Leo: 'Male', Mia: 'Female', Lucas: 'Male', Ava: 'Female', Sophie: 'Female', Henry: 'Male', Zoe: 'Female', Grace: 'Female', Finn: 'Male', Lily: 'Female', Ruby: 'Female', Oscar: 'Male', Chloe: 'Female', Ella: 'Female', Hugo: 'Male' };
+const nicknames = { Olivia: 'Liv', Amelia: 'Millie', Lucas: 'Luke', Sophie: 'Soph', Henry: 'Hal', Grace: 'Gracie', Oscar: 'Ozzie' };
+const streetNames = ['Quokka Rise', 'Wattlebird Loop', 'Marri Parade', 'Banded Stilt Way', 'Zamia Court', 'Karri Bend', 'Numbat Place', 'Boobook Lane', 'Samphire Road', 'Black Cockatoo Drive', 'Balga Gully Street', 'Tuart Avenue', 'Honeyeater Close', 'Kangaroo Paw Terrace', 'Mallee Hen Crescent'];
+// Numbers set aside for fiction, so they never reach a real person: the Australian regulator (ACMA) reserves
+// (08) 5550 xxxx landlines and a short list of 0491 57x xxx mobiles. Emails use example.com, which is reserved.
+const fictionalMobiles = ['0491 570 006', '0491 570 156', '0491 570 157', '0491 570 158', '0491 570 159', '0491 570 313', '0491 570 737', '0491 579 455'];
+function withContactDetails(person, i) {
+  const [first, last] = person.displayName.split(' ');
+  const nickname = nicknames[first];
+  const preferredName = nickname && hash(i, 1) % 3 === 0 ? nickname : first;
+  const g = hash(i, 2) % 100; // 0-6 Non-binary, 7-11 Prefer not to say, otherwise by name
+  const channel = person.contactPreference.channel;
+  const mobile = hash(i, 3) % 20 < 3 && channel !== 'sms' ? null : fictionalMobiles[hash(i, 4) % fictionalMobiles.length];
+  const phone = hash(i, 5) % 4 === 0 && channel !== 'phone' ? null : `(08) 5550 ${String(hash(i, 6) % 10000).padStart(4, '0')}`;
+  const email = hash(i, 7) % 10 === 0 && channel !== 'email' ? null : `${preferredName.toLowerCase()}.${last.toLowerCase()}@example.com`;
+  return {
+    ...person,
+    gender: g < 7 ? 'Non-binary' : g < 12 ? 'Prefer not to say' : nameGender[first],
+    preferredName,
+    address: { line1: `${1 + hash(i, 8) % 98} ${streetNames[hash(i, 9) % streetNames.length]}`, line2: hash(i, 10) % 10 < 3 ? `Unit ${1 + hash(i, 11) % 12}` : null, postcode: postcodes[person.suburb] },
+    mobile, phone, email,
+    contactDetailsProvenance: 'fictional_demo_contact_details',
+  };
+}
+
 const scenarioNames = ['unassigned_financial', 'assigned_financial', 'home_comfort', 'health_related', 'multiple_support_areas', 'historical_payment_plan', 'resolved_case', 'no_flagged_circumstances', 'incomplete_assessment', 'support_access_review'];
 const scenarioStatuses = ['new', 'in_progress', 'new', 'in_progress', 'in_progress', 'waiting', 'resolved', 'in_progress', 'new', 'waiting'];
 const assignees = [null, 'staff-alex', 'staff-sarah', 'staff-james', 'staff-maya', 'staff-alex', 'staff-sarah', 'staff-james', null, 'staff-maya'];
@@ -122,7 +154,8 @@ function build() {
   const people = [], cases = [];
   for (let i = 0; i < count; i++) {
     const n = String(i + 1).padStart(3, '0'), personId = `demo-person-${n}`, caseId = `GS-${2001 + i}`, scenario = i % 10;
-    people.push({ id: personId, isSynthetic: true, displayName: names[i], suburb: pick(suburbs), state: 'WA', householdSummary: pick(['1 adult', '2 adults', '1 adult, 1 child', '2 adults, 2 children']), contactPreference: { channel: pick(['sms', 'phone', 'email']), preferredWindow: pick(['Mornings', 'Afternoons', 'Weekdays']), provenance: 'fictional_demo_preference' }, fullProfilePath: null });
+    const basePerson = { id: personId, isSynthetic: true, displayName: names[i], suburb: pick(suburbs), state: 'WA', householdSummary: pick(['1 adult', '2 adults', '1 adult, 1 child', '2 adults, 2 children']), contactPreference: { channel: pick(['sms', 'phone', 'email']), preferredWindow: pick(['Mornings', 'Afternoons', 'Weekdays']), provenance: 'fictional_demo_preference' }, fullProfilePath: null };
+    people.push(withContactDetails(basePerson, i));
     const reportedAnswers = answersFor(scenario, i), reportedAt = day(asOf, -(5 + i % 12));
     const definitions = circumstanceDefinitions.filter(c => matches(c.id, reportedAnswers));
     const circumstances = definitions.map(c => ({ circumstanceId: c.id, evidenceFieldIds: [...c.evidenceFieldIds], provenance: 'illustrative_demo_grouping' }));
@@ -144,7 +177,7 @@ function build() {
     });
   }
   return {
-    metadata: { schemaVersion: '1.0.0', datasetId: 'greenspark-case-queue-demo-v1', classification: 'synthetic_demo_only', isSynthetic: true, asOf, timezone: 'Australia/Perth', generatorSeed: seed, peopleCount: count, caseCount: count, sourceDefinitions: [{ id: 'eca-household-jun-2026', purpose: 'Question definitions and allowed answer domains only; respondent rows are not copied.', url: 'https://energyconsumersaustralia.com.au/our-work/surveys/energy-consumer-survey-data' }], limits: ['All identities, combinations of answers, workflow events, recommendations and model assessments are fictional.', 'Scenario balance is designed for UI coverage, not population statistics or model training.', 'Historical answers do not establish current circumstances.', 'ERA aggregates and SGSC households have not been joined to these fictional people.'], profileContractStatus: 'proposed_shared_person_id', modelContractStatus: 'mock_adapter_only' },
+    metadata: { schemaVersion: '1.1.0', datasetId: 'greenspark-case-queue-demo-v1', classification: 'synthetic_demo_only', isSynthetic: true, asOf, timezone: 'Australia/Perth', generatorSeed: seed, peopleCount: count, caseCount: count, sourceDefinitions: [{ id: 'eca-household-jun-2026', purpose: 'Question definitions and allowed answer domains only; respondent rows are not copied.', url: 'https://energyconsumersaustralia.com.au/our-work/surveys/energy-consumer-survey-data' }], limits: ['All identities, combinations of answers, workflow events, recommendations and model assessments are fictional.', 'Scenario balance is designed for UI coverage, not population statistics or model training.', 'Historical answers do not establish current circumstances.', 'ERA aggregates and SGSC households have not been joined to these fictional people.', 'Gender, preferred name, addresses, phone numbers and emails are invented. Gender follows the fictional first name, apart from a few deliberate Non-binary and Prefer not to say records. Phone numbers come from ranges reserved for fiction and emails use example.com, so none can reach a real person. Street names are invented and are not real addresses.'], profileContractStatus: 'proposed_shared_person_id', modelContractStatus: 'mock_adapter_only' },
     users, supportAreas, circumstanceDefinitions, evidenceFieldDefinitions, recommendationDefinitions, people, cases,
   };
 }
@@ -165,6 +198,23 @@ function validate(data) {
   const circumstances = new Map(data.circumstanceDefinitions.map(c => [c.id, c]));
   const statuses = new Set(['new', 'in_progress', 'waiting', 'resolved']);
   for (const p of data.people) { assert.equal(p.isSynthetic, true); assert.equal(p.fullProfilePath, null); }
+  for (const p of data.people) {
+    assert(genders.includes(p.gender), `${p.id} gender`);
+    if (p.gender === 'Female' || p.gender === 'Male') assert.equal(p.gender, nameGender[p.displayName.split(' ')[0]], `${p.id} gender must follow the first name unless it is Non-binary or Prefer not to say`);
+    assert(typeof p.preferredName === 'string' && p.preferredName.length > 0, `${p.id} preferredName`);
+    assert(typeof p.address.line1 === 'string' && /^\d+ /.test(p.address.line1), `${p.id} address line 1`);
+    assert(p.address.line2 === null || /^Unit \d+$/.test(p.address.line2), `${p.id} address line 2`);
+    assert.equal(p.address.postcode, postcodes[p.suburb], `${p.id} postcode must match the suburb`);
+    assert(p.mobile === null || fictionalMobiles.includes(p.mobile), `${p.id} mobile must be a number reserved for fiction`);
+    assert(p.phone === null || /^\(08\) 5550 \d{4}$/.test(p.phone), `${p.id} phone must be in the reserved (08) 5550 block`);
+    assert(p.email === null || /^[a-z]+\.[a-z]+@example\.com$/.test(p.email), `${p.id} email must use example.com`);
+    assert(p.mobile || p.phone || p.email, `${p.id} needs at least one way to contact them`);
+    assert.equal(p.contactDetailsProvenance, 'fictional_demo_contact_details');
+    const ch = p.contactPreference.channel;
+    assert(ch !== 'sms' || p.mobile, `${p.id} prefers sms but has no mobile`);
+    assert(ch !== 'phone' || p.phone, `${p.id} prefers phone but has no phone number`);
+    assert(ch !== 'email' || p.email, `${p.id} prefers email but has no email`);
+  }
   for (const c of data.cases) {
     assert(personIds.has(c.personId)); assert.equal(c.isSynthetic, true); assert.equal(c.sourceRecordId, null);
     assert(statuses.has(c.workflow.status)); assert(Number.isInteger(c.version) && c.version > 0);

@@ -47,6 +47,13 @@ export interface Person {
   householdSummary: string;
   contactPreference: { channel: string; preferredWindow: string; provenance: string } | null;
   fullProfilePath: string | null;
+  // Fictional contact details. Missing means "not recorded", never "none"; people added in the queue start without them.
+  gender?: string | null;
+  preferredName?: string | null;
+  address?: { line1: string; line2: string | null; postcode: string } | null;
+  mobile?: string | null;
+  phone?: string | null;
+  email?: string | null;
 }
 
 export interface CaseCircumstance {
@@ -66,6 +73,9 @@ export interface CaseNote {
   text: string;
   authorUserId: string;
   createdAt: string;
+  /** Set once a note has been edited. Earlier wording is kept on the server as an audit record. */
+  editedAt?: string | null;
+  editedByUserId?: string | null;
 }
 
 export interface ModelAssessment {
