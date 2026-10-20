@@ -4,7 +4,8 @@ import type { CaseItem, Catalog } from "../data/api";
 import { describeFollowUp, formatDateTime, PERIOD_TEXT, readableDates, STATUS_LABELS } from "../domain/format";
 import { isResolved } from "../domain/query";
 import { PriorityBadge } from "./Primitives";
-import { AccountDetails } from "./AccountDetails";
+import { ageOn } from "../domain/types";
+import { AccountHistory, AccountSignals, date, UtilityAccount } from "./AccountDetails";
 
 /** A missing contact detail is shown as not recorded, so it is never mistaken for "none". */
 function notRecorded(v: string | null | undefined): string {
@@ -56,6 +57,7 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
   const fu = describeFollowUp(c.workflow.followUpAt, isResolved(c), data.asOf);
   const a = c.modelAssessment;
   const fromFlow = data.circumstanceSource === "flow";
+  const acct = person?.account ?? null;
 
   // A new page should start at its heading for keyboard and screen-reader users.
   useEffect(() => { heading.current?.focus(); }, [c.id]);
@@ -77,18 +79,15 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
       <div className="case-col">
       <dl className="facts case-card">
         <div><dt>Assigned worker</dt><dd>{assignedUser ? assignedUser.displayName : "Unassigned"}</dd></div>
-        <div><dt>Household</dt><dd>{person?.householdSummary}</dd></div>
         <div><dt>Case status</dt><dd>{STATUS_LABELS[c.workflow.status]}</dd></div>
-        <div>
-          <dt>Contact preference (demo)</dt>
-          <dd>{person?.contactPreference ? `${person.contactPreference.channel}, ${person.contactPreference.preferredWindow}` : "Not recorded"}</dd>
-        </div>
       </dl>
       <section className="case-card" aria-labelledby="ov-contact">
         <h3 id="ov-contact">Customer details <span className="sim">fictional</span></h3>
         <dl className="details">
           <div><dt>Preferred name</dt><dd>{notRecorded(person?.preferredName)}</dd></div>
           <div><dt>Gender</dt><dd>{notRecorded(person?.gender)}</dd></div>
+          <div><dt>Age</dt><dd>{acct ? `${ageOn(acct.dateOfBirth, data.asOf)} (born ${date(acct.dateOfBirth)})` : "Not recorded"}</dd></div>
+          <div><dt>Household</dt><dd>{notRecorded(person?.householdSummary)}</dd></div>
           <div className="wide">
             <dt>Address</dt>
             <dd>
@@ -104,8 +103,15 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
           <div><dt>Mobile</dt><dd>{notRecorded(person?.mobile)}</dd></div>
           <div><dt>Phone</dt><dd>{notRecorded(person?.phone)}</dd></div>
           <div className="wide"><dt>Email</dt><dd>{notRecorded(person?.email)}</dd></div>
+          <div className="wide">
+            <dt>Contact preference</dt>
+            <dd>{person?.contactPreference ? `${person.contactPreference.channel}, ${person.contactPreference.preferredWindow}` : "Not recorded"}</dd>
+          </div>
+          <div><dt>Language</dt><dd>{acct ? `${acct.languagePreference}${acct.interpreterUsed ? " (interpreter)" : ""}` : "Not recorded"}</dd></div>
+          <div><dt>Access needs</dt><dd>{acct ? acct.accessNeeds ?? "None recorded" : "Not recorded"}</dd></div>
         </dl>
       </section>
+      {acct ? <UtilityAccount account={acct} /> : null}
 
       <section className="case-card model" aria-labelledby="ov-model">
         <h3 id="ov-model">Model assessment <span className="sim">simulated · {a.provider}</span></h3>
@@ -116,6 +122,23 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
           </>
         ) : (
           <p>{a.status === "pending" ? "Assessment pending. No priority has been assigned." : "Assessment unavailable. No priority has been assigned."}</p>
+        )}
+      </section>
+
+      {acct ? <AccountSignals account={acct} asOf={data.asOf} /> : null}
+
+      <section className="case-card" aria-labelledby="ov-assist">
+        <h3 id="ov-assist">Assistance already reported</h3>
+        <p className="hint">Separate from support needs. Past support is not a current plan.</p>
+        <ul className="evidence">
+          <li><span>Hardship program enrolment (at report)</span><span className={`answer answer-${answerText(c, "Q37").tone}`}>{answerText(c, "Q37").text}</span></li>
+          <li><span>Energy-bill concession (at report)</span><span className={`answer answer-${answerText(c, "Z7_8").tone}`}>{answerText(c, "Z7_8").text}</span></li>
+        </ul>
+        <p className="subhead">Reported in the past 12 months</p>
+        {history.length ? (
+          <ul className="plain">{history.map((h) => <li key={h.evidenceFieldId}>{field(h.evidenceFieldId)?.label ?? h.evidenceFieldId}</li>)}</ul>
+        ) : (
+          <p className="muted">{c.answerAvailability.Q36b_1 === "unknown" ? "Unknown. Not recorded." : "None reported."}</p>
         )}
       </section>
 
@@ -133,12 +156,16 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
               const recs = c.recommendations.filter((r) => r.circumstanceIds.includes(x.circumstanceId));
               return (
                 <div key={x.circumstanceId} className={`circ${def.sensitivity === "safety" ? " circ-safety" : ""}`}>
-                  <strong>{def.label}</strong>
-                  {def.sensitivity && def.sensitivity !== "standard" ? <span className={`sens sens-${def.sensitivity}`}>{def.sensitivity === "safety" ? "Safety" : "Sensitive"}</span> : null}
+                  <div className="circ-head">
+                    <strong>{def.label}</strong>
+                    {def.sensitivity && def.sensitivity !== "standard" ? <span className={`sens sens-${def.sensitivity}`}>{def.sensitivity === "safety" ? "Safety" : "Sensitive"}</span> : null}
+                  </div>
                   {def.sensitivity === "safety" ? <p className="hint">Never actioned automatically. Route to trained staff.</p> : null}
                   {def.handling ? <p className="hint">{def.handling}</p> : null}
                   {x.signals ? (
-                    <ul className="evidence">
+                    <>
+                    <p className="block-label">Why it&apos;s flagged</p>
+                    <ul className="evidence signals">
                       {x.signals.map((sg) => (
                         <li key={sg.id}>
                           <span>{sg.name} <span className="sub">{readableDates(sg.evidence)}</span></span>
@@ -146,6 +173,7 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
                         </li>
                       ))}
                     </ul>
+                    </>
                   ) : (
                     <ul className="evidence">
                       {x.evidenceFieldIds.map((fid) => {
@@ -201,21 +229,7 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
         </section>
       ) : null}
 
-      <section className="case-card" aria-labelledby="ov-assist">
-        <h3 id="ov-assist">Assistance already reported</h3>
-        <p className="hint">Separate from support needs. Past support is not a current plan.</p>
-        <ul className="evidence">
-          <li><span>Hardship program enrolment (at report)</span><span className={`answer answer-${answerText(c, "Q37").tone}`}>{answerText(c, "Q37").text}</span></li>
-          <li><span>Energy-bill concession (at report)</span><span className={`answer answer-${answerText(c, "Z7_8").tone}`}>{answerText(c, "Z7_8").text}</span></li>
-        </ul>
-        <p className="subhead">Reported in the past 12 months</p>
-        {history.length ? (
-          <ul className="plain">{history.map((h) => <li key={h.evidenceFieldId}>{field(h.evidenceFieldId)?.label ?? h.evidenceFieldId}</li>)}</ul>
-        ) : (
-          <p className="muted">{c.answerAvailability.Q36b_1 === "unknown" ? "Unknown. Not recorded." : "None reported."}</p>
-        )}
-      </section>
-      {person?.account ? <AccountDetails account={person.account} asOf={data.asOf} /> : null}
+      {acct ? <AccountHistory account={acct} asOf={data.asOf} /> : null}
 
       </div>
       <div className="case-col">
