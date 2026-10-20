@@ -1,6 +1,8 @@
 # Fly.io config. Built from the repo's Dockerfile; /data is a Fly volume holding the SQLite case database and the Admin flow JSON.
 app = "greenspark-ervei"
-primary_region = "syd"
+primary_region = "iad"
+# A little swap as headroom on the smallest (256 MB) machine.
+swap_size_mb = 256
 
 [build]
   dockerfile = "Dockerfile"
@@ -25,4 +27,4 @@ primary_region = "syd"
 
 [[vm]]
   size = "shared-cpu-1x"
-  memory = "512mb"
+  memory = "256mb"

@@ -26,4 +26,4 @@ The repo's `Dockerfile` builds one container. In Coolify: **New resource → Pub
 
 ## Fly.io (live at https://greenspark-ervei.fly.dev)
 
-`fly.toml` deploys the same `Dockerfile` as one machine in Sydney (`syd`) with a 1 GB volume, `greenspark_data`, mounted at `/data`. As on Coolify, the case database and Admin flow JSON live there and survive deploys and restarts. Redeploy with `fly deploy`. Keep it to one machine and one volume (SQLite). The machine stops when idle and starts on the next request. No `GREENSPARK_BASIC_AUTH` is set, so the site is open. Add one with `fly secrets set GREENSPARK_BASIC_AUTH=user:password`.
+`fly.toml` deploys the same `Dockerfile` as one machine (shared-cpu-1x, 256 MB, with 256 MB swap) in US East (`iad`) with a 1 GB volume, `greenspark_data`, mounted at `/data`. As on Coolify, the case database and Admin flow JSON live there and survive deploys and restarts. Redeploy with `fly deploy`. Keep it to one machine and one volume (SQLite). The machine stops when idle and starts on the next request. No `GREENSPARK_BASIC_AUTH` is set, so the site is open. Add one with `fly secrets set GREENSPARK_BASIC_AUTH=user:password`.
