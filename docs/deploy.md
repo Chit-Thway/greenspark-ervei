@@ -19,3 +19,7 @@ Render supplies `PORT`; the server listens on it.
 - **Single instance only.** SQLite is a local file, so do not scale to more than one instance.
 - **Auto-deploy** follows the branch you connect. Merge the pull request and switch the service to `main` when ready.
 - Everything is fictional demo data. Do not load real customer data here.
+
+## Coolify (or any Docker host) with a persistent disk
+
+The repo's `Dockerfile` builds one container. In Coolify: **New resource → Public/Private Repository**, build pack **Dockerfile**, port **3001**. Then under **Persistent Storage** add a volume with destination path `/data`. That one volume holds both the case database (`/data/greenspark.sqlite`) and the Admin flow JSON (`/data/utility_hardship_mapping.json`, copied from the repo on first start only). Set `GREENSPARK_BASIC_AUTH` (`user:password`) if the site is public. Keep to one instance. To reset the Admin JSON to the repo's version, delete that file in the volume and redeploy.
