@@ -30,7 +30,7 @@ export function AdminPage({ client }: { client: ApiClient }) {
   // If the selected item is deleted (by you or somebody else), clear the selection.
   useEffect(() => { if (index && selected && !entityOf(index, selected)) setSelected(null); }, [index, selected]);
 
-  useEffect(() => { document.title = "Admin · ERVEI"; }, []);
+  useEffect(() => { document.title = "Flowchart · ERVEI"; }, []);
 
   // Bring a chosen node into view once it is on screen.
   useEffect(() => {
@@ -82,7 +82,7 @@ export function AdminPage({ client }: { client: ApiClient }) {
     <main id="queue" className={`admin${sheet ? " sheet-open" : ""}`} tabIndex={-1}>
       <header className="admin-head">
         <div>
-          <p className="eyebrow">Admin · {doc.meta.region}</p>
+          <p className="eyebrow">Flowchart · {doc.meta.region}</p>
           <h1>Utility hardship flow</h1>
           <p className="sub">{doc.meta.title} · last verified {doc.meta.last_verified} · {doc.meta.counts.signals} signals, {doc.meta.counts.circumstances} circumstances, {doc.meta.counts.solutions} solutions, {doc.meta.counts.links} links</p>
         </div>

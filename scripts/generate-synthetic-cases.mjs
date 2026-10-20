@@ -122,7 +122,7 @@ const TARIFF = { centsPerKwh: 31.65, supplyCentsPerDay: 115.63, provenance: 'ill
 const SEASON = [1.25, 1.2, 1.05, 0.9, 0.9, 1.05, 1.1, 1.05, 0.9, 0.85, 0.95, 1.15]; // Jan..Dec usage shape
 // How each of the six bills (oldest first) gets paid, per scenario. 'plan' bills are covered by plan instalments.
 const BILL_OUTCOMES = [
-  ['ontime', 'late', 'late', 'partial', 'unpaid', 'unpaid'], // unassigned_financial: overdue, arrears rising
+  ['ontime', 'late', 'late', 'partial', 'unpaid', 'unpaid'], // new_financial: overdue, arrears rising
   ['late', 'late', 'unpaid', 'plan', 'plan', 'plan'], // assigned_financial: now on a fortnightly hardship plan
   ['ontime', 'ontime', 'late', 'ontime', 'ontime', 'ontime'], // home_comfort (postpaid half): usage falling
   ['ontime', 'late', 'ontime', 'ontime', 'late', 'ontime'], // health_related
@@ -240,8 +240,9 @@ function withAccount(person, i, scenario, answers) {
 
   return {
     ...person,
+    // The account number is the customer's main ID on screen (the case ID stays an internal key).
+    accountNumber: `DEMO-${700001 + i}`,
     account: {
-      accountNumber: `DEMO-${700001 + i}`,
       utility: 'electricity',
       customerSince: yearsBefore(asOf, 1 + h(37) % Math.max(1, Math.min(15, ageYears - 18))),
       dateOfBirth,
@@ -276,9 +277,10 @@ function withAccount(person, i, scenario, answers) {
   };
 }
 
-const scenarioNames = ['unassigned_financial', 'assigned_financial', 'home_comfort', 'health_related', 'multiple_support_areas', 'historical_payment_plan', 'resolved_case', 'no_flagged_circumstances', 'incomplete_assessment', 'support_access_review'];
+const scenarioNames = ['new_financial', 'assigned_financial', 'home_comfort', 'health_related', 'multiple_support_areas', 'historical_payment_plan', 'resolved_case', 'no_flagged_circumstances', 'incomplete_assessment', 'support_access_review'];
 const scenarioStatuses = ['new', 'in_progress', 'new', 'in_progress', 'in_progress', 'waiting', 'resolved', 'in_progress', 'new', 'waiting'];
-const assignees = [null, 'staff-alex', 'staff-sarah', 'staff-james', 'staff-maya', 'staff-alex', 'staff-sarah', 'staff-james', null, 'staff-maya'];
+// Every case has a worker.
+const assignees = ['staff-james', 'staff-alex', 'staff-sarah', 'staff-james', 'staff-maya', 'staff-alex', 'staff-sarah', 'staff-james', 'staff-maya', 'staff-maya'];
 const q36Ids = evidenceFieldDefinitions.filter(f => f.id.startsWith('Q36b_')).map(f => f.id);
 
 function matches(id, a) {
@@ -378,10 +380,12 @@ function validate(data) {
     assert(ch !== 'email' || p.email, `${p.id} prefers email but has no email`);
   }
   const caseByPerson = new Map(data.cases.map(c => [c.personId, c]));
+  assert.equal(new Set(data.people.map(p => p.accountNumber)).size, data.people.length, 'Account numbers must be unique');
+  assert.equal(caseByPerson.size, data.cases.length, 'Each account has exactly one case');
   for (const p of data.people) {
     const a = p.account, answers = caseByPerson.get(p.id).reportedAnswers;
     assert.equal(a.provenance, 'fictional_demo_account');
-    assert(/^DEMO-\d{6}$/.test(a.accountNumber), `${p.id} account number must be a fictional DEMO- number`);
+    assert(/^DEMO-\d{6}$/.test(p.accountNumber), `${p.id} account number must be a fictional DEMO- number`);
     assert(a.dateOfBirth < yearsBefore(data.metadata.asOf, 18), `${p.id} account holder must be an adult`);
     assert.equal(a.lifeSupport, answers.Z7_4 === 'Yes', `${p.id} life support must match the reported answer`);
     assert.equal(a.concession.status === 'active', answers.Z7_8 === 'Yes', `${p.id} active concession must match the reported answer`);
@@ -399,7 +403,7 @@ function validate(data) {
   for (const c of data.cases) {
     assert(personIds.has(c.personId)); assert.equal(c.isSynthetic, true); assert.equal(c.sourceRecordId, null);
     assert(statuses.has(c.workflow.status)); assert(Number.isInteger(c.version) && c.version > 0);
-    assert(c.workflow.assignedToUserId === null || data.users.some(u => u.id === c.workflow.assignedToUserId && u.role === 'support_worker'));
+    assert(data.users.some(u => u.id === c.workflow.assignedToUserId && u.role === 'support_worker'), `${c.id} must be assigned to a support worker`);
     assert.equal(Object.keys(c.reportedAnswers).length, fields.size);
     for (const [id, value] of Object.entries(c.reportedAnswers)) { assert(fields.has(id), `Unknown evidence field ${id}`); assert(value === null || fields.get(id).allowedValues.includes(value), `Invalid answer ${id}`); }
     assert.deepEqual(c.missingEvidenceFieldIds, Object.keys(c.reportedAnswers).filter(id => c.reportedAnswers[id] === null));
@@ -427,11 +431,11 @@ function validate(data) {
   for (const s of statuses) assert(data.cases.some(c => c.workflow.status === s), `Missing ${s} scenario`);
   for (const x of data.circumstanceDefinitions) assert(data.cases.some(c => c.circumstances.some(s => s.circumstanceId === x.id)), `Missing ${x.id} coverage`);
   assert(data.cases.some(c => c.supportAreaIds.length === 0)); assert(data.cases.some(c => c.supportAreaIds.length > 1));
-  assert(data.cases.some(c => c.workflow.assignedToUserId === null)); assert(data.cases.some(c => c.workflow.assignedToUserId === 'staff-alex'));
+  for (const u of data.users.filter(x => x.role === 'support_worker')) assert(data.cases.some(c => c.workflow.assignedToUserId === u.id), `${u.id} has no cases`);
   assert(data.cases.some(c => c.modelAssessment.status === 'pending')); assert(data.cases.some(c => c.modelAssessment.status === 'unavailable'));
   assert(data.cases.some(c => c.assistance.reportedHistory.some(h => h.evidenceFieldId === 'Q36b_3') && c.reportedAnswers.Q37 === 'No'));
   for (const label of ['urgent', 'high', 'moderate', 'routine']) assert(data.cases.some(c => c.modelAssessment.priority?.label === label));
-  return { people: data.people.length, cases: data.cases.length, supportAreas: data.supportAreas.length, circumstances: data.circumstanceDefinitions.length, recommendationTypes: data.recommendationDefinitions.length, assigned: data.cases.filter(c => c.workflow.assignedToUserId !== null).length, unassigned: data.cases.filter(c => c.workflow.assignedToUserId === null).length, modelReady: data.cases.filter(c => c.modelAssessment.status === 'ready').length, modelPending: data.cases.filter(c => c.modelAssessment.status === 'pending').length, modelUnavailable: data.cases.filter(c => c.modelAssessment.status === 'unavailable').length };
+  return { people: data.people.length, cases: data.cases.length, supportAreas: data.supportAreas.length, circumstances: data.circumstanceDefinitions.length, recommendationTypes: data.recommendationDefinitions.length, assigned: data.cases.filter(c => c.workflow.assignedToUserId !== null).length, modelReady: data.cases.filter(c => c.modelAssessment.status === 'ready').length, modelPending: data.cases.filter(c => c.modelAssessment.status === 'pending').length, modelUnavailable: data.cases.filter(c => c.modelAssessment.status === 'unavailable').length };
 }
 
 const dataset = checkOnly ? JSON.parse(await fs.readFile(destination, 'utf8')) : build();

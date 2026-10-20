@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import type { Catalog, CaseItem } from "../data/api";
 import { describeFollowUp, shortName, STATUS_LABELS } from "../domain/format";
 import { isResolved } from "../domain/query";
-import { caseHref, isModifiedClick } from "../route";
+import { accountHref, isModifiedClick } from "../route";
 import { PriorityBadge } from "./Primitives";
 
 export function CaseTable(props: {
@@ -13,7 +13,8 @@ export function CaseTable(props: {
   selectionDisabled: boolean;
   onToggleRow: (id: string, on: boolean) => void;
   onTogglePage: (on: boolean) => void;
-  onOpen: (id: string) => void;
+  /** Opens a case by its account number. */
+  onOpen: (accountNumber: string) => void;
 }) {
   const { data, rows, selectedIds } = props;
   const users = new Map(data.users.map((u) => [u.id, u]));
@@ -58,12 +59,12 @@ export function CaseTable(props: {
                 key={c.id}
                 className={selectedIds.has(c.id) ? "is-selected" : undefined}
                 data-case-id={c.id}
-                onClick={() => props.onOpen(c.id)}
+                onClick={() => person?.accountNumber && props.onOpen(person.accountNumber)}
               >
                 <td className="col-check" onClick={(e) => e.stopPropagation()}>
                   <input
                     type="checkbox"
-                    aria-label={`Select ${person?.displayName ?? c.id}`}
+                    aria-label={`Select ${person?.displayName ?? person?.accountNumber ?? "case"}`}
                     checked={selectedIds.has(c.id)}
                     disabled={props.selectionDisabled}
                     onChange={(e) => props.onToggleRow(c.id, e.target.checked)}
@@ -74,18 +75,18 @@ export function CaseTable(props: {
                     <span>
                       <a
                         className="name-link"
-                        href={caseHref(c.id)}
-                        data-case-link={c.id}
+                        href={person?.accountNumber ? accountHref(person.accountNumber) : undefined}
+                        data-account-link={person?.accountNumber ?? undefined}
                         onClick={(e) => {
                           e.stopPropagation();
                           if (isModifiedClick(e)) return; // let the browser open a new tab or window
                           e.preventDefault();
-                          props.onOpen(c.id);
+                          if (person?.accountNumber) props.onOpen(person.accountNumber);
                         }}
                       >
                         {person?.displayName ?? "Unknown person"}
                       </a>
-                      <span className="sub">{c.id} · {person?.suburb}</span>
+                      <span className="sub">{person?.accountNumber} · {person?.suburb}</span>
                     </span>
                   </div>
                 </td>
@@ -108,9 +109,7 @@ export function CaseTable(props: {
                       <span>{shortName(assignee.displayName)}</span>
                       {assignee.id === props.currentUserId ? <span className="sub">You</span> : null}
                     </>
-                  ) : (
-                    <span className="unassigned">Unassigned</span>
-                  )}
+                  ) : null}
                 </td>
                 <td data-label="Status">
                   <span className={`status status-${c.workflow.status}`}>{STATUS_LABELS[c.workflow.status]}</span>

@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
 
-export const caseHref = (caseId: string) => `/cases/${encodeURIComponent(caseId)}`;
+/** Each customer's case lives at /accounts/:accountNumber; the account number is the main ID on screen. */
+export const accountHref = (accountNumber: string) => `/accounts/${encodeURIComponent(accountNumber)}`;
 
-/** The case ID in a /cases/:caseId path, or null for any other path. */
-export function caseIdFromPath(path: string): string | null {
-  const m = /^\/cases\/([^/]+)\/?$/.exec(path);
+/** The account number in an /accounts/:accountNumber path, or null for any other path. */
+export function accountFromPath(path: string): string | null {
+  const m = /^\/accounts\/([^/]+)\/?$/.exec(path);
   if (!m) return null;
   try { return decodeURIComponent(m[1]!); } catch { return null; }
 }
@@ -17,11 +18,11 @@ export function isModifiedClick(e: { metaKey: boolean; ctrlKey: boolean; shiftKe
 export type Page = "queue" | "case" | "admin";
 
 export function pageFromPath(path: string): Page {
-  if (/^\/admin\/?$/.test(path)) return "admin";
-  return caseIdFromPath(path) ? "case" : "queue";
+  if (/^\/(flowchart|admin)\/?$/.test(path)) return "admin"; // the Flowchart page; old /admin links still work
+  return accountFromPath(path) ? "case" : "queue";
 }
 
-/** Minimal path router: the queue lives at "/", each case at "/cases/:caseId" and the Admin page at "/admin". */
+/** Minimal path router: the queue lives at "/", each case at "/accounts/:accountNumber" and the Flowchart page at "/flowchart". */
 export function useRoute() {
   const [path, setPath] = useState(() => window.location.pathname);
   useEffect(() => {
@@ -34,5 +35,5 @@ export function useRoute() {
     setPath(window.location.pathname);
     window.scrollTo(0, 0);
   }, []);
-  return { caseId: caseIdFromPath(path), page: pageFromPath(path), navigate };
+  return { accountNumber: accountFromPath(path), page: pageFromPath(path), navigate };
 }

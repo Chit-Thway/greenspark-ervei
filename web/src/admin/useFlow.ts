@@ -7,7 +7,7 @@ export interface UndoEntry { inverse: FlowOp; label: string }
 export type DispatchResult = { ok: true } | { ok: false; error: string };
 
 /**
- * Holds the flow on the Admin page. Every edit is applied here at once (so the screen feels instant) and
+ * Holds the flow on the Flowchart page. Every edit is applied here at once (so the screen feels instant) and
  * sent to the server, which writes it into the JSON file. Edits are sent one at a time, in order. If anything
  * goes wrong, or somebody else changed the file meanwhile, the page reloads from the file, which is always right.
  */

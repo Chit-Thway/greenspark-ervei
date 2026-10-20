@@ -7,7 +7,7 @@ const STATUS: Record<ErrorCode, number> = {
   bulk_validation_failed: 422, version_conflict: 409, undo_conflict: 409,
 };
 
-export interface ErrorDetail { caseId?: string; code?: string; message: string }
+export interface ErrorDetail { caseId?: string; accountNumber?: string; code?: string; message: string }
 
 export class ApiError extends Error {
   readonly status: number;

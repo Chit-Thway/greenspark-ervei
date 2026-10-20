@@ -1,4 +1,4 @@
-// Applies the Admin hardship flow (signals -> circumstances -> solutions) to the case queue.
+// Applies the hardship flowchart (signals -> circumstances -> solutions) to the case queue.
 // Signals come from each person's account (accountSignals.ts) and from survey answers that say the same thing
 // as one of the flow's self-report signals. Circumstances are flagged with the flow's own scoring rules:
 //   at least 1 strong signal, or at least 2 supporting signals;

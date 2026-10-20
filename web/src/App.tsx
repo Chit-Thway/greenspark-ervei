@@ -7,8 +7,7 @@ import { PRIORITY_TEXT, STATUS_LABELS } from "./domain/format";
 import { FilterSidebar } from "./components/FilterSidebar";
 import { CaseTable } from "./components/CaseTable";
 import { CaseDetails } from "./components/CaseDetails";
-import { NewCasePanel, type NewCaseInput } from "./components/NewCasePanel";
-import { caseHref, isModifiedClick, useRoute, type Page } from "./route";
+import { accountHref, isModifiedClick, useRoute, type Page } from "./route";
 import { AdminPage } from "./admin/AdminPage";
 
 interface Notice {
@@ -31,14 +30,14 @@ export function App() {
   const userRef = useRef(userId);
   userRef.current = userId;
   const client = useMemo(() => createApiClient(() => userRef.current), []);
-  const { caseId, page, navigate } = useRoute();
+  const { accountNumber, page, navigate } = useRoute();
 
   const loadCatalog = useCallback(() => {
     setError(null);
     client.catalog().then(setCatalog, (e: unknown) => setError(e instanceof Error ? e.message : "Could not load the case queue."));
   }, [client]);
   useEffect(loadCatalog, [loadCatalog, userId]);
-  // Circumstances and solutions come from the Admin flow, so leaving the Admin page picks up any edits.
+  // Circumstances and solutions come from the flowchart, so leaving the Flowchart page picks up any edits.
   const lastPage = useRef(page);
   useEffect(() => {
     if (lastPage.current === "admin" && page !== "admin") client.catalog().then(setCatalog, () => undefined);
@@ -54,21 +53,23 @@ export function App() {
   if (error) return <div className="state-screen" role="alert"><h1>We couldn’t load the case queue</h1><p>{error}</p><button className="btn" onClick={loadCatalog}>Try again</button></div>;
   if (!catalog) return <div className="state-screen" role="status"><p>Loading cases…</p></div>;
   const user = catalog.users.find((u) => u.id === userId) ?? catalog.users[0]!;
-  return <Workspace key={user.id} catalog={catalog} user={user} client={client} caseId={caseId} page={page} navigate={navigate} onSwitchUser={switchUser} />;
+  return <Workspace key={user.id} catalog={catalog} user={user} client={client} openAccount={accountNumber} page={page} navigate={navigate} onSwitchUser={switchUser} />;
 }
 
 type Client = ReturnType<typeof createApiClient>;
 
-function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; caseId: string | null; page: Page; navigate: (to: string) => void; onSwitchUser: (id: string) => void }) {
+function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; openAccount: string | null; page: Page; navigate: (to: string) => void; onSwitchUser: (id: string) => void }) {
   const { catalog, user, client, navigate } = props;
-  const openCaseId = props.caseId;
+  // The open case is named by its account number (the main ID); case IDs stay internal.
+  const openAccount = props.openAccount;
+  const accountOf = (i: CaseItem | null | undefined) => i?.person?.accountNumber ?? null;
   const [query, setQuery] = useState<QueueQuery>(DEFAULT_QUERY);
   const [searchText, setSearchText] = useState("");
   const [list, setList] = useState<CaseListResponse | null>(null);
   const [listError, setListError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshTick, setRefreshTick] = useState(0);
-  // A new catalog means the Admin flow may have changed, so reload the list too.
+  // A new catalog means the flowchart may have changed, so reload the list too.
   const firstCatalog = useRef(catalog);
   useEffect(() => { if (catalog !== firstCatalog.current) setRefreshTick((t) => t + 1); }, [catalog]);
   const [loadedListKey, setLoadedListKey] = useState<string | null>(null);
@@ -77,7 +78,6 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; c
   // Selected case IDs map to the version the user last saw, so bulk requests carry expectedVersion.
   const [selected, setSelected] = useState<Map<string, number>>(new Map());
   const [openItem, setOpenItem] = useState<CaseItem | null>(null);
-  const [newCaseOpen, setNewCaseOpen] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [notice, setNotice] = useState<Notice | null>(null);
   const [busy, setBusy] = useState(false);
@@ -85,11 +85,8 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; c
   const [bulkStatus, setBulkStatus] = useState<CaseStatus>("in_progress");
   const [caseLoad, setCaseLoad] = useState<{ status: "loading" | "missing" | "error"; message?: string } | null>(null);
   const [caseRetry, setCaseRetry] = useState(0);
-  const returnFocus = useRef<HTMLElement | null>(null);
   const lastOpened = useRef<string | null>(null);
   const noticeTimer = useRef<number | undefined>(undefined);
-  // Bumped whenever the user opens another page or panel, so a slow "create case" never hijacks the screen.
-  const navToken = useRef(0);
   const isManager = user.role === "manager";
   const refresh = () => setRefreshTick((n) => n + 1);
   const filterKey = JSON.stringify({ ...query, page: 0, sort: "", pageSize: 0 });
@@ -103,20 +100,20 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; c
 
   useEffect(() => () => window.clearTimeout(noticeTimer.current), []);
 
-  // Load the case for /cases/:caseId. It shows at once from the list when we have it, then refreshes from the server.
+  // Load the case for /accounts/:accountNumber. It shows at once from the list when we have it, then refreshes from the server.
   useEffect(() => {
-    if (!openCaseId) {
+    if (!openAccount) {
       setOpenItem(null);
       setCaseLoad(null);
       return;
     }
     let current = true;
     setCaseLoad({ status: "loading" });
-    setOpenItem((o) => (o?.case.id === openCaseId ? o : list?.items.find((i) => i.case.id === openCaseId) ?? null));
-    client.overview(openCaseId).then(
+    setOpenItem((o) => (accountOf(o) === openAccount ? o : list?.items.find((i) => accountOf(i) === openAccount) ?? null));
+    client.account(openAccount).then(
       (fresh) => {
         if (!current) return;
-        setOpenItem((o) => (o?.case.id === openCaseId && o.case.version > fresh.case.version ? o : fresh));
+        setOpenItem((o) => (o?.case.id === fresh.case.id && o.case.version > fresh.case.version ? o : fresh));
         setCaseLoad(null);
       },
       (e: unknown) => {
@@ -126,19 +123,19 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; c
       },
     );
     return () => { current = false; };
-  }, [client, openCaseId, caseRetry]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [client, openAccount, caseRetry]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Going back to the queue puts keyboard focus on the case you came from.
   useEffect(() => {
-    if (openCaseId) { lastOpened.current = openCaseId; return; }
+    if (openAccount) { lastOpened.current = openAccount; return; }
     const id = lastOpened.current;
     lastOpened.current = null;
-    if (id) document.querySelector<HTMLElement>(`[data-case-link="${CSS.escape(id)}"]`)?.focus();
-  }, [openCaseId]);
+    if (id) document.querySelector<HTMLElement>(`[data-account-link="${CSS.escape(id)}"]`)?.focus();
+  }, [openAccount]);
 
   useEffect(() => {
-    document.title = openItem && openCaseId ? `${openItem.case.id} · ${catalogNameFor(openItem)} · ERVEI` : "Case queue · ERVEI";
-  }, [openItem, openCaseId]);
+    document.title = openItem && openAccount ? `${accountOf(openItem) ?? ""} · ${catalogNameFor(openItem)} · ERVEI` : "Case queue · ERVEI";
+  }, [openItem, openAccount]);
 
   // Debounce the search box so we don't query on every keystroke.
   useEffect(() => {
@@ -209,21 +206,7 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; c
   const change = (patch: Partial<QueueQuery>) => setQuery((q) => ({ ...q, ...patch, page: "page" in patch ? patch.page! : 1 }));
   const reset = () => { setSearchText(""); setQuery({ ...DEFAULT_QUERY }); };
 
-  const open = (id: string) => {
-    navToken.current += 1;
-    setNewCaseOpen(false);
-    navigate(caseHref(id));
-  };
-  const closeNewCase = () => {
-    navToken.current += 1;
-    setNewCaseOpen(false);
-    returnFocus.current?.focus();
-  };
-  const showNewCase = () => {
-    navToken.current += 1;
-    returnFocus.current = document.activeElement as HTMLElement;
-    setNewCaseOpen(true);
-  };
+  const open = (accountNumber: string) => navigate(accountHref(accountNumber));
 
   const nameOf = (id: string | null) => (id ? catalog.users.find((u) => u.id === id)?.displayName ?? id : "nobody");
 
@@ -297,8 +280,8 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; c
   const plural = (n: number) => `${n} case${n === 1 ? "" : "s"}`;
 
   const actions = {
-    onAssign: (userId: string | null) =>
-      run(() => client.assign(userId, [versioned(openItem!.case)]), () => (userId ? `Assigned to ${nameOf(userId)}.` : "Case unassigned.")),
+    onAssign: (userId: string) =>
+      run(() => client.assign(userId, [versioned(openItem!.case)]), () => `Assigned to ${nameOf(userId)}.`),
     onStatus: (status: CaseStatus) =>
       run(() => client.setStatus(status, [versioned(openItem!.case)]), () => `Status set to ${STATUS_LABELS[status]}.`),
     onReview: (next: ReviewStatus) =>
@@ -336,8 +319,8 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; c
   };
 
   const bulkAssign = () => {
-    if (bulkDisabled || !hasSelection || selected.size > MAX_BULK_ITEMS) return;
-    return run(() => client.assign(bulkAssignee || null, selectedItems()), (r) => (bulkAssignee ? `Assigned ${plural(r.updated.length)} to ${nameOf(bulkAssignee)}.` : `Unassigned ${plural(r.updated.length)}.`));
+    if (bulkDisabled || !hasSelection || !bulkAssignee || selected.size > MAX_BULK_ITEMS) return;
+    return run(() => client.assign(bulkAssignee, selectedItems()), (r) => `Assigned ${plural(r.updated.length)} to ${nameOf(bulkAssignee)}.`);
   };
   const bulkSetStatus = () => {
     if (bulkDisabled || !hasSelection || selected.size > MAX_BULK_ITEMS) return;
@@ -350,25 +333,6 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; c
       const r = await client.undo(actionId);
       applyUpdated(r);
       say({ kind: "success", message: `Undone. ${plural(r.updated.length)} restored.` });
-      refresh();
-    } catch (e) {
-      await handleError(e);
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function createCase(input: NewCaseInput) {
-    const token = navToken.current;
-    setBusy(true);
-    try {
-      const item = await client.createCase(input);
-      if (token === navToken.current) {
-        setNewCaseOpen(false);
-        setOpenItem(item);
-        navigate(caseHref(item.case.id));
-      }
-      say({ kind: "success", message: `Added ${input.displayName} as ${item.case.id}.` });
       refresh();
     } catch (e) {
       await handleError(e);
@@ -397,7 +361,7 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; c
   };
 
   return (
-    <div className={`app${newCaseOpen && !openCaseId ? " has-panel" : ""}`}>
+    <div className="app">
       <a className="skip" href="#queue">Skip to main content</a>
       <header className="topbar">
         <a
@@ -414,7 +378,7 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; c
           <span><strong>ERVEI</strong><span className="brand-sub">GREENSPARK · CASEWORK</span></span>
         </a>
         <nav className="mainnav" aria-label="Main">
-          {([["/", "Case queue", props.page !== "admin"], ["/admin", "Admin", props.page === "admin"]] as const).map(([href, label, current]) => (
+          {([["/", "Case queue", props.page !== "admin"], ["/flowchart", "Flowchart", props.page === "admin"]] as const).map(([href, label, current]) => (
             <a key={href} href={href} aria-current={current ? "page" : undefined} onClick={(e) => { if (isModifiedClick(e)) return; e.preventDefault(); navigate(href); }}>{label}</a>
           ))}
         </nav>
@@ -430,7 +394,7 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; c
 
       {props.page === "admin" ? (
         <AdminPage client={client} />
-      ) : openCaseId ? (
+      ) : openAccount ? (
         <main id="queue" className="detail-main" tabIndex={-1}>
           <a
             className="back-link"
@@ -447,7 +411,7 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; c
           {openItem ? (
             <CaseDetails key={openItem.case.id} data={catalog} item={openItem} user={user} busy={busy} actions={actions} />
           ) : caseLoad?.status === "missing" ? (
-            <div className="empty" role="alert"><h1>Case not found</h1><p>There is no case with the ID {openCaseId}. It may have been mistyped.</p></div>
+            <div className="empty" role="alert"><h1>Case not found</h1><p>There is no case for account {openAccount}. It may have been mistyped.</p></div>
           ) : caseLoad?.status === "error" ? (
             <div className="empty" role="alert"><h1>We couldn’t load this case</h1><p>{caseLoad.message}</p><button type="button" className="btn" onClick={() => setCaseRetry((n) => n + 1)}>Try again</button></div>
           ) : (
@@ -466,30 +430,26 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; c
         <main id="queue" className="main" tabIndex={-1}>
           <div className="page-head">
             <h1>Case queue</h1>
-            <button type="button" className="btn btn-primary" onClick={showNewCase}>
-              + New case
-            </button>
           </div>
 
           <NoticeBar notice={notice} busy={busy} onUndo={undo} onDismiss={() => say(null)} />
 
           <section className="counters" aria-label="Active case shortcuts (all cases, not filtered)">
             <div className="counter"><strong>{list?.counters.urgent ?? "–"}</strong><span>Urgent cases</span></div>
-            <div className="counter"><strong>{list?.counters.awaitingAssignment ?? "–"}</strong><span>Awaiting assignment</span></div>
             <div className="counter"><strong>{list?.counters.myActive ?? "–"}</strong><span>My active cases</span></div>
           </section>
           <p className="hint counters-note">Counters cover all unresolved cases and ignore the filters.</p>
 
           <section className="panel" aria-labelledby="list-title" aria-busy={loading}>
             <div className="panel-head">
-              <h2 id="list-title">{({ all: "All cases", mine: "Assigned to me", unassigned: "Unassigned", needs_review: "Needs review" })[query.view]} <span className="pill">{list?.total ?? "–"}</span></h2>
+              <h2 id="list-title">{({ all: "All cases", mine: "Assigned to me", needs_review: "Needs review" })[query.view]} <span className="pill">{list?.total ?? "–"}</span></h2>
               <span className="sim">Model suggestions · simulated data</span>
             </div>
 
             <div className="toolbar">
               <label className="search">
-                <span className="sr-only">Search by name, case ID or suburb</span>
-                <input type="search" placeholder="Search name, case ID or suburb…" value={searchText} onChange={(e) => setSearchText(e.target.value)} />
+                <span className="sr-only">Search by name, account number or suburb</span>
+                <input type="search" placeholder="Search name, account number or suburb…" value={searchText} onChange={(e) => setSearchText(e.target.value)} />
               </label>
               <label className="sort">
                 <span className="sr-only">Sort cases</span>
@@ -510,7 +470,7 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; c
               {query.minPriorityScore > 0 ? <Chip label={`Score ≥ ${query.minPriorityScore}`} onRemove={() => change({ minPriorityScore: 0 })} /> : null}
               {query.assessmentStatus ? <Chip label={`Assessment: ${query.assessmentStatus}`} onRemove={() => change({ assessmentStatus: "" })} /> : null}
               {query.status ? <Chip label={`Status: ${STATUS_LABELS[query.status]}`} onRemove={() => change({ status: "" })} /> : null}
-              {query.assignedToUserId ? <Chip label={`Worker: ${query.assignedToUserId === "__none__" ? "Unassigned" : catalog.users.find((u) => u.id === query.assignedToUserId)?.displayName}`} onRemove={() => change({ assignedToUserId: "" })} /> : null}
+              {query.assignedToUserId ? <Chip label={`Worker: ${catalog.users.find((u) => u.id === query.assignedToUserId)?.displayName ?? query.assignedToUserId}`} onRemove={() => change({ assignedToUserId: "" })} /> : null}
             </div>
 
             {selected.size > 0 ? (
@@ -522,11 +482,11 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; c
                 <label className="inline">
                   <span className="sr-only">Assign selected cases to</span>
                   <select value={bulkAssignee} disabled={!isManager || bulkDisabled} onChange={(e) => setBulkAssignee(e.target.value)} title={isManager ? undefined : "Only managers can assign cases"}>
-                    <option value="">Unassigned</option>
+                    <option value="" disabled>Choose a worker</option>
                     {catalog.users.filter((u) => catalog.assignableUserIds.includes(u.id)).map((u) => <option key={u.id} value={u.id}>{u.displayName}</option>)}
                   </select>
                 </label>
-                <button type="button" className="btn btn-small" disabled={!isManager || bulkDisabled} onClick={bulkAssign}>Assign</button>
+                <button type="button" className="btn btn-small" disabled={!isManager || bulkDisabled || !bulkAssignee} onClick={bulkAssign}>Assign</button>
                 <label className="inline">
                   <span className="sr-only">Set status of selected cases to</span>
                   <select value={bulkStatus} disabled={bulkDisabled} onChange={(e) => setBulkStatus(e.target.value as CaseStatus)}>
@@ -567,7 +527,6 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; c
           <footer className="foot"><span>All people and case details are fictional.</span><span>Demo date {catalog.asOf}</span></footer>
         </main>
 
-        {newCaseOpen ? <NewCasePanel busy={busy} onSubmit={createCase} onClose={closeNewCase} /> : null}
       </div>
       )}
     </div>
@@ -592,7 +551,7 @@ function NoticeBar(props: { notice: Notice | null; busy: boolean; onUndo: (id: s
           <div>
             <p>{n.message}</p>
             {n.details?.length ? (
-              <ul>{n.details.map((d, i) => <li key={i}>{d.caseId ? `${d.caseId}: ` : ""}{d.message}</li>)}</ul>
+              <ul>{n.details.map((d, i) => <li key={i}>{d.accountNumber ? `${d.accountNumber}: ` : ""}{d.message}</li>)}</ul>
             ) : null}
           </div>
           <div className="notice-actions">

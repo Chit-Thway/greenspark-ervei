@@ -10,7 +10,7 @@ const onDisk = () => JSON.parse(readFileSync(FILE, "utf8"));
 
 async function openAdmin(page: Page, user = "staff-manager") {
   await page.addInitScript((u) => localStorage.setItem("greenspark.demoUser", u), user);
-  await page.goto("/admin");
+  await page.goto("/flowchart");
   await expect(page.getByTestId("count-signals")).toHaveText(/\d+/);
 }
 const details = (page: Page) => page.getByRole("complementary", { name: "Details" });
@@ -18,11 +18,11 @@ const saved = (page: Page) => expect(page.getByRole("status").filter({ hasText: 
 
 test.describe.configure({ mode: "serial" });
 
-test("Admin is in the main navigation and shows the three columns", async ({ page }) => {
+test("Flowchart is in the main navigation and shows the three columns", async ({ page }) => {
   await page.addInitScript((u) => localStorage.setItem("greenspark.demoUser", u), "staff-manager");
   await page.goto("/");
-  await page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Admin" }).click();
-  await expect(page).toHaveURL(/\/admin$/);
+  await page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Flowchart" }).click();
+  await expect(page).toHaveURL(/\/flowchart$/);
   await expect(page.getByRole("heading", { name: "Utility hardship flow" })).toBeVisible();
   await expect(page.getByTestId("count-signals")).toHaveText("107");
   await expect(page.getByTestId("count-circumstances")).toHaveText("99");
@@ -118,7 +118,7 @@ test("any demo user (a support worker) can edit", async ({ page }) => {
   expect(res.status).toBe(200);
 });
 
-test("Admin page has no accessibility violations", async ({ page }) => {
+test("Flowchart page has no accessibility violations", async ({ page }) => {
   await openAdmin(page);
   await page.getByTestId("node-circumstance-job_loss").click();
   await page.addScriptTag({ content: readFileSync(axePath, "utf8") });

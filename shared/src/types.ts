@@ -24,7 +24,7 @@ export interface CircumstanceDefinition {
   evidenceFieldIds: string[];
   recommendationIds: string[];
   illustrativeRule: string;
-  // Set when the definition comes from the Admin flow.
+  // Set when the definition comes from the flowchart.
   sensitivity?: "standard" | "sensitive" | "safety";
   type?: string;
   handling?: string | null;
@@ -41,7 +41,7 @@ export interface RecommendationDefinition {
   id: string;
   label: string;
   description: string;
-  // Set when the recommendation is a solution from the Admin flow.
+  // Set when the recommendation is a solution from the flowchart.
   provider?: string;
   howToAccess?: string;
   contact?: string;
@@ -65,6 +65,8 @@ export interface Person {
   mobile?: string | null;
   phone?: string | null;
   email?: string | null;
+  /** The customer's main ID on screen (fictional, DEMO-7xxxxx). Every person has one, including people added in the queue. */
+  accountNumber?: string | null;
   // Fictional utility account. Missing for people added in the queue.
   account?: CustomerAccount | null;
 }
@@ -88,7 +90,6 @@ export interface Bill {
 export interface Payment { date: string; amount: number; method: PaymentMethod; status: "cleared" | "dishonoured" }
 
 export interface CustomerAccount {
-  accountNumber: string;
   utility: string;
   customerSince: string;
   dateOfBirth: string;
@@ -191,7 +192,7 @@ export interface QueueCase {
 
 export interface QueueDataset {
   asOf: string;
-  /** "flow": circumstances and solutions come from the Admin flow file. "fixture": the fixture's fixed survey rules. */
+  /** "flow": circumstances and solutions come from the flowchart file. "fixture": the fixture's fixed survey rules. */
   circumstanceSource?: "flow" | "fixture";
   isSynthetic: boolean;
   users: StaffUser[];
@@ -203,7 +204,7 @@ export interface QueueDataset {
   cases: QueueCase[];
 }
 
-export type QueueView = "all" | "mine" | "unassigned" | "needs_review";
+export type QueueView = "all" | "mine" | "needs_review";
 export type SortKey = "priority_desc" | "priority_asc" | "followup" | "name" | "updated";
 
 export interface QueueQuery {

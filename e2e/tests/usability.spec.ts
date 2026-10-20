@@ -19,7 +19,7 @@ async function seriousViolations(page: Page) {
 test.describe("states and content rules", () => {
   test("empty results, pending and unavailable model states, and unknown evidence", async ({ page }) => {
     await openQueue(page);
-    await page.getByPlaceholder("Search name, case ID or suburb…").fill("zzzz-no-match");
+    await page.getByPlaceholder("Search name, account number or suburb…").fill("zzzz-no-match");
     await expect(page.getByRole("heading", { name: "No cases match" })).toBeVisible();
     await page.getByRole("button", { name: "Reset filters" }).click();
     await expectTotal(page, 100);
@@ -93,10 +93,11 @@ test.describe("case pages", () => {
     await page.getByRole("button", { name: "Next" }).click();
     await expect(page.getByText("Page 2 of 2")).toBeVisible();
     const row = page.locator("tbody tr").nth(1);
-    const id = (await row.getAttribute("data-case-id"))!;
+    const id = (await row.locator(".name-link").getAttribute("data-account-link"))!; // the account number is the main ID
     await row.locator(".name-link").click();
-    await expect(page).toHaveURL(new RegExp(`/cases/${id}$`));
+    await expect(page).toHaveURL(new RegExp(`/accounts/${id}$`));
     await expect(page.locator(".case-page")).toContainText(id);
+    await expect(page.locator(".case-page")).not.toContainText(/GS-\d{4}/); // internal case IDs are never shown
     await expect(page.locator("#queue")).not.toContainText("Support areas Filters"); // no sidebar on a case page
     await expect(page.locator("#sidebar")).toHaveCount(0);
     await page.goBack();
@@ -107,10 +108,10 @@ test.describe("case pages", () => {
     await expect(page.locator(".case-page")).toBeVisible();
 
     // The address works directly (a bookmark or a shared link) and for unknown cases.
-    await page.goto(`/cases/${id}`);
+    await page.goto(`/accounts/${id}`);
     await expect(page.locator("#case-title")).toBeVisible();
     await expect(page.locator(".case-page")).toContainText(id);
-    await page.goto("/cases/GS-9999");
+    await page.goto("/accounts/DEMO-999999");
     await expect(page.getByRole("heading", { name: "Case not found" })).toBeVisible();
     await page.getByRole("link", { name: /Back to case queue/ }).click();
     await expect(page.locator(".case-table")).toBeVisible();
@@ -123,9 +124,9 @@ test.describe("case pages", () => {
     await expect(brand).toContainText("GREENSPARK · CASEWORK");
     await expect(page).toHaveTitle(/ERVEI/);
     await expect(brand).toHaveAttribute("href", "/");
-    const id = (await page.locator("tbody tr").first().getAttribute("data-case-id"))!;
+    const id = (await page.locator("tbody tr").first().locator(".name-link").getAttribute("data-account-link"))!;
     await page.locator("tbody tr").first().locator(".name-link").click();
-    await expect(page).toHaveURL(new RegExp(`/cases/${id}$`));
+    await expect(page).toHaveURL(new RegExp(`/accounts/${id}$`));
     await brand.click();
     await expect(page).toHaveURL(/\/$/);
     await expect(page.locator(".case-table")).toBeVisible();
@@ -140,7 +141,7 @@ test.describe("case pages", () => {
     const link = page.locator("tbody tr").first().locator(".name-link");
     const href = await link.getAttribute("href");
     const [popup] = await Promise.all([context.waitForEvent("page"), link.click({ modifiers: ["Control"] })]);
-    await popup.waitForURL(/\/cases\/GS-\d+$/);
+    await popup.waitForURL(/\/accounts\/DEMO-\d+$/);
     expect(new URL(popup.url()).pathname).toBe(href);
     await expect(popup.locator(".case-page")).toBeVisible();
     await expect(page.locator(".case-table")).toBeVisible(); // this tab stayed on the queue
@@ -154,7 +155,7 @@ test.describe("keyboard and accessibility", () => {
     await nameLink.focus();
     await page.keyboard.press("Enter");
     await expect(page.locator(".case-page")).toBeVisible();
-    await expect(page).toHaveURL(/\/cases\/GS-\d+$/);
+    await expect(page).toHaveURL(/\/accounts\/DEMO-\d+$/);
     await expect(page.locator("#case-title")).toBeFocused(); // a new page starts at its heading
     const back = page.getByRole("link", { name: /Back to case queue/ });
     await back.focus();
@@ -165,16 +166,16 @@ test.describe("keyboard and accessibility", () => {
 
   test("filters work with the keyboard", async ({ page }) => {
     await openQueue(page);
-    const toggle = page.getByRole("button", { name: /^(Expand|Collapse) Heating, cooling/ }); // its name flips when toggled
-    await expect(page.getByRole("checkbox", { name: /^Difficulty keeping warm/ })).toHaveCount(0); // areas start collapsed
+    const toggle = page.getByRole("button", { name: /^(Expand|Collapse) Billing and meters/ }); // its name flips when toggled
+    await expect(page.getByRole("checkbox", { name: /^Estimated reads then catch-up bill/ })).toHaveCount(0); // areas start collapsed
     await toggle.focus();
     await page.keyboard.press("Enter");
     await expect(toggle).toHaveAttribute("aria-expanded", "true");
-    const box = page.getByRole("checkbox", { name: /^Difficulty keeping warm/ });
+    const box = page.getByRole("checkbox", { name: /^Estimated reads then catch-up bill/ });
     await box.focus();
     await page.keyboard.press("Space");
-    await expect(page.locator(".chip")).toContainText("Difficulty keeping warm");
-    await expect(page.getByRole("checkbox", { name: /^Heating, cooling/ })).toHaveJSProperty("indeterminate", true);
+    await expect(page.locator(".chip")).toContainText("Estimated reads then catch-up bill");
+    await expect(page.getByRole("checkbox", { name: /^Billing and meters/ })).toHaveJSProperty("indeterminate", true);
   });
 
   test("queue and case page have no serious or critical WCAG A/AA violations", async ({ page }) => {
@@ -195,9 +196,9 @@ test.describe("small screen", () => {
     await expect(page.locator("#sidebar")).toBeHidden();
     await page.getByRole("button", { name: /^Filters/ }).click();
     await expect(page.locator("#sidebar")).toBeVisible();
-    await page.getByRole("button", { name: "Expand Heating, cooling & home comfort" }).click();
-    await page.getByRole("checkbox", { name: /^Difficulty keeping warm/ }).check();
-    await expectTotal(page, 20);
+    await page.getByRole("button", { name: "Expand Billing and meters" }).click();
+    await page.getByRole("checkbox", { name: /^Estimated reads then catch-up bill/ }).check();
+    await expectTotal(page, 10);
     await page.getByRole("button", { name: /^Filters/ }).click();
     await page.locator("tbody tr").first().locator(".name-link").click();
     const panel = page.locator(".case-page");
@@ -205,7 +206,7 @@ test.describe("small screen", () => {
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     await page.getByRole("link", { name: /Back to case queue/ }).click();
     await expect(panel).toHaveCount(0);
-    await expectTotal(page, 20); // the filter is still applied
+    await expectTotal(page, 10); // the filter is still applied
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   });
 });

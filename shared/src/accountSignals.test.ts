@@ -14,7 +14,7 @@ const signalsFor = (scenario: string) =>
   data.people.filter((p) => scenarioOf.get(p.id) === scenario).map((p) => new Set(detectAccountSignals(p.account!, data.asOf).map((s) => s.id)));
 
 describe("account signals", () => {
-  it("uses the ids and names of account signals in the Admin flow", () => {
+  it("uses the ids and names of account signals in the flowchart", () => {
     const flowSignals = new Map(flow.signals.map((s) => [s.id, s]));
     for (const p of data.people) {
       for (const s of detectAccountSignals(p.account!, data.asOf)) {
@@ -38,7 +38,7 @@ describe("account signals", () => {
     const every = (scenario: string, ids: string[]) => {
       for (const found of signalsFor(scenario)) for (const id of ids) expect(found.has(id), `${scenario} ${id}`).toBe(true);
     };
-    every("unassigned_financial", ["acct_missed_payment", "acct_repeated_late", "acct_rising_arrears", "acct_no_hardship_offer"]);
+    every("new_financial", ["acct_missed_payment", "acct_repeated_late", "acct_rising_arrears", "acct_no_hardship_offer"]);
     every("assigned_financial", ["acct_payday_aligned", "acct_concession_on_file"]);
     every("multiple_support_areas", ["acct_missed_payment", "acct_many_extensions", "acct_disconnection_warning", "acct_usage_drop"]);
     every("historical_payment_plan", ["acct_broken_plan", "acct_hardship_exit", "acct_many_extensions"]);

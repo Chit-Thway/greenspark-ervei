@@ -30,12 +30,12 @@ export function AccountSignals({ account, asOf }: { account: CustomerAccount; as
 }
 
 /** The fictional utility account behind a case: plan, payments setup, concession and protections. */
-export function UtilityAccount({ account: a }: { account: CustomerAccount }) {
+export function UtilityAccount({ account: a, accountNumber }: { account: CustomerAccount; accountNumber: string | null }) {
   return (
     <section className="case-card" aria-labelledby="ov-account">
       <h3 id="ov-account">Utility account <span className="sim">fictional</span></h3>
       <dl className="details">
-        <div><dt>Account number</dt><dd>{a.accountNumber}</dd></div>
+        <div><dt>Account number</dt><dd>{accountNumber ?? "Not recorded"}</dd></div>
         <div><dt>Customer since</dt><dd>{date(a.customerSince)}</dd></div>
         <div><dt>Plan</dt><dd>{a.plan.type === "prepaid" ? "Prepaid" : "Postpaid, billed every two months"}{a.supplyType === "embedded" ? " · embedded network" : ""}</dd></div>
         <div><dt>Payment method</dt><dd>{METHOD_LABELS[a.paymentMethod]}</dd></div>

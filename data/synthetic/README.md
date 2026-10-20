@@ -17,10 +17,10 @@ node scripts/generate-synthetic-cases.mjs --check
 
 No npm install, network request or source-data download is needed for the generator. Ordinary app mutations should update a separate development store, not this checked-in seed file.
 
-The seed covers all four case statuses; assigned/unassigned cases; all supported circumstances; multiple/no support areas; known and unknown answers; current versus historical assistance; overdue/future/no follow-up; notes; and ready/pending/unavailable simulated assessments.
+The seed covers all four case statuses; every case is assigned to one of the four support workers; all supported circumstances; multiple/no support areas; known and unknown answers; current versus historical assistance; overdue/future/no follow-up; notes; and ready/pending/unavailable simulated assessments.
 
 Each person also has invented contact details: gender, preferred name, address (line 1, optional line 2, postcode), mobile, phone and email. They use phone ranges reserved for fiction and `example.com` emails so they cannot reach a real person, and the generator's check enforces that. See the "Customer contact details" section of [the contract](../../docs/data-contract.md).
 
-Each person also has an invented electricity account: bills, payments, usage, plan (postpaid or prepaid), payment method, concession, third-party authority, date of birth and service flags. Each scenario's account is shaped so specific account signals from the Admin flow fire. See the "Utility accounts and account signals" section of [the contract](../../docs/data-contract.md).
+Each person also has an invented electricity account: bills, payments, usage, plan (postpaid or prepaid), payment method, concession, third-party authority, date of birth and service flags. Each scenario's account is shaped so specific account signals from the flowchart fire. See the "Utility accounts and account signals" section of [the contract](../../docs/data-contract.md).
 
 An existing local database picks up new fields for the seeded people when the server starts, so no reset is needed.

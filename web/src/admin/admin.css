@@ -1,4 +1,4 @@
-/* Admin flowchart: uses the dashboard tokens from styles.css */
+/* Flowchart page: uses the dashboard tokens from styles.css */
 .admin { padding: var(--pad); min-width: 0; outline: 0; max-width: 1760px; margin: 0 auto; }
 .admin-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; margin-bottom: 14px; }
 .admin-head .sub { margin-top: 4px; max-width: 70ch; }

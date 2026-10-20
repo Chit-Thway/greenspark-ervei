@@ -82,7 +82,7 @@ describe("the real flow over the fixture", () => {
 
   it("leaves the clean control unflagged and flags what each scenario is shaped for", () => {
     for (const list of ids("no_flagged_circumstances")) expect(list).toEqual([]);
-    for (const list of ids("unassigned_financial")) expect(list).toEqual(expect.arrayContaining(["hardship_not_offered", "debt_spiral"]));
+    for (const list of ids("new_financial")) expect(list).toEqual(expect.arrayContaining(["hardship_not_offered", "debt_spiral"]));
     for (const list of ids("historical_payment_plan")) expect(list).toContain("unaffordable_plan");
     for (const list of ids("incomplete_assessment")) expect(list).toContain("estimated_catchup");
     for (const list of ids("support_access_review")) expect(list).toContain("concession_lost");

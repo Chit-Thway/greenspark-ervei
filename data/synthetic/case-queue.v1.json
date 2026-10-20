@@ -683,8 +683,8 @@
       "phone": "(08) 5550 6673",
       "email": "ethan.parker@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700001",
       "account": {
-        "accountNumber": "DEMO-700001",
         "utility": "electricity",
         "customerSince": "2021-10-16",
         "dateOfBirth": "1982-05-28",
@@ -934,8 +934,8 @@
       "phone": "(08) 5550 5974",
       "email": "luke.hayes@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700002",
       "account": {
-        "accountNumber": "DEMO-700002",
         "utility": "electricity",
         "customerSince": "2019-10-16",
         "dateOfBirth": "1973-04-12",
@@ -1226,8 +1226,8 @@
       "phone": null,
       "email": "mia.hayes@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700003",
       "account": {
-        "accountNumber": "DEMO-700003",
         "utility": "electricity",
         "customerSince": "2016-10-16",
         "dateOfBirth": "1965-11-11",
@@ -1434,8 +1434,8 @@
       "phone": "(08) 5550 0770",
       "email": "sophie.spencer@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700004",
       "account": {
-        "accountNumber": "DEMO-700004",
         "utility": "electricity",
         "customerSince": "2016-10-16",
         "dateOfBirth": "1941-07-18",
@@ -1689,8 +1689,8 @@
       "phone": "(08) 5550 1270",
       "email": "soph.collins@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700005",
       "account": {
-        "accountNumber": "DEMO-700005",
         "utility": "electricity",
         "customerSince": "2022-10-16",
         "dateOfBirth": "1991-05-07",
@@ -1971,8 +1971,8 @@
       "phone": "(08) 5550 3117",
       "email": "olivia.hughes@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700006",
       "account": {
-        "accountNumber": "DEMO-700006",
         "utility": "electricity",
         "customerSince": "2023-10-16",
         "dateOfBirth": "1987-06-18",
@@ -2255,8 +2255,8 @@
       "phone": "(08) 5550 3736",
       "email": "hugo.spencer@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700007",
       "account": {
-        "accountNumber": "DEMO-700007",
         "utility": "electricity",
         "customerSince": "2018-10-16",
         "dateOfBirth": "1970-08-08",
@@ -2511,8 +2511,8 @@
       "phone": "(08) 5550 5904",
       "email": "isla.parker@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700008",
       "account": {
-        "accountNumber": "DEMO-700008",
         "utility": "electricity",
         "customerSince": "2011-10-16",
         "dateOfBirth": "1989-08-13",
@@ -2762,8 +2762,8 @@
       "phone": "(08) 5550 7245",
       "email": "noah.cooper@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700009",
       "account": {
-        "accountNumber": "DEMO-700009",
         "utility": "electricity",
         "customerSince": "2020-10-16",
         "dateOfBirth": "2000-01-29",
@@ -3007,8 +3007,8 @@
       "phone": "(08) 5550 4040",
       "email": "finn.harrison@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700010",
       "account": {
-        "accountNumber": "DEMO-700010",
         "utility": "electricity",
         "customerSince": "2022-10-16",
         "dateOfBirth": "2003-03-30",
@@ -3294,8 +3294,8 @@
       "phone": null,
       "email": "hugo.hayes@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700011",
       "account": {
-        "accountNumber": "DEMO-700011",
         "utility": "electricity",
         "customerSince": "2020-10-16",
         "dateOfBirth": "1956-02-18",
@@ -3551,8 +3551,8 @@
       "phone": "(08) 5550 1909",
       "email": "noah.parker@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700012",
       "account": {
-        "accountNumber": "DEMO-700012",
         "utility": "electricity",
         "customerSince": "2016-10-16",
         "dateOfBirth": "1955-09-02",
@@ -3855,8 +3855,8 @@
       "phone": "(08) 5550 3548",
       "email": "ethan.spencer@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700013",
       "account": {
-        "accountNumber": "DEMO-700013",
         "utility": "electricity",
         "customerSince": "2025-10-16",
         "dateOfBirth": "1967-08-11",
@@ -4100,8 +4100,8 @@
       "phone": "(08) 5550 0951",
       "email": null,
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700014",
       "account": {
-        "accountNumber": "DEMO-700014",
         "utility": "electricity",
         "customerSince": "2018-10-16",
         "dateOfBirth": "1948-04-07",
@@ -4345,8 +4345,8 @@
       "phone": "(08) 5550 8157",
       "email": "leo.williams@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700015",
       "account": {
-        "accountNumber": "DEMO-700015",
         "utility": "electricity",
         "customerSince": "2025-10-16",
         "dateOfBirth": "1951-09-10",
@@ -4627,8 +4627,8 @@
       "phone": "(08) 5550 6711",
       "email": null,
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700016",
       "account": {
-        "accountNumber": "DEMO-700016",
         "utility": "electricity",
         "customerSince": "2019-10-16",
         "dateOfBirth": "1954-09-29",
@@ -4911,8 +4911,8 @@
       "phone": "(08) 5550 6143",
       "email": "ozzie.phillips@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700017",
       "account": {
-        "accountNumber": "DEMO-700017",
         "utility": "electricity",
         "customerSince": "2021-10-16",
         "dateOfBirth": "1959-06-08",
@@ -5161,8 +5161,8 @@
       "phone": "(08) 5550 5729",
       "email": "chloe.phillips@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700018",
       "account": {
-        "accountNumber": "DEMO-700018",
         "utility": "electricity",
         "customerSince": "2015-10-16",
         "dateOfBirth": "1975-03-06",
@@ -5412,8 +5412,8 @@
       "phone": "(08) 5550 2737",
       "email": "hal.foster@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700019",
       "account": {
-        "accountNumber": "DEMO-700019",
         "utility": "electricity",
         "customerSince": "2024-10-16",
         "dateOfBirth": "1955-06-30",
@@ -5657,8 +5657,8 @@
       "phone": "(08) 5550 8245",
       "email": "soph.hayes@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700020",
       "account": {
-        "accountNumber": "DEMO-700020",
         "utility": "electricity",
         "customerSince": "2018-10-16",
         "dateOfBirth": "1987-10-11",
@@ -5937,8 +5937,8 @@
       "phone": null,
       "email": "henry.phillips@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700021",
       "account": {
-        "accountNumber": "DEMO-700021",
         "utility": "electricity",
         "customerSince": "2012-10-16",
         "dateOfBirth": "1980-03-05",
@@ -6188,8 +6188,8 @@
       "phone": "(08) 5550 5369",
       "email": "mia.cooper@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700022",
       "account": {
-        "accountNumber": "DEMO-700022",
         "utility": "electricity",
         "customerSince": "2020-10-16",
         "dateOfBirth": "1955-05-24",
@@ -6480,8 +6480,8 @@
       "phone": "(08) 5550 1064",
       "email": "millie.roberts@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700023",
       "account": {
-        "accountNumber": "DEMO-700023",
         "utility": "electricity",
         "customerSince": "2025-10-16",
         "dateOfBirth": "2007-09-19",
@@ -6731,8 +6731,8 @@
       "phone": "(08) 5550 1829",
       "email": "ruby.walker@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700024",
       "account": {
-        "accountNumber": "DEMO-700024",
         "utility": "electricity",
         "customerSince": "2024-10-16",
         "dateOfBirth": "1955-05-12",
@@ -6980,8 +6980,8 @@
       "phone": "(08) 5550 8771",
       "email": null,
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700025",
       "account": {
-        "accountNumber": "DEMO-700025",
         "utility": "electricity",
         "customerSince": "2025-10-16",
         "dateOfBirth": "1993-11-07",
@@ -7262,8 +7262,8 @@
       "phone": "(08) 5550 0583",
       "email": "luke.williams@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700026",
       "account": {
-        "accountNumber": "DEMO-700026",
         "utility": "electricity",
         "customerSince": "2019-10-16",
         "dateOfBirth": "1989-10-01",
@@ -7552,8 +7552,8 @@
       "phone": null,
       "email": "zoe.roberts@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700027",
       "account": {
-        "accountNumber": "DEMO-700027",
         "utility": "electricity",
         "customerSince": "2014-10-16",
         "dateOfBirth": "1946-01-18",
@@ -7802,8 +7802,8 @@
       "phone": "(08) 5550 8807",
       "email": "ava.ross@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700028",
       "account": {
-        "accountNumber": "DEMO-700028",
         "utility": "electricity",
         "customerSince": "2018-10-16",
         "dateOfBirth": "1968-09-21",
@@ -8053,8 +8053,8 @@
       "phone": "(08) 5550 5718",
       "email": "noah.turner@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700029",
       "account": {
-        "accountNumber": "DEMO-700029",
         "utility": "electricity",
         "customerSince": "2014-10-16",
         "dateOfBirth": "1974-10-01",
@@ -8298,8 +8298,8 @@
       "phone": "(08) 5550 8076",
       "email": "ethan.foster@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700030",
       "account": {
-        "accountNumber": "DEMO-700030",
         "utility": "electricity",
         "customerSince": "2011-10-16",
         "dateOfBirth": "1981-03-19",
@@ -8590,8 +8590,8 @@
       "phone": "(08) 5550 2690",
       "email": "isla.williams@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700031",
       "account": {
-        "accountNumber": "DEMO-700031",
         "utility": "electricity",
         "customerSince": "2012-10-16",
         "dateOfBirth": "1961-09-28",
@@ -8841,8 +8841,8 @@
       "phone": "(08) 5550 9994",
       "email": "chloe.ross@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700032",
       "account": {
-        "accountNumber": "DEMO-700032",
         "utility": "electricity",
         "customerSince": "2013-10-16",
         "dateOfBirth": "1982-08-23",
@@ -9145,8 +9145,8 @@
       "phone": "(08) 5550 5045",
       "email": "isla.hughes@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700033",
       "account": {
-        "accountNumber": "DEMO-700033",
         "utility": "electricity",
         "customerSince": "2020-10-16",
         "dateOfBirth": "1957-05-11",
@@ -9348,8 +9348,8 @@
       "phone": "(08) 5550 0664",
       "email": "ruby.foster@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700034",
       "account": {
-        "accountNumber": "DEMO-700034",
         "utility": "electricity",
         "customerSince": "2014-10-16",
         "dateOfBirth": "1962-07-09",
@@ -9599,8 +9599,8 @@
       "phone": "(08) 5550 0796",
       "email": "leo.roberts@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700035",
       "account": {
-        "accountNumber": "DEMO-700035",
         "utility": "electricity",
         "customerSince": "2015-10-16",
         "dateOfBirth": "1991-07-05",
@@ -9881,8 +9881,8 @@
       "phone": "(08) 5550 5530",
       "email": "finn.anderson@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700036",
       "account": {
-        "accountNumber": "DEMO-700036",
         "utility": "electricity",
         "customerSince": "2020-10-16",
         "dateOfBirth": "1951-08-29",
@@ -10165,8 +10165,8 @@
       "phone": "(08) 5550 5418",
       "email": "lucas.spencer@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700037",
       "account": {
-        "accountNumber": "DEMO-700037",
         "utility": "electricity",
         "customerSince": "2024-10-16",
         "dateOfBirth": "1946-04-30",
@@ -10415,8 +10415,8 @@
       "phone": null,
       "email": "amelia.spencer@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700038",
       "account": {
-        "accountNumber": "DEMO-700038",
         "utility": "electricity",
         "customerSince": "2020-10-16",
         "dateOfBirth": "1958-02-02",
@@ -10660,8 +10660,8 @@
       "phone": "(08) 5550 4937",
       "email": "ethan.cooper@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700039",
       "account": {
-        "accountNumber": "DEMO-700039",
         "utility": "electricity",
         "customerSince": "2025-10-16",
         "dateOfBirth": "1985-07-06",
@@ -10905,8 +10905,8 @@
       "phone": "(08) 5550 6591",
       "email": "ozzie.harrison@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700040",
       "account": {
-        "accountNumber": "DEMO-700040",
         "utility": "electricity",
         "customerSince": "2020-10-16",
         "dateOfBirth": "1980-08-14",
@@ -11192,8 +11192,8 @@
       "phone": null,
       "email": "olivia.collins@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700041",
       "account": {
-        "accountNumber": "DEMO-700041",
         "utility": "electricity",
         "customerSince": "2025-10-16",
         "dateOfBirth": "2004-09-20",
@@ -11449,8 +11449,8 @@
       "phone": "(08) 5550 4059",
       "email": "ruby.anderson@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700042",
       "account": {
-        "accountNumber": "DEMO-700042",
         "utility": "electricity",
         "customerSince": "2017-10-16",
         "dateOfBirth": "1967-04-21",
@@ -11741,8 +11741,8 @@
       "phone": "(08) 5550 8451",
       "email": "oscar.spencer@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700043",
       "account": {
-        "accountNumber": "DEMO-700043",
         "utility": "electricity",
         "customerSince": "2017-10-16",
         "dateOfBirth": "1958-09-05",
@@ -11986,8 +11986,8 @@
       "phone": null,
       "email": "henry.williams@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700044",
       "account": {
-        "accountNumber": "DEMO-700044",
         "utility": "electricity",
         "customerSince": "2018-10-16",
         "dateOfBirth": "1945-09-04",
@@ -12241,8 +12241,8 @@
       "phone": "(08) 5550 3457",
       "email": "zoe.turner@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700045",
       "account": {
-        "accountNumber": "DEMO-700045",
         "utility": "electricity",
         "customerSince": "2012-10-16",
         "dateOfBirth": "1993-12-23",
@@ -12523,8 +12523,8 @@
       "phone": "(08) 5550 1500",
       "email": "mia.mitchell@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700046",
       "account": {
-        "accountNumber": "DEMO-700046",
         "utility": "electricity",
         "customerSince": "2020-10-16",
         "dateOfBirth": "1983-10-06",
@@ -12813,8 +12813,8 @@
       "phone": "(08) 5550 8765",
       "email": "leo.foster@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700047",
       "account": {
-        "accountNumber": "DEMO-700047",
         "utility": "electricity",
         "customerSince": "2014-10-16",
         "dateOfBirth": "1959-08-21",
@@ -13069,8 +13069,8 @@
       "phone": "(08) 5550 3933",
       "email": "gracie.ross@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700048",
       "account": {
-        "accountNumber": "DEMO-700048",
         "utility": "electricity",
         "customerSince": "2022-10-16",
         "dateOfBirth": "1976-09-24",
@@ -13314,8 +13314,8 @@
       "phone": null,
       "email": "henry.roberts@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700049",
       "account": {
-        "accountNumber": "DEMO-700049",
         "utility": "electricity",
         "customerSince": "2015-10-16",
         "dateOfBirth": "1961-05-11",
@@ -13559,8 +13559,8 @@
       "phone": "(08) 5550 2780",
       "email": "noah.collins@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700050",
       "account": {
-        "accountNumber": "DEMO-700050",
         "utility": "electricity",
         "customerSince": "2018-10-16",
         "dateOfBirth": "1982-05-14",
@@ -13834,8 +13834,8 @@
       "phone": "(08) 5550 1405",
       "email": "ethan.williams@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700051",
       "account": {
-        "accountNumber": "DEMO-700051",
         "utility": "electricity",
         "customerSince": "2022-10-16",
         "dateOfBirth": "1994-06-09",
@@ -14091,8 +14091,8 @@
       "phone": "(08) 5550 0674",
       "email": "leo.ross@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700052",
       "account": {
-        "accountNumber": "DEMO-700052",
         "utility": "electricity",
         "customerSince": "2020-10-16",
         "dateOfBirth": "1967-03-10",
@@ -14383,8 +14383,8 @@
       "phone": "(08) 5550 1342",
       "email": "zoe.williams@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700053",
       "account": {
-        "accountNumber": "DEMO-700053",
         "utility": "electricity",
         "customerSince": "2012-10-16",
         "dateOfBirth": "1967-05-03",
@@ -14628,8 +14628,8 @@
       "phone": null,
       "email": "leo.cooper@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700054",
       "account": {
-        "accountNumber": "DEMO-700054",
         "utility": "electricity",
         "customerSince": "2012-10-16",
         "dateOfBirth": "1955-10-29",
@@ -14873,8 +14873,8 @@
       "phone": null,
       "email": "ella.williams@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700055",
       "account": {
-        "accountNumber": "DEMO-700055",
         "utility": "electricity",
         "customerSince": "2019-10-16",
         "dateOfBirth": "1951-10-01",
@@ -15155,8 +15155,8 @@
       "phone": "(08) 5550 5988",
       "email": "noah.williams@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700056",
       "account": {
-        "accountNumber": "DEMO-700056",
         "utility": "electricity",
         "customerSince": "2011-10-16",
         "dateOfBirth": "1967-04-29",
@@ -15439,8 +15439,8 @@
       "phone": "(08) 5550 8413",
       "email": "mia.parker@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700057",
       "account": {
-        "accountNumber": "DEMO-700057",
         "utility": "electricity",
         "customerSince": "2012-10-16",
         "dateOfBirth": "1977-01-03",
@@ -15695,8 +15695,8 @@
       "phone": "(08) 5550 9448",
       "email": "zoe.foster@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700058",
       "account": {
-        "accountNumber": "DEMO-700058",
         "utility": "electricity",
         "customerSince": "2024-10-16",
         "dateOfBirth": "1989-02-24",
@@ -15946,8 +15946,8 @@
       "phone": null,
       "email": "hal.spencer@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700059",
       "account": {
-        "accountNumber": "DEMO-700059",
         "utility": "electricity",
         "customerSince": "2016-10-16",
         "dateOfBirth": "1997-11-21",
@@ -16191,8 +16191,8 @@
       "phone": "(08) 5550 8074",
       "email": "hugo.phillips@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700060",
       "account": {
-        "accountNumber": "DEMO-700060",
         "utility": "electricity",
         "customerSince": "2024-10-16",
         "dateOfBirth": "1959-12-19",
@@ -16471,8 +16471,8 @@
       "phone": "(08) 5550 3057",
       "email": null,
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700061",
       "account": {
-        "accountNumber": "DEMO-700061",
         "utility": "electricity",
         "customerSince": "2021-10-16",
         "dateOfBirth": "1996-02-18",
@@ -16728,8 +16728,8 @@
       "phone": "(08) 5550 1138",
       "email": "liv.turner@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700062",
       "account": {
-        "accountNumber": "DEMO-700062",
         "utility": "electricity",
         "customerSince": "2025-10-16",
         "dateOfBirth": "1983-06-23",
@@ -17032,8 +17032,8 @@
       "phone": "(08) 5550 6954",
       "email": "liv.phillips@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700063",
       "account": {
-        "accountNumber": "DEMO-700063",
         "utility": "electricity",
         "customerSince": "2016-10-16",
         "dateOfBirth": "1970-07-23",
@@ -17283,8 +17283,8 @@
       "phone": "(08) 5550 4852",
       "email": "isla.bennett@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700064",
       "account": {
-        "accountNumber": "DEMO-700064",
         "utility": "electricity",
         "customerSince": "2020-10-16",
         "dateOfBirth": "1961-03-16",
@@ -17538,8 +17538,8 @@
       "phone": "(08) 5550 2839",
       "email": "grace.turner@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700065",
       "account": {
-        "accountNumber": "DEMO-700065",
         "utility": "electricity",
         "customerSince": "2018-10-16",
         "dateOfBirth": "1966-05-27",
@@ -17820,8 +17820,8 @@
       "phone": "(08) 5550 9120",
       "email": "ella.parker@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700066",
       "account": {
-        "accountNumber": "DEMO-700066",
         "utility": "electricity",
         "customerSince": "2021-10-16",
         "dateOfBirth": "1975-08-14",
@@ -18110,8 +18110,8 @@
       "phone": "(08) 5550 4897",
       "email": "gracie.thompson@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700067",
       "account": {
-        "accountNumber": "DEMO-700067",
         "utility": "electricity",
         "customerSince": "2015-10-16",
         "dateOfBirth": "1996-07-17",
@@ -18360,8 +18360,8 @@
       "phone": null,
       "email": "luke.harrison@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700068",
       "account": {
-        "accountNumber": "DEMO-700068",
         "utility": "electricity",
         "customerSince": "2022-10-16",
         "dateOfBirth": "1992-08-30",
@@ -18611,8 +18611,8 @@
       "phone": "(08) 5550 4029",
       "email": "ava.harrison@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700069",
       "account": {
-        "accountNumber": "DEMO-700069",
         "utility": "electricity",
         "customerSince": "2012-10-16",
         "dateOfBirth": "1991-11-03",
@@ -18856,8 +18856,8 @@
       "phone": "(08) 5550 7604",
       "email": "lucas.evans@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700070",
       "account": {
-        "accountNumber": "DEMO-700070",
         "utility": "electricity",
         "customerSince": "2014-10-16",
         "dateOfBirth": "1991-07-24",
@@ -19148,8 +19148,8 @@
       "phone": "(08) 5550 1502",
       "email": "finn.williams@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700071",
       "account": {
-        "accountNumber": "DEMO-700071",
         "utility": "electricity",
         "customerSince": "2023-10-16",
         "dateOfBirth": "1960-07-31",
@@ -19405,8 +19405,8 @@
       "phone": "(08) 5550 0589",
       "email": "hal.turner@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700072",
       "account": {
-        "accountNumber": "DEMO-700072",
         "utility": "electricity",
         "customerSince": "2021-10-16",
         "dateOfBirth": "1977-09-02",
@@ -19697,8 +19697,8 @@
       "phone": "(08) 5550 9786",
       "email": "lucas.thompson@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700073",
       "account": {
-        "accountNumber": "DEMO-700073",
         "utility": "electricity",
         "customerSince": "2021-10-16",
         "dateOfBirth": "1983-09-09",
@@ -19948,8 +19948,8 @@
       "phone": "(08) 5550 9359",
       "email": "chloe.turner@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700074",
       "account": {
-        "accountNumber": "DEMO-700074",
         "utility": "electricity",
         "customerSince": "2017-10-16",
         "dateOfBirth": "1937-12-20",
@@ -20193,8 +20193,8 @@
       "phone": "(08) 5550 6964",
       "email": "ruby.evans@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700075",
       "account": {
-        "accountNumber": "DEMO-700075",
         "utility": "electricity",
         "customerSince": "2024-10-16",
         "dateOfBirth": "2006-01-07",
@@ -20475,8 +20475,8 @@
       "phone": "(08) 5550 0686",
       "email": "zoe.parker@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700076",
       "account": {
-        "accountNumber": "DEMO-700076",
         "utility": "electricity",
         "customerSince": "2023-10-16",
         "dateOfBirth": "1955-06-21",
@@ -20759,8 +20759,8 @@
       "phone": "(08) 5550 4565",
       "email": "grace.bennett@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700077",
       "account": {
-        "accountNumber": "DEMO-700077",
         "utility": "electricity",
         "customerSince": "2014-10-16",
         "dateOfBirth": "1981-12-06",
@@ -21015,8 +21015,8 @@
       "phone": "(08) 5550 7355",
       "email": "amelia.phillips@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700078",
       "account": {
-        "accountNumber": "DEMO-700078",
         "utility": "electricity",
         "customerSince": "2015-10-16",
         "dateOfBirth": "1960-11-30",
@@ -21266,8 +21266,8 @@
       "phone": "(08) 5550 2919",
       "email": "amelia.bennett@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700079",
       "account": {
-        "accountNumber": "DEMO-700079",
         "utility": "electricity",
         "customerSince": "2022-10-16",
         "dateOfBirth": "1992-02-28",
@@ -21511,8 +21511,8 @@
       "phone": "(08) 5550 5590",
       "email": "henry.cooper@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700080",
       "account": {
-        "accountNumber": "DEMO-700080",
         "utility": "electricity",
         "customerSince": "2015-10-16",
         "dateOfBirth": "1962-10-10",
@@ -21791,8 +21791,8 @@
       "phone": "(08) 5550 3293",
       "email": "chloe.mitchell@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700081",
       "account": {
-        "accountNumber": "DEMO-700081",
         "utility": "electricity",
         "customerSince": "2014-10-16",
         "dateOfBirth": "1988-10-04",
@@ -22048,8 +22048,8 @@
       "phone": "(08) 5550 2639",
       "email": "mia.anderson@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700082",
       "account": {
-        "accountNumber": "DEMO-700082",
         "utility": "electricity",
         "customerSince": "2025-10-16",
         "dateOfBirth": "1999-05-03",
@@ -22352,8 +22352,8 @@
       "phone": "(08) 5550 4469",
       "email": "ella.spencer@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700083",
       "account": {
-        "accountNumber": "DEMO-700083",
         "utility": "electricity",
         "customerSince": "2025-10-16",
         "dateOfBirth": "2007-05-21",
@@ -22597,8 +22597,8 @@
       "phone": "(08) 5550 1412",
       "email": "sophie.bennett@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700084",
       "account": {
-        "accountNumber": "DEMO-700084",
         "utility": "electricity",
         "customerSince": "2014-10-16",
         "dateOfBirth": "1947-07-16",
@@ -22846,8 +22846,8 @@
       "phone": "(08) 5550 2240",
       "email": "oscar.collins@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700085",
       "account": {
-        "accountNumber": "DEMO-700085",
         "utility": "electricity",
         "customerSince": "2024-10-16",
         "dateOfBirth": "2004-09-11",
@@ -23128,8 +23128,8 @@
       "phone": "(08) 5550 4298",
       "email": "soph.evans@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700086",
       "account": {
-        "accountNumber": "DEMO-700086",
         "utility": "electricity",
         "customerSince": "2022-10-16",
         "dateOfBirth": "1991-08-17",
@@ -23412,8 +23412,8 @@
       "phone": "(08) 5550 0868",
       "email": "zoe.hughes@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700087",
       "account": {
-        "accountNumber": "DEMO-700087",
         "utility": "electricity",
         "customerSince": "2022-10-16",
         "dateOfBirth": "1983-07-06",
@@ -23668,8 +23668,8 @@
       "phone": "(08) 5550 8548",
       "email": "zoe.collins@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700088",
       "account": {
-        "accountNumber": "DEMO-700088",
         "utility": "electricity",
         "customerSince": "2020-10-16",
         "dateOfBirth": "1960-09-19",
@@ -23913,8 +23913,8 @@
       "phone": "(08) 5550 2590",
       "email": "ruby.thompson@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700089",
       "account": {
-        "accountNumber": "DEMO-700089",
         "utility": "electricity",
         "customerSince": "2015-10-16",
         "dateOfBirth": "1961-06-12",
@@ -24158,8 +24158,8 @@
       "phone": "(08) 5550 0930",
       "email": "ozzie.thompson@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700090",
       "account": {
-        "accountNumber": "DEMO-700090",
         "utility": "electricity",
         "customerSince": "2022-10-16",
         "dateOfBirth": "2000-12-04",
@@ -24433,8 +24433,8 @@
       "phone": "(08) 5550 1277",
       "email": "noah.brooks@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700091",
       "account": {
-        "accountNumber": "DEMO-700091",
         "utility": "electricity",
         "customerSince": "2011-10-16",
         "dateOfBirth": "1989-11-03",
@@ -24690,8 +24690,8 @@
       "phone": "(08) 5550 2887",
       "email": "olivia.roberts@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700092",
       "account": {
-        "accountNumber": "DEMO-700092",
         "utility": "electricity",
         "customerSince": "2019-10-16",
         "dateOfBirth": "1995-08-05",
@@ -24982,8 +24982,8 @@
       "phone": "(08) 5550 8410",
       "email": null,
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700093",
       "account": {
-        "accountNumber": "DEMO-700093",
         "utility": "electricity",
         "customerSince": "2025-10-16",
         "dateOfBirth": "1982-05-05",
@@ -25227,8 +25227,8 @@
       "phone": "(08) 5550 8172",
       "email": "mia.foster@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700094",
       "account": {
-        "accountNumber": "DEMO-700094",
         "utility": "electricity",
         "customerSince": "2021-10-16",
         "dateOfBirth": "1951-01-31",
@@ -25478,8 +25478,8 @@
       "phone": "(08) 5550 4934",
       "email": "chloe.hayes@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700095",
       "account": {
-        "accountNumber": "DEMO-700095",
         "utility": "electricity",
         "customerSince": "2017-10-16",
         "dateOfBirth": "1982-02-10",
@@ -25760,8 +25760,8 @@
       "phone": "(08) 5550 1846",
       "email": "lucas.brooks@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700096",
       "account": {
-        "accountNumber": "DEMO-700096",
         "utility": "electricity",
         "customerSince": "2019-10-16",
         "dateOfBirth": "1998-07-24",
@@ -26044,8 +26044,8 @@
       "phone": "(08) 5550 1264",
       "email": "isla.collins@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700097",
       "account": {
-        "accountNumber": "DEMO-700097",
         "utility": "electricity",
         "customerSince": "2024-10-16",
         "dateOfBirth": "1961-10-24",
@@ -26300,8 +26300,8 @@
       "phone": "(08) 5550 0412",
       "email": "finn.collins@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700098",
       "account": {
-        "accountNumber": "DEMO-700098",
         "utility": "electricity",
         "customerSince": "2015-10-16",
         "dateOfBirth": "1992-03-26",
@@ -26551,8 +26551,8 @@
       "phone": "(08) 5550 4853",
       "email": "ruby.phillips@example.com",
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700099",
       "account": {
-        "accountNumber": "DEMO-700099",
         "utility": "electricity",
         "customerSince": "2025-10-16",
         "dateOfBirth": "1997-09-22",
@@ -26796,8 +26796,8 @@
       "phone": "(08) 5550 6407",
       "email": null,
       "contactDetailsProvenance": "fictional_demo_contact_details",
+      "accountNumber": "DEMO-700100",
       "account": {
-        "accountNumber": "DEMO-700100",
         "utility": "electricity",
         "customerSince": "2011-10-16",
         "dateOfBirth": "1959-01-06",
@@ -27178,7 +27178,7 @@
             "Q32_1"
           ],
           "reviewStatus": "reviewed",
-          "reviewedByUserId": "staff-manager",
+          "reviewedByUserId": "staff-james",
           "provenance": "synthetic_candidate_action_for_worker_review"
         },
         {
@@ -27190,7 +27190,7 @@
             "Q32_1"
           ],
           "reviewStatus": "reviewed",
-          "reviewedByUserId": "staff-manager",
+          "reviewedByUserId": "staff-james",
           "provenance": "synthetic_candidate_action_for_worker_review"
         },
         {
@@ -27204,7 +27204,7 @@
             "Q35_7"
           ],
           "reviewStatus": "reviewed",
-          "reviewedByUserId": "staff-manager",
+          "reviewedByUserId": "staff-james",
           "provenance": "synthetic_candidate_action_for_worker_review"
         },
         {
@@ -27220,7 +27220,7 @@
             "Z8a"
           ],
           "reviewStatus": "reviewed",
-          "reviewedByUserId": "staff-manager",
+          "reviewedByUserId": "staff-james",
           "provenance": "synthetic_candidate_action_for_worker_review"
         },
         {
@@ -27234,7 +27234,7 @@
             "Z8a"
           ],
           "reviewStatus": "reviewed",
-          "reviewedByUserId": "staff-manager",
+          "reviewedByUserId": "staff-james",
           "provenance": "synthetic_candidate_action_for_worker_review"
         }
       ],
@@ -27252,7 +27252,7 @@
       },
       "workflow": {
         "status": "new",
-        "assignedToUserId": null,
+        "assignedToUserId": "staff-james",
         "createdAt": "2026-10-12T09:00:00+08:00",
         "updatedAt": "2026-10-16T10:00:00+08:00",
         "followUpAt": "2026-10-14T14:00:00+08:00",
@@ -27260,7 +27260,7 @@
         "notes": []
       },
       "testing": {
-        "scenario": "unassigned_financial",
+        "scenario": "new_financial",
         "notRepresentativeOfPopulation": true
       }
     },
@@ -28832,7 +28832,7 @@
       },
       "workflow": {
         "status": "new",
-        "assignedToUserId": null,
+        "assignedToUserId": "staff-maya",
         "createdAt": "2026-10-04T09:00:00+08:00",
         "updatedAt": "2026-10-16T10:00:00+08:00",
         "followUpAt": "2026-10-14T14:00:00+08:00",
@@ -29259,7 +29259,7 @@
       },
       "workflow": {
         "status": "new",
-        "assignedToUserId": null,
+        "assignedToUserId": "staff-james",
         "createdAt": "2026-10-02T09:00:00+08:00",
         "updatedAt": "2026-10-16T10:00:00+08:00",
         "followUpAt": "2026-10-20T14:00:00+08:00",
@@ -29267,7 +29267,7 @@
         "notes": []
       },
       "testing": {
-        "scenario": "unassigned_financial",
+        "scenario": "new_financial",
         "notRepresentativeOfPopulation": true
       }
     },
@@ -30793,7 +30793,7 @@
       },
       "workflow": {
         "status": "new",
-        "assignedToUserId": null,
+        "assignedToUserId": "staff-maya",
         "createdAt": "2026-10-06T09:00:00+08:00",
         "updatedAt": "2026-10-16T10:00:00+08:00",
         "followUpAt": "2026-10-21T14:00:00+08:00",
@@ -31213,7 +31213,7 @@
       },
       "workflow": {
         "status": "new",
-        "assignedToUserId": null,
+        "assignedToUserId": "staff-james",
         "createdAt": "2026-10-04T09:00:00+08:00",
         "updatedAt": "2026-10-16T10:00:00+08:00",
         "followUpAt": "2026-10-14T14:00:00+08:00",
@@ -31221,7 +31221,7 @@
         "notes": []
       },
       "testing": {
-        "scenario": "unassigned_financial",
+        "scenario": "new_financial",
         "notRepresentativeOfPopulation": true
       }
     },
@@ -32793,7 +32793,7 @@
       },
       "workflow": {
         "status": "new",
-        "assignedToUserId": null,
+        "assignedToUserId": "staff-maya",
         "createdAt": "2026-10-08T09:00:00+08:00",
         "updatedAt": "2026-10-16T10:00:00+08:00",
         "followUpAt": "2026-10-14T14:00:00+08:00",
@@ -33146,7 +33146,7 @@
             "Q32_1"
           ],
           "reviewStatus": "reviewed",
-          "reviewedByUserId": "staff-manager",
+          "reviewedByUserId": "staff-james",
           "provenance": "synthetic_candidate_action_for_worker_review"
         },
         {
@@ -33158,7 +33158,7 @@
             "Q32_1"
           ],
           "reviewStatus": "reviewed",
-          "reviewedByUserId": "staff-manager",
+          "reviewedByUserId": "staff-james",
           "provenance": "synthetic_candidate_action_for_worker_review"
         },
         {
@@ -33172,7 +33172,7 @@
             "Q35_7"
           ],
           "reviewStatus": "reviewed",
-          "reviewedByUserId": "staff-manager",
+          "reviewedByUserId": "staff-james",
           "provenance": "synthetic_candidate_action_for_worker_review"
         },
         {
@@ -33188,7 +33188,7 @@
             "Z8a"
           ],
           "reviewStatus": "reviewed",
-          "reviewedByUserId": "staff-manager",
+          "reviewedByUserId": "staff-james",
           "provenance": "synthetic_candidate_action_for_worker_review"
         },
         {
@@ -33202,7 +33202,7 @@
             "Z8a"
           ],
           "reviewStatus": "reviewed",
-          "reviewedByUserId": "staff-manager",
+          "reviewedByUserId": "staff-james",
           "provenance": "synthetic_candidate_action_for_worker_review"
         }
       ],
@@ -33220,7 +33220,7 @@
       },
       "workflow": {
         "status": "new",
-        "assignedToUserId": null,
+        "assignedToUserId": "staff-james",
         "createdAt": "2026-10-06T09:00:00+08:00",
         "updatedAt": "2026-10-16T10:00:00+08:00",
         "followUpAt": "2026-10-19T14:00:00+08:00",
@@ -33228,7 +33228,7 @@
         "notes": []
       },
       "testing": {
-        "scenario": "unassigned_financial",
+        "scenario": "new_financial",
         "notRepresentativeOfPopulation": true
       }
     },
@@ -34754,7 +34754,7 @@
       },
       "workflow": {
         "status": "new",
-        "assignedToUserId": null,
+        "assignedToUserId": "staff-maya",
         "createdAt": "2026-10-10T09:00:00+08:00",
         "updatedAt": "2026-10-16T10:00:00+08:00",
         "followUpAt": "2026-10-20T14:00:00+08:00",
@@ -35174,7 +35174,7 @@
       },
       "workflow": {
         "status": "new",
-        "assignedToUserId": null,
+        "assignedToUserId": "staff-james",
         "createdAt": "2026-10-08T09:00:00+08:00",
         "updatedAt": "2026-10-16T10:00:00+08:00",
         "followUpAt": "2026-10-14T14:00:00+08:00",
@@ -35182,7 +35182,7 @@
         "notes": []
       },
       "testing": {
-        "scenario": "unassigned_financial",
+        "scenario": "new_financial",
         "notRepresentativeOfPopulation": true
       }
     },
@@ -36715,7 +36715,7 @@
             "Q32_1"
           ],
           "reviewStatus": "reviewed",
-          "reviewedByUserId": "staff-manager",
+          "reviewedByUserId": "staff-maya",
           "provenance": "synthetic_candidate_action_for_worker_review"
         },
         {
@@ -36727,7 +36727,7 @@
             "Q32_1"
           ],
           "reviewStatus": "reviewed",
-          "reviewedByUserId": "staff-manager",
+          "reviewedByUserId": "staff-maya",
           "provenance": "synthetic_candidate_action_for_worker_review"
         },
         {
@@ -36739,7 +36739,7 @@
             "Q32_1"
           ],
           "reviewStatus": "reviewed",
-          "reviewedByUserId": "staff-manager",
+          "reviewedByUserId": "staff-maya",
           "provenance": "synthetic_candidate_action_for_worker_review"
         }
       ],
@@ -36754,7 +36754,7 @@
       },
       "workflow": {
         "status": "new",
-        "assignedToUserId": null,
+        "assignedToUserId": "staff-maya",
         "createdAt": "2026-10-12T09:00:00+08:00",
         "updatedAt": "2026-10-16T10:00:00+08:00",
         "followUpAt": "2026-10-14T14:00:00+08:00",
@@ -37181,7 +37181,7 @@
       },
       "workflow": {
         "status": "new",
-        "assignedToUserId": null,
+        "assignedToUserId": "staff-james",
         "createdAt": "2026-10-10T09:00:00+08:00",
         "updatedAt": "2026-10-16T10:00:00+08:00",
         "followUpAt": "2026-10-18T14:00:00+08:00",
@@ -37189,7 +37189,7 @@
         "notes": []
       },
       "testing": {
-        "scenario": "unassigned_financial",
+        "scenario": "new_financial",
         "notRepresentativeOfPopulation": true
       }
     },
@@ -38715,7 +38715,7 @@
       },
       "workflow": {
         "status": "new",
-        "assignedToUserId": null,
+        "assignedToUserId": "staff-maya",
         "createdAt": "2026-10-02T09:00:00+08:00",
         "updatedAt": "2026-10-16T10:00:00+08:00",
         "followUpAt": "2026-10-19T14:00:00+08:00",
@@ -39061,7 +39061,7 @@
             "Q32_1"
           ],
           "reviewStatus": "reviewed",
-          "reviewedByUserId": "staff-manager",
+          "reviewedByUserId": "staff-james",
           "provenance": "synthetic_candidate_action_for_worker_review"
         },
         {
@@ -39073,7 +39073,7 @@
             "Q32_1"
           ],
           "reviewStatus": "reviewed",
-          "reviewedByUserId": "staff-manager",
+          "reviewedByUserId": "staff-james",
           "provenance": "synthetic_candidate_action_for_worker_review"
         },
         {
@@ -39087,7 +39087,7 @@
             "Q35_7"
           ],
           "reviewStatus": "reviewed",
-          "reviewedByUserId": "staff-manager",
+          "reviewedByUserId": "staff-james",
           "provenance": "synthetic_candidate_action_for_worker_review"
         },
         {
@@ -39103,7 +39103,7 @@
             "Z8a"
           ],
           "reviewStatus": "reviewed",
-          "reviewedByUserId": "staff-manager",
+          "reviewedByUserId": "staff-james",
           "provenance": "synthetic_candidate_action_for_worker_review"
         },
         {
@@ -39117,7 +39117,7 @@
             "Z8a"
           ],
           "reviewStatus": "reviewed",
-          "reviewedByUserId": "staff-manager",
+          "reviewedByUserId": "staff-james",
           "provenance": "synthetic_candidate_action_for_worker_review"
         }
       ],
@@ -39135,7 +39135,7 @@
       },
       "workflow": {
         "status": "new",
-        "assignedToUserId": null,
+        "assignedToUserId": "staff-james",
         "createdAt": "2026-10-12T09:00:00+08:00",
         "updatedAt": "2026-10-16T10:00:00+08:00",
         "followUpAt": "2026-10-14T14:00:00+08:00",
@@ -39143,7 +39143,7 @@
         "notes": []
       },
       "testing": {
-        "scenario": "unassigned_financial",
+        "scenario": "new_financial",
         "notRepresentativeOfPopulation": true
       }
     },
@@ -40715,7 +40715,7 @@
       },
       "workflow": {
         "status": "new",
-        "assignedToUserId": null,
+        "assignedToUserId": "staff-maya",
         "createdAt": "2026-10-04T09:00:00+08:00",
         "updatedAt": "2026-10-16T10:00:00+08:00",
         "followUpAt": "2026-10-14T14:00:00+08:00",
@@ -41142,7 +41142,7 @@
       },
       "workflow": {
         "status": "new",
-        "assignedToUserId": null,
+        "assignedToUserId": "staff-james",
         "createdAt": "2026-10-02T09:00:00+08:00",
         "updatedAt": "2026-10-16T10:00:00+08:00",
         "followUpAt": "2026-10-17T14:00:00+08:00",
@@ -41150,7 +41150,7 @@
         "notes": []
       },
       "testing": {
-        "scenario": "unassigned_financial",
+        "scenario": "new_financial",
         "notRepresentativeOfPopulation": true
       }
     },
@@ -42676,7 +42676,7 @@
       },
       "workflow": {
         "status": "new",
-        "assignedToUserId": null,
+        "assignedToUserId": "staff-maya",
         "createdAt": "2026-10-06T09:00:00+08:00",
         "updatedAt": "2026-10-16T10:00:00+08:00",
         "followUpAt": "2026-10-18T14:00:00+08:00",
@@ -43096,7 +43096,7 @@
       },
       "workflow": {
         "status": "new",
-        "assignedToUserId": null,
+        "assignedToUserId": "staff-james",
         "createdAt": "2026-10-04T09:00:00+08:00",
         "updatedAt": "2026-10-16T10:00:00+08:00",
         "followUpAt": "2026-10-14T14:00:00+08:00",
@@ -43104,7 +43104,7 @@
         "notes": []
       },
       "testing": {
-        "scenario": "unassigned_financial",
+        "scenario": "new_financial",
         "notRepresentativeOfPopulation": true
       }
     },
@@ -44676,7 +44676,7 @@
       },
       "workflow": {
         "status": "new",
-        "assignedToUserId": null,
+        "assignedToUserId": "staff-maya",
         "createdAt": "2026-10-08T09:00:00+08:00",
         "updatedAt": "2026-10-16T10:00:00+08:00",
         "followUpAt": "2026-10-14T14:00:00+08:00",
@@ -45029,7 +45029,7 @@
             "Q32_1"
           ],
           "reviewStatus": "reviewed",
-          "reviewedByUserId": "staff-manager",
+          "reviewedByUserId": "staff-james",
           "provenance": "synthetic_candidate_action_for_worker_review"
         },
         {
@@ -45041,7 +45041,7 @@
             "Q32_1"
           ],
           "reviewStatus": "reviewed",
-          "reviewedByUserId": "staff-manager",
+          "reviewedByUserId": "staff-james",
           "provenance": "synthetic_candidate_action_for_worker_review"
         },
         {
@@ -45055,7 +45055,7 @@
             "Q35_7"
           ],
           "reviewStatus": "reviewed",
-          "reviewedByUserId": "staff-manager",
+          "reviewedByUserId": "staff-james",
           "provenance": "synthetic_candidate_action_for_worker_review"
         },
         {
@@ -45071,7 +45071,7 @@
             "Z8a"
           ],
           "reviewStatus": "reviewed",
-          "reviewedByUserId": "staff-manager",
+          "reviewedByUserId": "staff-james",
           "provenance": "synthetic_candidate_action_for_worker_review"
         },
         {
@@ -45085,7 +45085,7 @@
             "Z8a"
           ],
           "reviewStatus": "reviewed",
-          "reviewedByUserId": "staff-manager",
+          "reviewedByUserId": "staff-james",
           "provenance": "synthetic_candidate_action_for_worker_review"
         }
       ],
@@ -45103,7 +45103,7 @@
       },
       "workflow": {
         "status": "new",
-        "assignedToUserId": null,
+        "assignedToUserId": "staff-james",
         "createdAt": "2026-10-06T09:00:00+08:00",
         "updatedAt": "2026-10-16T10:00:00+08:00",
         "followUpAt": "2026-10-23T14:00:00+08:00",
@@ -45111,7 +45111,7 @@
         "notes": []
       },
       "testing": {
-        "scenario": "unassigned_financial",
+        "scenario": "new_financial",
         "notRepresentativeOfPopulation": true
       }
     },
@@ -46637,7 +46637,7 @@
       },
       "workflow": {
         "status": "new",
-        "assignedToUserId": null,
+        "assignedToUserId": "staff-maya",
         "createdAt": "2026-10-10T09:00:00+08:00",
         "updatedAt": "2026-10-16T10:00:00+08:00",
         "followUpAt": "2026-10-17T14:00:00+08:00",

@@ -1,6 +1,6 @@
-# Admin flowchart
+# Flowchart page
 
-`/admin` shows the utility-hardship mapping as a three-column flowchart: **Signals → Circumstances → Solutions**. The JSON file is the single source of truth: the page reads it from the API, and every edit is written back to it.
+`/flowchart` (the **Flowchart** page in the main navigation; old `/admin` links still work) shows the utility-hardship mapping as a three-column flowchart: **Signals → Circumstances → Solutions**. The JSON file is the single source of truth: the page reads it from the API, and every edit is written back to it.
 
 File: `data/admin/utility_hardship_mapping.json` (override with `GREENSPARK_FLOW_FILE`).
 

@@ -22,7 +22,7 @@ function answerText(c: QueueCase, fieldId: string): { text: string; tone: "yes" 
 }
 
 export interface CaseActions {
-  onAssign: (userId: string | null) => Promise<boolean>;
+  onAssign: (userId: string) => Promise<boolean>;
   onStatus: (status: CaseStatus) => Promise<boolean>;
   onReview: (next: ReviewStatus) => Promise<boolean>;
   onNote: (text: string) => Promise<boolean>;
@@ -66,9 +66,9 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
   return (
     <article className="case-page" aria-labelledby="case-title">
       <header className="case-head">
-        <span className="eyebrow">Case details · {c.id}</span>
+        <span className="eyebrow">Account · {person?.accountNumber ?? "Not recorded"}</span>
         <h1 id="case-title" tabIndex={-1} ref={heading}>{person?.displayName ?? "Unknown person"}</h1>
-        <p className="sub">{person?.suburb}, {person?.state} · {c.personId}</p>
+        <p className="sub">{person?.suburb}, {person?.state}</p>
         <div className="ov-row">
           <PriorityBadge c={c} />
           <span className={`sub follow-${fu.tone}`}>{fu.text}</span>
@@ -78,7 +78,7 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
       <div className="case-grid">
       <div className="case-col">
       <dl className="facts case-card">
-        <div><dt>Assigned worker</dt><dd>{assignedUser ? assignedUser.displayName : "Unassigned"}</dd></div>
+        <div><dt>Assigned worker</dt><dd>{assignedUser?.displayName ?? c.workflow.assignedToUserId}</dd></div>
         <div><dt>Case status</dt><dd>{STATUS_LABELS[c.workflow.status]}</dd></div>
       </dl>
       <section className="case-card" aria-labelledby="ov-contact">
@@ -111,7 +111,7 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
           <div><dt>Access needs</dt><dd>{acct ? acct.accessNeeds ?? "None recorded" : "Not recorded"}</dd></div>
         </dl>
       </section>
-      {acct ? <UtilityAccount account={acct} /> : null}
+      {acct ? <UtilityAccount account={acct} accountNumber={person?.accountNumber ?? null} /> : null}
 
       <section className="case-card model" aria-labelledby="ov-model">
         <h3 id="ov-model">Model assessment <span className="sim">simulated · {a.provider}</span></h3>
@@ -145,7 +145,7 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
       <section className="case-card" aria-labelledby="ov-support">
         <h3 id="ov-support">Support areas and why {fromFlow ? <span className="sim">hardship flow</span> : null}</h3>
         {fromFlow ? (
-          <p className="hint">Worked out from account data and survey answers with the Admin flow&apos;s rules: one strong signal, or two supporting ones. Sensitive circumstances need a strong signal.</p>
+          <p className="hint">Worked out from account data and survey answers with the Flowchart&apos;s rules: one strong signal, or two supporting ones. Sensitive circumstances need a strong signal.</p>
         ) : null}
         {c.circumstances.length === 0 ? <p className="muted">{fromFlow ? "No circumstances flagged." : "No circumstances flagged from the reported answers."}</p> : null}
         {data.supportAreas.filter((area) => c.supportAreaIds.includes(area.id)).map((area) => (
@@ -252,13 +252,12 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
         <label className="field">
           <span>Assigned worker</span>
           <select value={assignee} disabled={!isManager || props.busy} onChange={(e) => setAssignee(e.target.value)}>
-            <option value="">Unassigned</option>
             {workers.map((w) => <option key={w.id} value={w.id}>{w.displayName}</option>)}
           </select>
         </label>
         {isManager ? (
           <div className="actions">
-            <button type="button" className="btn" disabled={props.busy || assignee === (c.workflow.assignedToUserId ?? "")} onClick={() => props.actions.onAssign(assignee || null)}>
+            <button type="button" className="btn" disabled={props.busy || !assignee || assignee === (c.workflow.assignedToUserId ?? "")} onClick={() => props.actions.onAssign(assignee)}>
               Save assignment
             </button>
           </div>

@@ -28,18 +28,20 @@ describe("queue filters", () => {
     expect(res.every((c) => c.modelAssessment.priority !== null)).toBe(true);
   });
 
-  it("searches name, case id and suburb", () => {
+  it("searches name, account number and suburb, not internal case IDs", () => {
     const first = data.people[0]!;
     expect(applyFilters(data, q({ search: first.displayName.toUpperCase() }), me).length).toBeGreaterThan(0);
-    expect(applyFilters(data, q({ search: "GS-2001" }), me).map((c) => c.id)).toContain("GS-2001");
+    expect(applyFilters(data, q({ search: first.accountNumber! }), me).map((c) => c.personId)).toEqual([first.id]);
+    expect(applyFilters(data, q({ search: "GS-2001" }), me)).toHaveLength(0);
     expect(applyFilters(data, q({ search: first.suburb }), me).length).toBeGreaterThan(0);
     expect(applyFilters(data, q({ search: "zzzz-no-match" }), me)).toHaveLength(0);
   });
 
-  it("assigned-to-me and unassigned views use the current user", () => {
+  it("the assigned-to-me view uses the current user, and every case has a worker", () => {
     const mine = applyFilters(data, q({ view: "mine" }), me);
+    expect(mine.length).toBeGreaterThan(0);
     expect(mine.every((c) => c.workflow.assignedToUserId === me)).toBe(true);
-    expect(applyFilters(data, q({ view: "unassigned" }), me)).toHaveLength(20);
+    expect(data.cases.every((c) => c.workflow.assignedToUserId !== null)).toBe(true);
   });
 
   it("assistance filters keep unknown separate from No", () => {
@@ -78,7 +80,7 @@ describe("sorting, paging and counters", () => {
   it("global counters ignore resolved cases", () => {
     const c = overviewCounters(data.cases, me);
     const active = data.cases.filter((x) => x.workflow.status !== "resolved");
-    expect(c.awaitingAssignment).toBe(active.filter((x) => !x.workflow.assignedToUserId).length);
+    expect(c.urgent).toBe(active.filter((x) => x.modelAssessment.status === "ready" && x.modelAssessment.priority?.label === "urgent").length);
     expect(c.myActive).toBe(active.filter((x) => x.workflow.assignedToUserId === me).length);
   });
 

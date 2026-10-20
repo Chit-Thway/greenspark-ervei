@@ -4,7 +4,7 @@ This team's screen works without the prediction model, which connects through a 
 
 ## Shared identity
 
-- `personId` (for example `demo-person-011`) identifies a person; `caseId` (for example `GS-2011`) identifies a queue case. Both are stable strings; never derive them from a name.
+- `personId` (for example `demo-person-011`) identifies a person; `caseId` (for example `GS-2011`) identifies a queue case. Both are stable strings; never derive them from a name. They are internal keys: on screen the customer's `accountNumber` (for example `DEMO-700011`) is the main ID, and each account has one case (`GET /api/accounts/:accountNumber` returns it).
 - One person can have several cases later. New cases made in the queue get server-generated IDs.
 - `sourceRecordId` is null for demo people; no survey respondent IDs are copied.
 
@@ -37,5 +37,5 @@ The demo uses an `X-Demo-User` header, validated against fixture users on the se
 
 - Undo window (10 minutes) and bulk limit (100 cases).
 - Whether any signed-in user may create a case.
-- Whether workers should see all cases (current) or only unassigned plus their own.
+- Whether workers should see all cases (current) or only their own.
 - Priority labels and thresholds, once the model owner defines them.

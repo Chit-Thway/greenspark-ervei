@@ -41,8 +41,9 @@ Every `/api` route except `/api/health` needs an `X-Demo-User` header naming a f
 | `GET /api/cases` | `search, view, circumstanceIds, assistanceIds, priorityLabels` (comma separated), `minPriorityScore, assessmentStatus, status, assignedToUserId, sort, page, pageSize`. Returns `items`, totals, global `counters` and filter `facets` |
 | `GET /api/cases/ids` | Same filters, no paging: IDs of every matching case (used to drop selections that no longer match) |
 | `GET /api/cases/:id/overview` | Case and person |
-| `POST /api/cases` | `{personId}` or `{displayName, suburb}`; starts at version 1, unassigned, evidence unknown, model pending |
-| `POST /api/cases/bulk/assignment` | Manager only. `{assigneeUserId \| null, items:[{caseId, expectedVersion}]}` |
+| `GET /api/accounts/:accountNumber` | The account's case and person. The account number is the main ID on screen; each account has one case |
+| `POST /api/cases` | `{personId}` (one without a case) or `{displayName, suburb}` (gets the next account number), plus `assigneeUserId` (required from a manager; a worker's case is theirs); starts at version 1, evidence unknown, model pending |
+| `POST /api/cases/bulk/assignment` | Manager only. `{assigneeUserId, items:[{caseId, expectedVersion}]}`; always a support worker, never null |
 | `POST /api/cases/bulk/status` | `{status, items}`; workers only for their own cases |
 | `PATCH /api/cases/:id/status` | `{status, expectedVersion}` |
 | `POST /api/cases/:id/notes` | `{text (not empty, no character limit), expectedVersion}`; requests over about 100 KB return 422 |

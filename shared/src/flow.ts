@@ -1,6 +1,6 @@
 // Utility hardship flow: signals -> circumstances -> solutions.
 // This module is the single definition of the JSON document, what a valid edit is, and how to undo it.
-// The API applies edits to the file with it and the Admin page applies the same edits locally.
+// The API applies edits to the file with it and the Flowchart page applies the same edits locally.
 //
 // Links are stored in two directions in the JSON file. The circumstance is the source of truth:
 //   circumstance.signals   [{ id, strength }]   (signal -> circumstance)

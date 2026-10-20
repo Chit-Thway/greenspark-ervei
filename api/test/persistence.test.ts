@@ -18,7 +18,7 @@ describe("persistence and reset", () => {
     const before = hash();
     try {
       let h = await start(db);
-      const c = (await allCases(h)).find((x) => x.workflow.assignedToUserId === null)!;
+      const c = (await allCases(h)).find((x) => x.workflow.assignedToUserId !== "staff-alex")!;
       await h.call("staff-manager", "POST", "/api/cases/bulk/assignment", { assigneeUserId: "staff-alex", items: [{ caseId: c.id, expectedVersion: c.version }] });
       const a = (await allCases(h)).find((x) => x.workflow.assignedToUserId === "staff-alex" && x.workflow.notes !== undefined)!;
       await h.call("staff-alex", "POST", `/api/cases/${a.id}/notes`, { text: "Persisted note", expectedVersion: a.version });
@@ -38,7 +38,7 @@ describe("persistence and reset", () => {
       h = await start(db);
       const fresh = await allCases(h);
       expect(fresh).toHaveLength(100);
-      expect(fresh.find((x) => x.id === c.id)!.workflow.assignedToUserId).toBeNull();
+      expect(fresh.find((x) => x.id === c.id)!.workflow.assignedToUserId).toBe(c.workflow.assignedToUserId);
       await h.stop();
       expect(hash()).toBe(before);
     } finally {
@@ -74,7 +74,7 @@ describe("databases seeded before people had accounts", () => {
     const db = join(dir, "acct.sqlite");
     try {
       let h = await start(db);
-      await h.call("staff-manager", "POST", "/api/cases", { displayName: "Queue Person", suburb: "Perth" });
+      await h.call("staff-manager", "POST", "/api/cases", { displayName: "Queue Person", suburb: "Perth", assigneeUserId: "staff-maya" });
       // Simulate an older database: seeded people without the account field.
       for (const r of h.store.db.prepare("SELECT id, doc FROM people WHERE is_created = 0").all() as { id: string; doc: string }[]) {
         const { account: _, ...rest } = JSON.parse(r.doc);
@@ -88,6 +88,57 @@ describe("databases seeded before people had accounts", () => {
       expect(people).toHaveLength(101);
       expect(people.filter((p) => p.account)).toHaveLength(100);
       expect(people.find((p) => p.displayName === "Queue Person")!.account).toBeUndefined();
+      await h.stop();
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("databases from before every case had a worker", () => {
+  it("assign every case on start: seeded ones to the fixture's worker, others in turn", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "gs-assign-"));
+    const db = join(dir, "assign.sqlite");
+    try {
+      let h = await start(db);
+      await h.call("staff-alex", "POST", "/api/cases", { displayName: "Queue Person", suburb: "Perth" });
+      const before = await allCases(h);
+      // Simulate an older database where some cases had no worker.
+      h.store.db.prepare("UPDATE cases SET assigned_to = NULL WHERE id IN ('GS-2001', 'GS-2009', 'GS-2101')").run();
+      await h.stop();
+
+      h = await start(db);
+      const after = await allCases(h);
+      expect(after.every((c) => c.workflow.assignedToUserId)).toBe(true);
+      for (const id of ["GS-2001", "GS-2009"]) {
+        const was = before.find((c) => c.id === id)!;
+        const now = after.find((c) => c.id === id)!;
+        expect(now.workflow.assignedToUserId).toBe(was.workflow.assignedToUserId);
+        expect(now.version).toBe(was.version + 1);
+      }
+      expect(after.find((c) => c.id === "GS-2101")!.workflow.assignedToUserId).toMatch(/^staff-/);
+      await h.stop();
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("databases from before every person had an account number", () => {
+  it("number people added in the queue on start, after the highest number in use", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "gs-acctno-"));
+    const db = join(dir, "acctno.sqlite");
+    try {
+      let h = await start(db);
+      const made = await h.call("staff-alex", "POST", "/api/cases", { displayName: "Old Queue Person", suburb: "Perth" });
+      const id = made.body.person.id;
+      const { accountNumber: _, ...rest } = h.store.getPerson(id)!;
+      h.store.db.prepare("UPDATE people SET doc = ? WHERE id = ?").run(JSON.stringify(rest), id);
+      await h.stop();
+
+      h = await start(db);
+      expect(h.store.getPerson(id)!.accountNumber).toBe("DEMO-700101");
+      expect(h.store.allPeople().every((p) => p.accountNumber)).toBe(true);
       await h.stop();
     } finally {
       rmSync(dir, { recursive: true, force: true });

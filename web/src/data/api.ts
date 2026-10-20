@@ -9,7 +9,7 @@ export interface Catalog {
   circumstances: CircumstanceDefinition[];
   evidenceFields: EvidenceFieldDefinition[];
   recommendations: RecommendationDefinition[];
-  /** "flow" when circumstances and solutions come from the Admin flow file. */
+  /** "flow" when circumstances and solutions come from the flowchart file. */
   circumstanceSource?: "flow" | "fixture";
   asOf: string;
   users: StaffUser[];
@@ -19,7 +19,7 @@ export interface Catalog {
 export interface CaseItem { case: QueueCase; person: Person | null }
 
 export interface Facets {
-  view: Record<"all" | "mine" | "unassigned" | "needs_review", number>;
+  view: Record<"all" | "mine" | "needs_review", number>;
   circumstances: Record<string, number>;
   areas: Record<string, number>;
   assistance: Record<string, number>;
@@ -29,13 +29,13 @@ export interface Facets {
 export interface CaseListResponse {
   items: CaseItem[];
   total: number; page: number; pageSize: number; pageCount: number; from: number; to: number;
-  counters: { urgent: number; awaitingAssignment: number; myActive: number };
+  counters: { urgent: number; myActive: number };
   facets: Facets;
 }
 
 export interface MutationResult { actionId: string | null; updated: QueueCase[]; unchanged: string[] }
 
-export interface ErrorDetail { caseId?: string; code?: string; message: string }
+export interface ErrorDetail { caseId?: string; accountNumber?: string; code?: string; message: string }
 
 export class ApiClientError extends Error {
   constructor(readonly status: number, readonly code: string, message: string, readonly details: ErrorDetail[] = [], readonly current?: QueueCase) {
@@ -47,15 +47,16 @@ export interface FlowSnapshot { doc: FlowDoc | null; hash: string; problems: str
 export interface FlowSaved { hash: string; previousHash: string; changed: boolean }
 
 export interface ApiClient {
-  /** The utility hardship flow behind the Admin page (a JSON file on the server). */
+  /** The utility hardship flow behind the Flowchart page (a JSON file on the server). */
   flow(): Promise<FlowSnapshot>;
   flowOps(ops: FlowOp[]): Promise<FlowSaved>;
   catalog(): Promise<Catalog>;
   list(q: QueueQuery): Promise<CaseListResponse>;
   matchingIds(q: QueueQuery): Promise<string[]>;
   overview(caseId: string): Promise<CaseItem>;
-  createCase(input: { displayName: string; suburb: string }): Promise<CaseItem>;
-  assign(assigneeUserId: string | null, items: VersionedId[]): Promise<MutationResult>;
+  /** The case for an account number (each account has one case). */
+  account(accountNumber: string): Promise<CaseItem>;
+  assign(assigneeUserId: string, items: VersionedId[]): Promise<MutationResult>;
   setStatus(status: CaseStatus, items: VersionedId[]): Promise<MutationResult>;
   addNote(caseId: string, text: string, expectedVersion: number): Promise<QueueCase>;
   editNote(caseId: string, noteId: string, text: string, expectedVersion: number): Promise<QueueCase>;
@@ -117,7 +118,7 @@ export function createApiClient(getUser: () => string, base = ""): ApiClient {
     list: (q) => req("GET", `/api/cases?${queryString(q)}`),
     matchingIds: async (q) => (await req<{ ids: string[] }>("GET", `/api/cases/ids?${queryString(q, false)}`)).ids,
     overview: (id) => req("GET", `/api/cases/${encodeURIComponent(id)}/overview`),
-    createCase: (input) => req("POST", "/api/cases", input),
+    account: (accountNumber) => req("GET", `/api/accounts/${encodeURIComponent(accountNumber)}`),
     assign: (assigneeUserId, items) => req("POST", "/api/cases/bulk/assignment", { assigneeUserId, items }),
     setStatus: (status, items) =>
       items.length === 1

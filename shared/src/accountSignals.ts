@@ -1,4 +1,4 @@
-// Detects the account-data signals from the Admin hardship flow (data/admin/utility_hardship_mapping.json)
+// Detects the account-data signals from the hardship flowchart (data/admin/utility_hardship_mapping.json)
 // in a fictional customer account. Ids and names match the flow's signals; each rule follows that signal's
 // example_rule. Signals only prompt an offer of help, never a penalty, and a person checks them before acting.
 import type { Bill, CustomerAccount } from "./types";

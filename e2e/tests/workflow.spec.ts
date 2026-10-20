@@ -13,14 +13,14 @@ test.describe.serial("manager to worker workflow", () => {
     await expect(page.getByText("View case")).toHaveCount(0); // no separate button; the name opens the case
     await expect(page.locator("tbody tr")).toHaveCount(50);
     await expect(page.getByText("Showing 1–50 of 100 cases")).toBeVisible();
-    await expect(page.getByRole("button", { name: /^Unassigned/ })).toContainText("20");
-    await expect(page.locator(".sidebar")).toContainText("Financial pressure");
+    await expect(page.getByRole("button", { name: /^Unassigned/ })).toHaveCount(0); // every case has a worker
+    await expect(page.locator(".sidebar")).toContainText("Income and work"); // support areas are the flowchart's categories
     await expect(page.locator(".sidebar")).not.toContainText("Domestic violence");
   });
 
-  test("manager bulk-assigns two unassigned cases, then Undo restores them", async ({ page }) => {
+  test("manager bulk-reassigns two of Sarah's cases to Alex, then Undo restores them", async ({ page }) => {
     await openQueue(page);
-    await page.getByRole("button", { name: /^Unassigned/ }).click();
+    await page.locator(".sidebar").getByLabel("Assigned worker").selectOption({ label: "Sarah Chen" });
     await expectTotal(page, 20);
     const boxes = page.locator("tbody tr input[type=checkbox]");
     assigned = await page.locator("tbody tr").evaluateAll((rows) => rows.slice(0, 2).map((r) => r.getAttribute("data-case-id")!));
@@ -66,10 +66,11 @@ test.describe.serial("manager to worker workflow", () => {
     expect(await total(page)).toBeGreaterThanOrEqual(2);
     for (const id of assigned) await expect(page.locator(`tr[data-case-id="${id}"]`)).toBeVisible(); // the two cases the manager assigned
     const first = page.locator("tbody tr").first();
-    const caseId = (await first.getAttribute("data-case-id"))!;
+    const caseId = (await first.getAttribute("data-case-id"))!; // internal key, for API calls
+    const account = (await first.locator(".name-link").getAttribute("data-account-link"))!;
     const startStatus = (await first.locator(".status").innerText()).trim(); // read before leaving the queue
     await first.locator(".name-link").click();
-    await expect(page).toHaveURL(new RegExp(`/cases/${caseId}$`));
+    await expect(page).toHaveURL(new RegExp(`/accounts/${account}$`));
     const panel = page.locator(".case-page");
     await expect(panel).toBeVisible();
     await expect(panel.getByLabel("Assigned worker")).toBeDisabled();
@@ -138,32 +139,14 @@ test.describe.serial("manager to worker workflow", () => {
     await expect(err.locator("li").first()).toContainText("assigned to you");
   });
 
-  test("manager creates a case; it persists across a reload", async ({ page }) => {
+  test("there is no New case form", async ({ page }) => {
     await openQueue(page);
-    await page.getByRole("button", { name: "+ New case" }).click();
-    await page.getByRole("button", { name: "Create case" }).click();
-    await expect(page.locator(".error")).toHaveCount(2);
-    await page.getByLabel("Display name (fictional)").fill("Jordan Newcase");
-    await page.getByRole("textbox", { name: "Suburb" }).fill("Perth");
-    await page.getByRole("button", { name: "Create case" }).click();
-    await expect(page.locator(".notice-success")).toContainText("Added Jordan Newcase");
-    await expect(page.locator("#case-title")).toHaveText("Jordan Newcase");
-    await expect(page.locator(".case-page")).toContainText("Assessment pending");
-    await expect(page.locator(".case-page")).toContainText("No circumstances flagged");
-    // A person added in the queue has no contact details yet, which reads as not recorded rather than blank.
-    await expect(page.locator(".details dd", { hasText: "Not recorded" })).toHaveCount(6);
-    await expect(page).toHaveURL(/\/cases\/GS-\d+$/);
-    await page.reload(); // the new case's own page survives a reload
-    await expect(page.locator("#case-title")).toHaveText("Jordan Newcase");
-    await page.getByRole("link", { name: /Back to case queue/ }).click();
-    await expectTotal(page, 101);
-    await page.getByPlaceholder("Search name, case ID or suburb…").fill("Jordan Newcase");
-    await expectTotal(page, 1);
+    await expect(page.getByRole("button", { name: /New case/ })).toHaveCount(0);
   });
 
   test("worker view is the same shared queue; managers cannot be impersonated by request body", async ({ page }) => {
     await openQueue(page, "staff-sarah");
-    await expectTotal(page, 101);
+    await expectTotal(page, 100);
     const cur = (await api(page, "staff-sarah", "GET", `/api/cases/${assigned[0]}/overview`)).body.case;
     const r = await api(page, "staff-sarah", "POST", "/api/cases/bulk/assignment", { assigneeUserId: "staff-sarah", items: [{ caseId: cur.id, expectedVersion: cur.version }], actorUserId: MANAGER });
     expect(r.status).toBe(422);

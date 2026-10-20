@@ -16,19 +16,22 @@ import { SyntheticModelAdapter, withAssessments, type ModelAdapter } from "./ada
 
 const STATUSES = ["new", "in_progress", "waiting", "resolved"] as const;
 const SORTS = ["priority_desc", "priority_asc", "followup", "name", "updated"] as const;
-const VIEWS = ["all", "mine", "unassigned", "needs_review"] as const;
+const VIEWS = ["all", "mine", "needs_review"] as const;
 
 const item = z.object({ caseId: z.string().min(1), expectedVersion: z.number().int().min(1) }).strict();
 const items = z.array(item).min(1).max(MAX_BULK_ITEMS).refine((a) => new Set(a.map((i) => i.caseId)).size === a.length, "Duplicate case IDs");
-const assignBody = z.object({ assigneeUserId: z.string().min(1).nullable(), items }).strict();
+// Every case has a worker, so an assignment always names one.
+const assignBody = z.object({ assigneeUserId: z.string().min(1), items }).strict();
 const bulkStatusBody = z.object({ status: z.enum(STATUSES), items }).strict();
 const statusBody = z.object({ status: z.enum(STATUSES), expectedVersion: z.number().int().min(1) }).strict();
 // Notes have no character limit; the 100 KB request-size limit below is the only cap.
 const noteBody = z.object({ text: z.string().trim().min(1), expectedVersion: z.number().int().min(1) }).strict();
 const reviewBody = z.object({ reviewStatus: z.enum(["needs_review", "reviewed"]), expectedVersion: z.number().int().min(1) }).strict();
+// The worker for a new case: required from a manager; a support worker's new case is theirs.
+const assignee = { assigneeUserId: z.string().min(1).optional() };
 const newCaseBody = z.union([
-  z.object({ personId: z.string().min(1) }).strict(),
-  z.object({ displayName: z.string().trim().min(1).max(100), suburb: z.string().trim().min(1).max(100) }).strict(),
+  z.object({ personId: z.string().min(1), ...assignee }).strict(),
+  z.object({ displayName: z.string().trim().min(1).max(100), suburb: z.string().trim().min(1).max(100), ...assignee }).strict(),
 ]);
 
 const csv = (v: unknown) => (typeof v === "string" && v ? v.split(",") : []);
@@ -195,6 +198,14 @@ export function createApp(store: Store, options: AppOptions = {}) {
     });
   });
 
+  // The account number is the customer's main ID; each account has one case.
+  app.get("/api/accounts/:accountNumber", async (req, res) => {
+    const person = store.getPersonByAccount(String(req.params.accountNumber));
+    const c = person && store.getCaseForPerson(person.id);
+    if (!person || !c) throw new ApiError("not_found", "No case was found for that account number.");
+    res.json({ case: await enrichOne(c), person });
+  });
+
   app.get("/api/cases/:caseId/overview", async (req, res) => {
     const c = store.getCase(String(req.params.caseId));
     if (!c) throw new ApiError("not_found", "Case not found.");
@@ -202,7 +213,7 @@ export function createApp(store: Store, options: AppOptions = {}) {
   });
 
   app.post("/api/cases", async (req, res) => {
-    const c = service.createCase(parse(newCaseBody, req.body));
+    const c = service.createCase(actor(res), parse(newCaseBody, req.body));
     res.status(201).json({ case: await enrichOne(c), person: store.getPerson(c.personId) });
   });
 
