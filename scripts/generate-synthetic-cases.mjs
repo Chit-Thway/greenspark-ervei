@@ -114,6 +114,168 @@ function withContactDetails(person, i) {
   };
 }
 
+// Fictional electricity accounts, billed every two months as in WA. Like the contact details they come from
+// hash(i, salt), not the seeded random stream, so every other generated value stays the same. Each testing
+// scenario shapes the bills, payments and account flags so that specific account signals from the Admin flow
+// (data/admin/utility_hardship_mapping.json) fire; shared/src/accountSignals.ts detects them.
+const TARIFF = { centsPerKwh: 31.65, supplyCentsPerDay: 115.63, provenance: 'illustrative_tariff_not_a_quote' };
+const SEASON = [1.25, 1.2, 1.05, 0.9, 0.9, 1.05, 1.1, 1.05, 0.9, 0.85, 0.95, 1.15]; // Jan..Dec usage shape
+// How each of the six bills (oldest first) gets paid, per scenario. 'plan' bills are covered by plan instalments.
+const BILL_OUTCOMES = [
+  ['ontime', 'late', 'late', 'partial', 'unpaid', 'unpaid'], // unassigned_financial: overdue, arrears rising
+  ['late', 'late', 'unpaid', 'plan', 'plan', 'plan'], // assigned_financial: now on a fortnightly hardship plan
+  ['ontime', 'ontime', 'late', 'ontime', 'ontime', 'ontime'], // home_comfort (postpaid half): usage falling
+  ['ontime', 'late', 'ontime', 'ontime', 'late', 'ontime'], // health_related
+  ['late', 'ontime', 'late', 'partial', 'partial', 'unpaid'], // multiple_support_areas
+  ['late', 'late', 'ontime', 'plan', 'partial', 'unpaid'], // historical_payment_plan: plan broken
+  ['late', 'late', 'ontime', 'ontime', 'ontime', 'ontime'], // resolved_case: up to date now
+  ['ontime', 'ontime', 'ontime', 'ontime', 'ontime', 'ontime'], // no_flagged_circumstances: clean control
+  ['ontime', 'ontime', 'ontime', 'ontime', 'late', 'open'], // incomplete_assessment: estimates then a catch-up bill
+  ['late', 'ontime', 'late', 'late', 'ontime', 'partial'], // support_access_review
+];
+const representatives = ['Jordan Avery', 'Casey Lin', 'Riley Nguyen', 'Morgan Doyle', 'Sam Okafor', 'Jamie Kowalski'];
+const money = n => Math.round(n * 100) / 100;
+const monthKey = (y, m) => `${y}-${String(m).padStart(2, '0')}`; // m is 1-12
+const daysInMonth = (y, m) => new Date(Date.UTC(y, m, 0)).getUTCDate();
+const addDays = (date, n) => day(date, n);
+const yearsBefore = (date, n) => { const d = new Date(`${date}T12:00:00Z`); d.setUTCFullYear(d.getUTCFullYear() - n); return d.toISOString().slice(0, 10); };
+
+function withAccount(person, i, scenario, answers) {
+  const h = salt => hash(i, salt);
+  const prepaid = scenario === 2 && h(20) % 2 === 0;
+  // Overdue scenarios bill a month earlier, so their latest bill is already past due on the asOf date.
+  const offset = [0, 4, 5].includes(scenario) ? 1 : h(21) % 2;
+  const ageYears = scenario === 3 ? 62 + h(22) % 27 : [1, 5, 6].includes(scenario) ? 25 + h(22) % 56 : 19 + h(22) % 57;
+  const dateOfBirth = addDays(yearsBefore(asOf, ageYears), -(1 + h(23) % 360));
+  const baseKwh = 300 + h(24) % 300; // average monthly use last year
+
+  // Twelve months of usage ending two months before asOf (minus the billing offset). Shocks apply to the last four months.
+  const months = [];
+  for (let k = 11; k >= 0; k--) {
+    const d = new Date(Date.UTC(2026, 8 - offset - k, 1)); // 2026-09 is month index 8
+    months.push({ y: d.getUTCFullYear(), m: d.getUTCMonth() + 1 });
+  }
+  const shock = (scenario === 2 && !prepaid) || scenario === 4 ? 0.42 : scenario === 3 && i % 4 === 3 ? 1.55 : 1;
+  const usage = months.map(({ y, m }, k) => {
+    const lastYear = Math.round(baseKwh * SEASON[m - 1] * (0.95 + (h(100 + k) % 100) / 1000));
+    const noise = 0.93 + (h(120 + k) % 140) / 1000;
+    return { month: monthKey(y, m), kWh: Math.round(lastYear * noise * (k >= 8 ? shock : 1)), kWhLastYear: lastYear };
+  });
+
+  const paymentMethod = prepaid ? (h(25) % 2 ? 'card' : 'cash_counter')
+    : scenario === 1 ? 'centrepay' : scenario === 7 ? 'direct_debit' : scenario === 4 && h(25) % 2 === 0 ? 'cash_counter'
+    : scenario === 0 && h(25) % 2 === 0 ? 'direct_debit' : ['bpay', 'card', 'direct_debit', 'bpay'][h(25) % 4];
+
+  const bills = [], payments = [];
+  if (!prepaid) {
+    for (let b = 0; b < 6; b++) {
+      const [first, second] = [months[b * 2], months[b * 2 + 1]];
+      const periodStart = `${first.y}-${String(first.m).padStart(2, '0')}-01`;
+      const periodEnd = `${second.y}-${String(second.m).padStart(2, '0')}-${daysInMonth(second.y, second.m)}`;
+      const actual = usage[b * 2].kWh + usage[b * 2 + 1].kWh;
+      const lastYear = usage[b * 2].kWhLastYear + usage[b * 2 + 1].kWhLastYear;
+      // incomplete_assessment: two estimated reads that undershoot, then a catch-up bill for the shortfall.
+      const estimated = scenario === 8 && (b === 2 || b === 3);
+      const shortfall = scenario === 8 && b === 4 ? Math.round(0.75 * (usage[4].kWh + usage[5].kWh + usage[6].kWh + usage[7].kWh)) : 0;
+      const kWh = estimated ? Math.round(actual * 0.25) : actual + shortfall;
+      const days = (Date.parse(periodEnd) - Date.parse(periodStart)) / 86400000 + 1;
+      const issuedAt = addDays(periodEnd, 5 + h(140 + b) % 5);
+      bills.push({ id: `${person.id.replace('demo-person', 'demo-bill')}-${b + 1}`, periodStart, periodEnd, issuedAt, dueAt: addDays(issuedAt, 15), usageKwh: kWh, usageKwhLastYear: lastYear, estimatedRead: estimated, amount: money((kWh * TARIFF.centsPerKwh + days * TARIFF.supplyCentsPerDay) / 100) });
+    }
+    BILL_OUTCOMES[scenario].forEach((outcome, b) => {
+      const bill = bills[b];
+      const pay = (date, amount, status = 'cleared') => { if (date <= asOf) payments.push({ date, amount: money(amount), method: paymentMethod, status }); };
+      if (outcome === 'ontime') pay(addDays(bill.dueAt, -(1 + h(150 + b) % 6)), bill.amount);
+      if (outcome === 'late') pay(addDays(bill.dueAt, 6 + h(150 + b) % 22), bill.amount);
+      if (outcome === 'partial') for (const d of [4, 18, 32]) pay(addDays(bill.issuedAt, d), bill.amount * 0.25);
+      // A direct debit that bounced on the latest bill's due date.
+      if (outcome === 'unpaid' && b === 5 && paymentMethod === 'direct_debit') pay(bill.dueAt, bill.amount, 'dishonoured');
+    });
+  }
+
+  // Payment plans. Instalments are fortnightly, so they also show up as payments that track a pay cycle.
+  let paymentPlan = null;
+  if (scenario === 1 || scenario === 5) {
+    const startedAt = bills[3].issuedAt;
+    const owing = bills.slice(0, 3).reduce((s, b) => s + b.amount, 0);
+    const instalment = money(bills.reduce((s, b) => s + b.amount, 0) / 6 / 4.36 + owing / 26);
+    const count = scenario === 5 ? 3 : 99;
+    for (let k = 0, d = startedAt; k < count && d <= asOf; k++, d = addDays(d, 14)) payments.push({ date: d, amount: instalment, method: scenario === 1 ? 'centrepay' : paymentMethod, status: 'cleared' });
+    paymentPlan = { status: scenario === 5 ? 'broken' : 'active', startedAt, frequency: 'fortnightly', instalment };
+  }
+  if (scenario === 6) paymentPlan = { status: 'completed', startedAt: addDays(bills[0].issuedAt, -30), frequency: 'fortnightly', instalment: money(bills[0].amount / 4) };
+
+  // Prepaid: small, frequent top-ups and the meter running out of credit three times in the last month.
+  let prepay = null;
+  if (prepaid) {
+    const recharges = [];
+    for (let d = addDays(asOf, -90 + h(26) % 5); d <= asOf; d = addDays(d, 6 + h(200 + recharges.length) % 4)) recharges.push({ date: d, amount: [20, 20, 25, 30, 40][h(300 + recharges.length) % 5], method: paymentMethod });
+    prepay = { recharges, zeroCreditEvents: [addDays(asOf, -(3 + h(28) % 4)), addDays(asOf, -(12 + h(29) % 5)), addDays(asOf, -(24 + h(29) % 5))] };
+  }
+
+  // Allocate cleared payments to the oldest open bill first, then record when each bill was paid off.
+  const owed = bills.map(b => b.amount);
+  for (const p of [...payments].filter(p => p.status === 'cleared').sort((a, b) => a.date.localeCompare(b.date))) {
+    let left = p.amount;
+    for (let b = 0; b < bills.length && left > 0.004; b++) {
+      if (owed[b] <= 0.004 || bills[b].issuedAt > p.date) continue;
+      const take = Math.min(left, owed[b]);
+      owed[b] = money(owed[b] - take); left = money(left - take);
+      if (owed[b] <= 0.004) bills[b].paidInFullAt = p.date;
+    }
+  }
+  bills.forEach((b, k) => { b.amountPaid = money(b.amount - owed[k]); b.paidInFullAt ??= null; });
+  payments.sort((a, b) => a.date.localeCompare(b.date));
+
+  const concessionType = ageYears >= 67 ? 'Pensioner Concession Card' : 'Health Care Card';
+  const concession = answers.Z7_8 === 'Yes' ? { status: 'active', type: concessionType, endDate: addDays(asOf, 120 + h(31) % 500) }
+    : scenario === 9 ? { status: 'lapsed', type: concessionType, endDate: addDays(asOf, -(20 + h(31) % 60)) }
+    : { status: 'none', type: null, endDate: null };
+  const authorityTypes = ['Power of attorney', 'Authorised representative', 'Financial counsellor'];
+  const thirdPartyAuthority = scenario === 9 || (scenario === 3 && i % 4 === 3)
+    ? { type: scenario === 3 ? 'Authorised representative' : authorityTypes[h(32) % 3], name: representatives[h(33) % representatives.length], since: addDays(asOf, -(40 + h(34) % 600)) }
+    : null;
+  const contactTopics = scenario === 9 ? Array.from({ length: 3 + h(35) % 2 }, (_, k) => ({ date: addDays(asOf, -(4 + k * 13 + h(160 + k) % 5)), channel: k % 2 ? 'phone' : 'email', topic: 'Billing query' })) : scenario === 4 ? [{ date: addDays(asOf, -18), channel: 'phone', topic: 'Payment extension' }] : [];
+  const extensionCount = scenario === 5 ? 3 : scenario === 4 ? 2 : scenario === 9 ? 1 : 0;
+
+  return {
+    ...person,
+    account: {
+      accountNumber: `DEMO-${700001 + i}`,
+      utility: 'electricity',
+      customerSince: yearsBefore(asOf, 1 + h(37) % Math.max(1, Math.min(15, ageYears - 18))),
+      dateOfBirth,
+      supplyType: scenario === 2 && h(38) % 5 === 1 ? 'embedded' : 'standard',
+      plan: prepaid ? { type: 'prepaid', name: 'Prepay (demo)', billingCycle: null } : { type: 'postpaid', name: 'Home Plan (demo)', billingCycle: 'bimonthly' },
+      tariff: TARIFF,
+      paymentMethod,
+      concession,
+      thirdPartyAuthority,
+      lifeSupport: answers.Z7_4 === 'Yes',
+      accessNeeds: scenario === 9 && h(39) % 3 === 1 ? 'Large-print bills' : scenario === 3 && i % 4 === 1 ? 'Hearing impairment: contact by SMS or email' : null,
+      languagePreference: scenario === 9 && h(39) % 3 === 0 ? 'Vietnamese' : 'English',
+      interpreterUsed: scenario === 9 && h(39) % 3 === 0,
+      hardshipProgram: answers.Q37 === 'Yes' ? { status: 'active', exitReason: null, assessmentOffered: true }
+        : scenario === 5 ? { status: 'exited', exitReason: 'missed_plan_payments', assessmentOffered: true }
+        : scenario === 6 ? { status: 'exited', exitReason: 'completed', assessmentOffered: true }
+        : { status: 'none', exitReason: null, assessmentOffered: false },
+      paymentPlan,
+      extensions: Array.from({ length: extensionCount }, (_, k) => ({ requestedAt: addDays(bills[5 - k]?.dueAt ?? asOf, -2) })),
+      bills,
+      payments,
+      usage,
+      prepay,
+      contacts: contactTopics,
+      complaintOpen: scenario === 9 && h(40) % 2 === 0,
+      disconnectionWarningAt: (scenario === 0 && paymentMethod !== 'direct_debit') || scenario === 4 ? addDays(asOf, -(6 + h(41) % 18)) : null,
+      collectionsStatus: scenario === 5 && h(42) % 2 === 0 ? 'referred_to_agency' : null,
+      digital: scenario === 8 ? { lastLoginAt: h(43) % 2 ? null : addDays(asOf, -(130 + h(44) % 200)), lastEmailOpenAt: addDays(asOf, -(100 + h(45) % 100)) } : { lastLoginAt: addDays(asOf, -(1 + h(44) % 40)), lastEmailOpenAt: addDays(asOf, -(1 + h(45) % 20)) },
+      returnedMail: scenario === 8 && h(46) % 2 === 0,
+      provenance: 'fictional_demo_account',
+    },
+  };
+}
+
 const scenarioNames = ['unassigned_financial', 'assigned_financial', 'home_comfort', 'health_related', 'multiple_support_areas', 'historical_payment_plan', 'resolved_case', 'no_flagged_circumstances', 'incomplete_assessment', 'support_access_review'];
 const scenarioStatuses = ['new', 'in_progress', 'new', 'in_progress', 'in_progress', 'waiting', 'resolved', 'in_progress', 'new', 'waiting'];
 const assignees = [null, 'staff-alex', 'staff-sarah', 'staff-james', 'staff-maya', 'staff-alex', 'staff-sarah', 'staff-james', null, 'staff-maya'];
@@ -155,8 +317,8 @@ function build() {
   for (let i = 0; i < count; i++) {
     const n = String(i + 1).padStart(3, '0'), personId = `demo-person-${n}`, caseId = `GS-${2001 + i}`, scenario = i % 10;
     const basePerson = { id: personId, isSynthetic: true, displayName: names[i], suburb: pick(suburbs), state: 'WA', householdSummary: pick(['1 adult', '2 adults', '1 adult, 1 child', '2 adults, 2 children']), contactPreference: { channel: pick(['sms', 'phone', 'email']), preferredWindow: pick(['Mornings', 'Afternoons', 'Weekdays']), provenance: 'fictional_demo_preference' }, fullProfilePath: null };
-    people.push(withContactDetails(basePerson, i));
     const reportedAnswers = answersFor(scenario, i), reportedAt = day(asOf, -(5 + i % 12));
+    people.push(withAccount(withContactDetails(basePerson, i), i, scenario, reportedAnswers));
     const definitions = circumstanceDefinitions.filter(c => matches(c.id, reportedAnswers));
     const circumstances = definitions.map(c => ({ circumstanceId: c.id, evidenceFieldIds: [...c.evidenceFieldIds], provenance: 'illustrative_demo_grouping' }));
     const recommendationIds = [...new Set(definitions.flatMap(c => c.recommendationIds))];
@@ -177,7 +339,7 @@ function build() {
     });
   }
   return {
-    metadata: { schemaVersion: '1.1.0', datasetId: 'greenspark-case-queue-demo-v1', classification: 'synthetic_demo_only', isSynthetic: true, asOf, timezone: 'Australia/Perth', generatorSeed: seed, peopleCount: count, caseCount: count, sourceDefinitions: [{ id: 'eca-household-jun-2026', purpose: 'Question definitions and allowed answer domains only; respondent rows are not copied.', url: 'https://energyconsumersaustralia.com.au/our-work/surveys/energy-consumer-survey-data' }], limits: ['All identities, combinations of answers, workflow events, recommendations and model assessments are fictional.', 'Scenario balance is designed for UI coverage, not population statistics or model training.', 'Historical answers do not establish current circumstances.', 'ERA aggregates and SGSC households have not been joined to these fictional people.', 'Gender, preferred name, addresses, phone numbers and emails are invented. Gender follows the fictional first name, apart from a few deliberate Non-binary and Prefer not to say records. Phone numbers come from ranges reserved for fiction and emails use example.com, so none can reach a real person. Street names are invented and are not real addresses.'], profileContractStatus: 'proposed_shared_person_id', modelContractStatus: 'mock_adapter_only' },
+    metadata: { schemaVersion: '1.2.0', datasetId: 'greenspark-case-queue-demo-v1', classification: 'synthetic_demo_only', isSynthetic: true, asOf, timezone: 'Australia/Perth', generatorSeed: seed, peopleCount: count, caseCount: count, sourceDefinitions: [{ id: 'eca-household-jun-2026', purpose: 'Question definitions and allowed answer domains only; respondent rows are not copied.', url: 'https://energyconsumersaustralia.com.au/our-work/surveys/energy-consumer-survey-data' }], limits: ['All identities, combinations of answers, workflow events, recommendations and model assessments are fictional.', 'Scenario balance is designed for UI coverage, not population statistics or model training.', 'Historical answers do not establish current circumstances.', 'ERA aggregates and SGSC households have not been joined to these fictional people.', 'Gender, preferred name, addresses, phone numbers and emails are invented. Gender follows the fictional first name, apart from a few deliberate Non-binary and Prefer not to say records. Phone numbers come from ranges reserved for fiction and emails use example.com, so none can reach a real person. Street names are invented and are not real addresses.', 'Utility accounts (bills, payments, usage, plans, concessions, authorities, dates of birth) are invented and shaped per testing scenario so specific account signals fire. The tariff is illustrative, not a real price.'], profileContractStatus: 'proposed_shared_person_id', modelContractStatus: 'mock_adapter_only' },
     users, supportAreas, circumstanceDefinitions, evidenceFieldDefinitions, recommendationDefinitions, people, cases,
   };
 }
@@ -214,6 +376,25 @@ function validate(data) {
     assert(ch !== 'sms' || p.mobile, `${p.id} prefers sms but has no mobile`);
     assert(ch !== 'phone' || p.phone, `${p.id} prefers phone but has no phone number`);
     assert(ch !== 'email' || p.email, `${p.id} prefers email but has no email`);
+  }
+  const caseByPerson = new Map(data.cases.map(c => [c.personId, c]));
+  for (const p of data.people) {
+    const a = p.account, answers = caseByPerson.get(p.id).reportedAnswers;
+    assert.equal(a.provenance, 'fictional_demo_account');
+    assert(/^DEMO-\d{6}$/.test(a.accountNumber), `${p.id} account number must be a fictional DEMO- number`);
+    assert(a.dateOfBirth < yearsBefore(data.metadata.asOf, 18), `${p.id} account holder must be an adult`);
+    assert.equal(a.lifeSupport, answers.Z7_4 === 'Yes', `${p.id} life support must match the reported answer`);
+    assert.equal(a.concession.status === 'active', answers.Z7_8 === 'Yes', `${p.id} active concession must match the reported answer`);
+    assert.equal(a.hardshipProgram.status === 'active', answers.Q37 === 'Yes', `${p.id} hardship enrolment must match the reported answer`);
+    assert.equal(a.plan.type === 'prepaid', a.prepay !== null);
+    assert(a.plan.type === 'prepaid' ? a.bills.length === 0 && a.prepay.recharges.length > 0 : a.bills.length === 6, `${p.id} bills`);
+    assert.equal(a.usage.length, 12);
+    for (const b of a.bills) {
+      assert(b.periodStart < b.periodEnd && b.periodEnd < b.issuedAt && b.issuedAt < b.dueAt, `${b.id} dates out of order`);
+      assert(b.issuedAt <= data.metadata.asOf && b.amount > 0 && b.amountPaid >= 0 && b.amountPaid <= b.amount + 0.001, `${b.id} amounts`);
+      assert.equal(b.paidInFullAt !== null, Math.abs(b.amount - b.amountPaid) < 0.005, `${b.id} paidInFullAt must match amountPaid`);
+    }
+    for (const x of a.payments) assert(x.date <= data.metadata.asOf && x.amount > 0 && ['cleared', 'dishonoured'].includes(x.status), `${p.id} payment`);
   }
   for (const c of data.cases) {
     assert(personIds.has(c.personId)); assert.equal(c.isSynthetic, true); assert.equal(c.sourceRecordId, null);

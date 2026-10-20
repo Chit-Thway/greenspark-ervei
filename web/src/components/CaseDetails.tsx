@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import type { CaseStatus, QueueCase, ReviewStatus, StaffUser } from "../domain/types";
 import type { CaseItem, Catalog } from "../data/api";
-import { describeFollowUp, formatDateTime, PERIOD_TEXT, STATUS_LABELS } from "../domain/format";
+import { describeFollowUp, formatDateTime, PERIOD_TEXT, readableDates, STATUS_LABELS } from "../domain/format";
 import { isResolved } from "../domain/query";
 import { PriorityBadge } from "./Primitives";
+import { AccountDetails } from "./AccountDetails";
 
 /** A missing contact detail is shown as not recorded, so it is never mistaken for "none". */
 function notRecorded(v: string | null | undefined): string {
@@ -54,6 +55,7 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
   const userName = (id: string) => data.users.find((u) => u.id === id)?.displayName ?? id;
   const fu = describeFollowUp(c.workflow.followUpAt, isResolved(c), data.asOf);
   const a = c.modelAssessment;
+  const fromFlow = data.circumstanceSource === "flow";
 
   // A new page should start at its heading for keyboard and screen-reader users.
   useEffect(() => { heading.current?.focus(); }, [c.id]);
@@ -105,7 +107,6 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
         </dl>
       </section>
 
-
       <section className="case-card model" aria-labelledby="ov-model">
         <h3 id="ov-model">Model assessment <span className="sim">simulated · {a.provider}</span></h3>
         {a.status === "ready" && a.priority ? (
@@ -119,8 +120,11 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
       </section>
 
       <section className="case-card" aria-labelledby="ov-support">
-        <h3 id="ov-support">Support areas and why</h3>
-        {c.circumstances.length === 0 ? <p className="muted">No circumstances flagged from the reported answers.</p> : null}
+        <h3 id="ov-support">Support areas and why {fromFlow ? <span className="sim">hardship flow</span> : null}</h3>
+        {fromFlow ? (
+          <p className="hint">Worked out from account data and survey answers with the Admin flow&apos;s rules: one strong signal, or two supporting ones. Sensitive circumstances need a strong signal.</p>
+        ) : null}
+        {c.circumstances.length === 0 ? <p className="muted">{fromFlow ? "No circumstances flagged." : "No circumstances flagged from the reported answers."}</p> : null}
         {data.supportAreas.filter((area) => c.supportAreaIds.includes(area.id)).map((area) => (
           <div key={area.id} className="area-block">
             <h4>{area.label}</h4>
@@ -128,23 +132,37 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
               const def = data.circumstances.find((d) => d.id === x.circumstanceId)!;
               const recs = c.recommendations.filter((r) => r.circumstanceIds.includes(x.circumstanceId));
               return (
-                <div key={x.circumstanceId} className="circ">
+                <div key={x.circumstanceId} className={`circ${def.sensitivity === "safety" ? " circ-safety" : ""}`}>
                   <strong>{def.label}</strong>
-                  <ul className="evidence">
-                    {x.evidenceFieldIds.map((fid) => {
-                      const f = field(fid);
-                      const ans = answerText(c, fid);
-                      return (
-                        <li key={fid}>
-                          <span>{f?.label ?? fid} <span className="sub">({fid}, {f ? PERIOD_TEXT[f.referencePeriod] : ""}{c.reportedAt ? `, reported ${c.reportedAt}` : ""})</span></span>
-                          <span className={`answer answer-${ans.tone}`}>{ans.text}</span>
+                  {def.sensitivity && def.sensitivity !== "standard" ? <span className={`sens sens-${def.sensitivity}`}>{def.sensitivity === "safety" ? "Safety" : "Sensitive"}</span> : null}
+                  {def.sensitivity === "safety" ? <p className="hint">Never actioned automatically. Route to trained staff.</p> : null}
+                  {def.handling ? <p className="hint">{def.handling}</p> : null}
+                  {x.signals ? (
+                    <ul className="evidence">
+                      {x.signals.map((sg) => (
+                        <li key={sg.id}>
+                          <span>{sg.name} <span className="sub">{readableDates(sg.evidence)}</span></span>
+                          <span className={`strength strength-${sg.strength}`}>{sg.strength === "strong" ? "Strong" : "Supporting"}</span>
                         </li>
-                      );
-                    })}
-                  </ul>
+                      ))}
+                    </ul>
+                  ) : (
+                    <ul className="evidence">
+                      {x.evidenceFieldIds.map((fid) => {
+                        const f = field(fid);
+                        const ans = answerText(c, fid);
+                        return (
+                          <li key={fid}>
+                            <span>{f?.label ?? fid} <span className="sub">({fid}, {f ? PERIOD_TEXT[f.referencePeriod] : ""}{c.reportedAt ? `, reported ${c.reportedAt}` : ""})</span></span>
+                            <span className={`answer answer-${ans.tone}`}>{ans.text}</span>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
                   {recs.length ? (
                     <div className="suggest">
-                      <span className="sim">Suggested for staff review</span>
+                      <span className="sim">{fromFlow ? "Solutions for staff review" : "Suggested for staff review"}</span>
                       <ul className="suggest-list">
                         {recs.map((r) => <li key={r.recommendationId}>{data.recommendations.find((d) => d.id === r.recommendationId)?.label ?? r.recommendationId}</li>)}
                       </ul>
@@ -156,6 +174,28 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
           </div>
         ))}
       </section>
+
+      {fromFlow && c.recommendations.length ? (
+        <section className="case-card" aria-labelledby="ov-solutions">
+          <h3 id="ov-solutions">Solutions to offer <span className="sim">for staff review</span></h3>
+          <p className="hint">Each solution once, with the circumstances it helps with. Check eligibility before offering.</p>
+          <ul className="suggest-list solutions">
+            {c.recommendations.map((r) => {
+              const d = data.recommendations.find((x) => x.id === r.recommendationId);
+              const forNames = r.circumstanceIds.map((id) => data.circumstances.find((x) => x.id === id)?.label ?? id);
+              return (
+                <li key={r.recommendationId} className="solution">
+                  <strong>{d?.label ?? r.recommendationId}</strong>
+                  {d?.provider ? <span className="sub">{d.provider}. {d.howToAccess}{d.contact ? ` Contact: ${d.contact}.` : ""}</span> : null}
+                  {d?.description ? <span className="sub">{d.description}</span> : null}
+                  <span className="sub">For: {forNames.join(", ")}</span>
+                  {d?.sourceUrl ? <a className="sub" href={d.sourceUrl} target="_blank" rel="noreferrer">Source{d.verified ? "" : " (not re-checked)"}</a> : null}
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      ) : null}
 
       <section className="case-card" aria-labelledby="ov-assist">
         <h3 id="ov-assist">Assistance already reported</h3>
@@ -171,6 +211,7 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
           <p className="muted">{c.answerAvailability.Q36b_1 === "unknown" ? "Unknown. Not recorded." : "None reported."}</p>
         )}
       </section>
+      {person?.account ? <AccountDetails account={person.account} asOf={data.asOf} /> : null}
 
       </div>
       <div className="case-col">

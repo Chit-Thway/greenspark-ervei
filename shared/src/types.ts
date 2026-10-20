@@ -24,6 +24,10 @@ export interface CircumstanceDefinition {
   evidenceFieldIds: string[];
   recommendationIds: string[];
   illustrativeRule: string;
+  // Set when the definition comes from the Admin flow.
+  sensitivity?: "standard" | "sensitive" | "safety";
+  type?: string;
+  handling?: string | null;
 }
 
 export interface EvidenceFieldDefinition {
@@ -37,6 +41,13 @@ export interface RecommendationDefinition {
   id: string;
   label: string;
   description: string;
+  // Set when the recommendation is a solution from the Admin flow.
+  provider?: string;
+  howToAccess?: string;
+  contact?: string;
+  sourceUrl?: string | null;
+  verified?: boolean;
+  lastVerified?: string | null;
 }
 
 export interface Person {
@@ -54,11 +65,73 @@ export interface Person {
   mobile?: string | null;
   phone?: string | null;
   email?: string | null;
+  // Fictional utility account. Missing for people added in the queue.
+  account?: CustomerAccount | null;
+}
+
+export type PaymentMethod = "direct_debit" | "card" | "bpay" | "centrepay" | "cash_counter";
+
+export interface Bill {
+  id: string;
+  periodStart: string;
+  periodEnd: string;
+  issuedAt: string;
+  dueAt: string;
+  usageKwh: number;
+  usageKwhLastYear: number;
+  estimatedRead: boolean;
+  amount: number;
+  amountPaid: number;
+  paidInFullAt: string | null;
+}
+
+export interface Payment { date: string; amount: number; method: PaymentMethod; status: "cleared" | "dishonoured" }
+
+export interface CustomerAccount {
+  accountNumber: string;
+  utility: string;
+  customerSince: string;
+  dateOfBirth: string;
+  supplyType: "standard" | "embedded";
+  plan: { type: "postpaid" | "prepaid"; name: string; billingCycle: "bimonthly" | null };
+  tariff: { centsPerKwh: number; supplyCentsPerDay: number; provenance: string };
+  paymentMethod: PaymentMethod;
+  concession: { status: "active" | "lapsed" | "none"; type: string | null; endDate: string | null };
+  thirdPartyAuthority: { type: string; name: string; since: string } | null;
+  lifeSupport: boolean;
+  accessNeeds: string | null;
+  languagePreference: string;
+  interpreterUsed: boolean;
+  hardshipProgram: { status: "none" | "active" | "exited"; exitReason: string | null; assessmentOffered: boolean };
+  paymentPlan: { status: "active" | "broken" | "completed"; startedAt: string; frequency: string; instalment: number } | null;
+  extensions: { requestedAt: string }[];
+  bills: Bill[];
+  payments: Payment[];
+  usage: { month: string; kWh: number; kWhLastYear: number }[];
+  prepay: { recharges: { date: string; amount: number; method: PaymentMethod }[]; zeroCreditEvents: string[] } | null;
+  contacts: { date: string; channel: string; topic: string }[];
+  complaintOpen: boolean;
+  disconnectionWarningAt: string | null;
+  collectionsStatus: string | null;
+  digital: { lastLoginAt: string | null; lastEmailOpenAt: string | null };
+  returnedMail: boolean;
+}
+
+/** A flow signal seen for a case: from the account, or from a survey answer that matches a self-report signal. */
+export interface CaseSignal {
+  id: string;
+  name: string;
+  source: "account" | "self_report";
+  strength: "strong" | "supporting";
+  evidence: string;
+  evidenceFieldId?: string;
 }
 
 export interface CaseCircumstance {
   circumstanceId: string;
   evidenceFieldIds: string[];
+  /** The flow signals that raised this circumstance (flow-based cases only). */
+  signals?: CaseSignal[];
 }
 
 export interface CaseRecommendation {
@@ -118,6 +191,8 @@ export interface QueueCase {
 
 export interface QueueDataset {
   asOf: string;
+  /** "flow": circumstances and solutions come from the Admin flow file. "fixture": the fixture's fixed survey rules. */
+  circumstanceSource?: "flow" | "fixture";
   isSynthetic: boolean;
   users: StaffUser[];
   supportAreas: SupportArea[];

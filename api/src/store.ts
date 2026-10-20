@@ -42,6 +42,18 @@ export class Store {
     const noteColumns = (this.db.prepare("PRAGMA table_info(notes)").all() as Row[]).map((c) => c.name);
     if (!noteColumns.includes("edited_at")) this.db.exec("ALTER TABLE notes ADD COLUMN edited_at TEXT; ALTER TABLE notes ADD COLUMN edited_by TEXT;");
     if (!this.getMeta("seeded_dataset")) this.seed(raw);
+    else this.refreshSeededPeople(raw);
+  }
+
+  /**
+   * Seeded people are read-only in the app, so their records follow the fixture. This brings new fixture
+   * fields (such as accounts) into an existing database without a reset; people added in the queue are untouched.
+   */
+  private refreshSeededPeople(raw: RawFixture) {
+    const update = this.db.prepare("UPDATE people SET doc = ? WHERE id = ? AND is_created = 0 AND doc <> ?");
+    this.transaction(() => {
+      for (const p of raw.people) { const doc = JSON.stringify(p); update.run(doc, p.id, doc); }
+    });
   }
 
   close() { this.db.close(); }

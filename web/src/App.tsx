@@ -38,6 +38,12 @@ export function App() {
     client.catalog().then(setCatalog, (e: unknown) => setError(e instanceof Error ? e.message : "Could not load the case queue."));
   }, [client]);
   useEffect(loadCatalog, [loadCatalog, userId]);
+  // Circumstances and solutions come from the Admin flow, so leaving the Admin page picks up any edits.
+  const lastPage = useRef(page);
+  useEffect(() => {
+    if (lastPage.current === "admin" && page !== "admin") client.catalog().then(setCatalog, () => undefined);
+    lastPage.current = page;
+  }, [client, page]);
 
   const switchUser = (id: string) => {
     try { localStorage.setItem(STORED_USER_KEY, id); } catch { /* storage is optional */ }
@@ -62,6 +68,9 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; c
   const [listError, setListError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshTick, setRefreshTick] = useState(0);
+  // A new catalog means the Admin flow may have changed, so reload the list too.
+  const firstCatalog = useRef(catalog);
+  useEffect(() => { if (catalog !== firstCatalog.current) setRefreshTick((t) => t + 1); }, [catalog]);
   const [loadedListKey, setLoadedListKey] = useState<string | null>(null);
   const [validatedSelectionKey, setValidatedSelectionKey] = useState<string | null>(null);
   const [selectionError, setSelectionError] = useState<string | null>(null);

@@ -31,7 +31,23 @@ Each person also has invented contact details, shown on the case page as "Custom
 | `mobile`, `phone`, `email` | May be null, which the app shows as "Not recorded". The stated contact preference always has a matching detail, and everyone has at least one way to be contacted. |
 | `contactDetailsProvenance` | `fictional_demo_contact_details` |
 
-Safety: landlines are in the `(08) 5550 xxxx` block and mobiles come from a short list of `0491 57x xxx` numbers, which Australia's communications regulator (ACMA) sets aside for fiction. Emails use `example.com`. People created in the queue start with all of these null. The fixture schema version is 1.1.0.
+Safety: landlines are in the `(08) 5550 xxxx` block and mobiles come from a short list of `0491 57x xxx` numbers, which Australia's communications regulator (ACMA) sets aside for fiction. Emails use `example.com`. People created in the queue start with all of these null.
+
+## Utility accounts and account signals (fictional)
+
+Each seeded person also has an invented electricity `account`, shown on the case page as "Utility account", "Account signals" and "Bills" (or "Prepaid top-ups").
+
+| Field | Notes |
+| --- | --- |
+| `accountNumber`, `customerSince`, `dateOfBirth` | `DEMO-7xxxxx` numbers. Every holder is an adult; the page shows age on the dataset's `asOf` date. |
+| `plan`, `paymentMethod`, `supplyType` | Postpaid (billed every two months) or prepaid; direct debit, card, BPAY, Centrepay or cash/in person; standard or embedded network. |
+| `bills` | Six bills (oldest first): period, issue and due dates, kWh and the same period last year, estimated read, amount, amount paid and the date paid in full. Prepaid accounts have none. |
+| `payments`, `prepay` | Payment date, amount, method and cleared/dishonoured result. Payments pay the oldest open bill first. Prepaid accounts have top-ups and the dates the meter ran out of credit. |
+| `usage` | Twelve months of kWh with the same month last year. |
+| `concession`, `thirdPartyAuthority`, `lifeSupport`, `hardshipProgram`, `paymentPlan`, `extensions` | Concession status matches the case's `Z7_8` answer (active) or is lapsed/none; life support matches `Z7_4`; an active hardship program matches `Q37`. |
+| `contacts`, `complaintOpen`, `disconnectionWarningAt`, `collectionsStatus`, `digital`, `returnedMail`, `accessNeeds`, `languagePreference`, `interpreterUsed` | Contact history and service flags. |
+
+Each testing scenario shapes its accounts so specific account signals from the Admin flow fire, for example overdue and growing arrears for `unassigned_financial`, a broken plan for `historical_payment_plan`, estimates followed by a catch-up bill for `incomplete_assessment`. `no_flagged_circumstances` is a clean control with none. `shared/src/accountSignals.ts` detects 29 of the flow's account signals using each signal's `example_rule`, under the same id and name as the flow. Signals are display-only: they do not change circumstances, priorities or recommendations. The tariff is illustrative, not a real price. Existing databases pick up new fixture fields for seeded people on start, without a reset. The fixture schema version is 1.2.0.
 
 ## Identity and ownership
 
@@ -45,7 +61,9 @@ The manager is `staff-manager` (Taylor Brooks). Workers are `staff-alex`, `staff
 
 Each case contains synthetic `reportedAnswers`, `reportedAt` and reference periods. Values use the source-defined answer domains, with null for unknown/not recorded/not asked. `answerAvailability` distinguishes `recorded`, `not_asked` and `unknown`; No remains a recorded answer. `Q36b_*` answers are null when the respondent did not report contacting the provider (`Q35_5`), matching the questionnaire's branching. When contact is explicitly No, those history questions are not asked; when contact itself is unknown, their availability is unknown too.
 
-`circumstances` are precomputed demo classifications, with their supporting `evidenceFieldIds` and a clearly declared illustrative rule. They are useful for testing how the planned UI explains a flag. They are not a trained model or a universal assessment of hardship. A single low-income band, employment status, location or appliance characteristic is not used to assert a sensitive circumstance.
+**When the server has the Admin flow file (the normal setup), circumstances, support areas and recommendations are worked out from it on every request, and the precomputed values below are not used.** Each case's signals are its account signals plus survey answers that match a flow self-report signal: `Q35_8` → `ask_trade_offs`, `Q35_3` → `ask_rationing`, `Z7_4` → `ask_medical_equipment`, `Z7_6` → `ask_temperature_need`, `Z7_8` → `ask_concession_card` (see `SURVEY_SIGNALS` in `shared/src/caseFlow.ts`). Survey questions with no matching signal (`Q32_1`, `Q35_7`, `Z8a`, `Q33a_*`) don't flag anything there. A circumstance is flagged with the flow's scoring rules: at least 1 strong signal or at least 2 supporting signals; sensitive and safety circumstances need a strong signal. Only electricity entries apply. Support areas are the flow's categories, and recommendations are the flow's solutions. Each flagged circumstance carries the `signals` (id, name, source, strength, evidence) that raised it, so staff can check it. Edits on the Admin page change cases straight away. If the flow file is missing or invalid, the fixture's precomputed values below are used instead, and `/api/catalogs` reports `circumstanceSource: "fixture"`.
+
+In the fixture itself, `circumstances` are precomputed demo classifications, with their supporting `evidenceFieldIds` and a clearly declared illustrative rule. They are useful for testing how the planned UI explains a flag. They are not a trained model or a universal assessment of hardship. A single low-income band, employment status, location or appliance characteristic is not used to assert a sensitive circumstance.
 
 `supportAreaIds` are the union of matched circumstances. `recommendations` refer to the shared catalog and the particular circumstances/evidence that support offering a worker review. They do not assert eligibility or a chosen treatment. Missing answers remain visible as missing rather than being converted to No.
 

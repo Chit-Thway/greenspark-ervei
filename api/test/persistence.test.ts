@@ -67,3 +67,30 @@ describe("databases from before notes could be edited", () => {
     }
   });
 });
+
+describe("databases seeded before people had accounts", () => {
+  it("bring seeded people up to date with the fixture on start, leaving people added in the queue alone", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "gs-acct-"));
+    const db = join(dir, "acct.sqlite");
+    try {
+      let h = await start(db);
+      await h.call("staff-manager", "POST", "/api/cases", { displayName: "Queue Person", suburb: "Perth" });
+      // Simulate an older database: seeded people without the account field.
+      for (const r of h.store.db.prepare("SELECT id, doc FROM people WHERE is_created = 0").all() as { id: string; doc: string }[]) {
+        const { account: _, ...rest } = JSON.parse(r.doc);
+        h.store.db.prepare("UPDATE people SET doc = ? WHERE id = ?").run(JSON.stringify(rest), r.id);
+      }
+      expect(h.store.getPerson("demo-person-001")!.account).toBeUndefined();
+      await h.stop();
+
+      h = await start(db);
+      const people = h.store.allPeople();
+      expect(people).toHaveLength(101);
+      expect(people.filter((p) => p.account)).toHaveLength(100);
+      expect(people.find((p) => p.displayName === "Queue Person")!.account).toBeUndefined();
+      await h.stop();
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});

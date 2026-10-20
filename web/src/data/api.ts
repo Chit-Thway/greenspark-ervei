@@ -9,6 +9,8 @@ export interface Catalog {
   circumstances: CircumstanceDefinition[];
   evidenceFields: EvidenceFieldDefinition[];
   recommendations: RecommendationDefinition[];
+  /** "flow" when circumstances and solutions come from the Admin flow file. */
+  circumstanceSource?: "flow" | "fixture";
   asOf: string;
   users: StaffUser[];
   assignableUserIds: string[];

@@ -55,7 +55,9 @@ export function FilterSidebar(props: {
       <fieldset className="group">
         <legend>Support areas</legend>
         {data.supportAreas.map((area) => {
-          const children = data.circumstances.filter((c) => c.supportAreaId === area.id);
+          // The Admin flow has many circumstances; only list ones that match a case, or are selected.
+          const children = data.circumstances.filter((c) => c.supportAreaId === area.id && (!facets || (facets.circumstances[c.id] ?? 0) > 0 || query.circumstanceIds.includes(c.id)));
+          if (!children.length) return null;
           const selected = children.filter((c) => query.circumstanceIds.includes(c.id));
           const all = selected.length === children.length;
           const open = expanded[area.id] ?? false; // areas start collapsed

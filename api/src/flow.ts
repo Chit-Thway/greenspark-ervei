@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rename, stat, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 import { FlowError, applyOp, normalizeDoc, validateDoc, type FlowDoc, type FlowOp } from "@greenspark/shared";
 import { ApiError } from "./errors";
@@ -21,7 +21,22 @@ const fingerprint = (text: string) => createHash("sha256").update(text).digest("
  */
 export class FlowFile {
   private queue: Promise<unknown> = Promise.resolve();
+  private cached: { key: string; snapshot: FlowSnapshot } | null = null;
   constructor(readonly path: string) {}
+
+  /** The flow when it is valid, re-read only when the file changes. Case requests use this. */
+  async current(): Promise<FlowDoc | null> {
+    let key: string;
+    try {
+      const st = await stat(this.path);
+      key = `${st.mtimeMs}:${st.size}`;
+    } catch {
+      return null;
+    }
+    if (this.cached?.key !== key) this.cached = { key, snapshot: await this.read() };
+    const { doc, problems } = this.cached.snapshot;
+    return doc && !problems.length ? doc : null;
+  }
 
   async read(): Promise<FlowSnapshot> {
     let text: string;

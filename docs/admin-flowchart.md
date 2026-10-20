@@ -4,6 +4,8 @@
 
 File: `data/admin/utility_hardship_mapping.json` (override with `GREENSPARK_FLOW_FILE`).
 
+The flow also drives the case queue. Each case's circumstances, support areas (the flow's categories) and solutions are worked out from it, using the scoring rules in Settings, the case's account signals and its matching survey answers. An edit here changes what cases show as soon as it is saved. See the data contract for details.
+
 ## Using it
 
 - **Select a box** to trace its path (everything connected stays bright) and open its details on the right (a bottom sheet on small screens).

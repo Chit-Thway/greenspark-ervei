@@ -11,7 +11,7 @@ import { MAX_BULK_ITEMS, WorkflowService, type MutationResult } from "./service"
 import type { Store } from "./store";
 import type { Clock } from "./clock";
 import { FlowFile } from "./flow";
-import { FlowError, parseOp } from "@greenspark/shared";
+import { FlowError, applyFlow, evaluateCase, flowCatalog, parseOp, type FlowDoc } from "@greenspark/shared";
 import { SyntheticModelAdapter, withAssessments, type ModelAdapter } from "./adapters";
 
 const STATUSES = ["new", "in_progress", "waiting", "resolved"] as const;
@@ -65,7 +65,25 @@ export function createApp(store: Store, options: AppOptions = {}) {
   const model = options.modelAdapter ?? new SyntheticModelAdapter(store);
   const service = new WorkflowService(store, clock);
   const flow = options.flowFile ? new FlowFile(options.flowFile) : null;
-  const enrich = (cases: QueueCase[]) => withAssessments(model, cases);
+  // Circumstances and solutions come from the Admin flow file when it is configured and valid; otherwise the
+  // fixture's fixed survey rules stay in place. Assessments are added after.
+  const catalogs = new WeakMap<FlowDoc, ReturnType<typeof flowCatalog>>();
+  const catalogOf = (doc: FlowDoc) => { let c = catalogs.get(doc); if (!c) catalogs.set(doc, (c = flowCatalog(doc))); return c; };
+  const currentFlow = async () => (flow ? flow.current() : null);
+  const withFlow = async (cases: QueueCase[]) => {
+    const doc = await currentFlow();
+    if (!doc) return cases;
+    return cases.map((c) => ({ ...c, ...evaluateCase(c, store.getPerson(c.personId), store.catalog, doc, catalogOf(doc)) }));
+  };
+  /** Every case, with the catalogs that match how its circumstances were worked out. */
+  const dataset = async () => {
+    const data = store.dataset();
+    const doc = await currentFlow();
+    const out = doc ? applyFlow(data, doc) : { ...data, circumstanceSource: "fixture" as const };
+    out.cases = await withAssessments(model, out.cases);
+    return out;
+  };
+  const enrich = async (cases: QueueCase[]) => withAssessments(model, await withFlow(cases));
   const enrichOne = async (c: QueueCase) => (await enrich([c]))[0]!;
   const enrichResult = async (r: MutationResult) => ({ ...r, updated: await enrich(r.updated) });
   const app = express();
@@ -100,12 +118,14 @@ export function createApp(store: Store, options: AppOptions = {}) {
     res.json({ user: actor(res), demoIdentity: true, isSynthetic: store.catalog.isSynthetic, asOf: store.catalog.asOf });
   });
 
-  app.get("/api/catalogs", (_req, res) => {
+  app.get("/api/catalogs", async (_req, res) => {
     const c = store.catalog;
+    const doc = await currentFlow();
+    const f = doc ? catalogOf(doc) : c;
     res.json({
-      supportAreas: c.supportAreas, circumstances: c.circumstances, evidenceFields: c.evidenceFields,
-      recommendations: c.recommendations, assistanceOptions: ASSISTANCE_OPTIONS, priorityLabels: PRIORITY_LABELS,
-      statuses: STATUSES, asOf: c.asOf,
+      supportAreas: f.supportAreas, circumstances: f.circumstances, evidenceFields: c.evidenceFields,
+      recommendations: f.recommendations, assistanceOptions: ASSISTANCE_OPTIONS, priorityLabels: PRIORITY_LABELS,
+      statuses: STATUSES, asOf: c.asOf, circumstanceSource: doc ? "flow" : "fixture",
     });
   });
 
@@ -149,16 +169,14 @@ export function createApp(store: Store, options: AppOptions = {}) {
   });
 
   app.get("/api/cases/ids", async (req, res) => {
-    const data = store.dataset();
-    data.cases = await enrich(data.cases);
+    const data = await dataset();
     res.json({ ids: applyFilters(data, queryOf(req), actor(res).id).map((c) => c.id) });
   });
 
   app.get("/api/cases", async (req, res) => {
     const q = queryOf(req);
     const me = actor(res).id;
-    const data = store.dataset();
-    data.cases = await enrich(data.cases);
+    const data = await dataset();
     const matches = sortCases(applyFilters(data, q, me), data.people, q.sort);
     const page = paginate(matches, q.page, q.pageSize);
     const people = new Map(data.people.map((x) => [x.id, x]));
