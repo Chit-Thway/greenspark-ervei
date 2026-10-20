@@ -234,3 +234,7 @@ textarea { resize: vertical; }
 .suggest-list .solution .sub { display: block; }
 .suggest-list.solutions { list-style: none; padding: 0; display: grid; gap: 8px; }
 .suggest-list.solutions .solution { padding: 8px 10px; border: 1px solid var(--border); border-radius: var(--r-control); margin: 0; }
+.solution-facts { display: grid; gap: 2px; margin: 4px 0 0; font-size: 12px; }
+.solution-facts div { display: grid; grid-template-columns: 88px minmax(0, 1fr); gap: 8px; }
+.solution-facts dt { color: var(--muted); }
+.solution-facts dd { margin: 0; overflow-wrap: anywhere; }

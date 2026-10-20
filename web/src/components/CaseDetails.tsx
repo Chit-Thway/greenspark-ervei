@@ -178,7 +178,7 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
       {fromFlow && c.recommendations.length ? (
         <section className="case-card" aria-labelledby="ov-solutions">
           <h3 id="ov-solutions">Solutions to offer <span className="sim">for staff review</span></h3>
-          <p className="hint">Each solution once, with the circumstances it helps with. Check eligibility before offering.</p>
+          <p className="hint">What we can offer this customer, or refer them to. Check eligibility before offering.</p>
           <ul className="suggest-list solutions">
             {c.recommendations.map((r) => {
               const d = data.recommendations.find((x) => x.id === r.recommendationId);
@@ -186,9 +186,13 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
               return (
                 <li key={r.recommendationId} className="solution">
                   <strong>{d?.label ?? r.recommendationId}</strong>
-                  {d?.provider ? <span className="sub">{d.provider}. {d.howToAccess}{d.contact ? ` Contact: ${d.contact}.` : ""}</span> : null}
-                  {d?.description ? <span className="sub">{d.description}</span> : null}
-                  <span className="sub">For: {forNames.join(", ")}</span>
+                  <dl className="solution-facts">
+                    {d?.howToAccess ? <div><dt>What to do</dt><dd>{d.howToAccess}</dd></div> : null}
+                    {d?.provider ? <div><dt>Who</dt><dd>{d.provider}</dd></div> : null}
+                    {d?.contact ? <div><dt>Contact</dt><dd>{d.contact}</dd></div> : null}
+                    {d?.description ? <div><dt>Good to know</dt><dd>{d.description}</dd></div> : null}
+                    <div><dt>For</dt><dd>{forNames.join(", ")}</dd></div>
+                  </dl>
                   {d?.sourceUrl ? <a className="sub" href={d.sourceUrl} target="_blank" rel="noreferrer">Source{d.verified ? "" : " (not re-checked)"}</a> : null}
                 </li>
               );
