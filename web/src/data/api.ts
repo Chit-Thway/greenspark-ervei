@@ -1,3 +1,4 @@
+import type { FlowDoc, FlowOp } from "@greenspark/shared";
 import type {
   AssessmentStatus, CaseStatus, CircumstanceDefinition, EvidenceFieldDefinition, Person, QueueCase,
   QueueQuery, RecommendationDefinition, ReviewStatus, StaffUser, SupportArea,
@@ -40,7 +41,13 @@ export class ApiClientError extends Error {
   }
 }
 
+export interface FlowSnapshot { doc: FlowDoc | null; hash: string; problems: string[] }
+export interface FlowSaved { hash: string; previousHash: string; changed: boolean }
+
 export interface ApiClient {
+  /** The utility hardship flow behind the Admin page (a JSON file on the server). */
+  flow(): Promise<FlowSnapshot>;
+  flowOps(ops: FlowOp[]): Promise<FlowSaved>;
   catalog(): Promise<Catalog>;
   list(q: QueueQuery): Promise<CaseListResponse>;
   matchingIds(q: QueueQuery): Promise<string[]>;
@@ -96,6 +103,8 @@ export function createApiClient(getUser: () => string, base = ""): ApiClient {
     return json as T;
   }
   return {
+    flow: () => req("GET", "/api/admin/flow"),
+    flowOps: (ops) => req("POST", "/api/admin/flow/ops", { ops }),
     async catalog() {
       const [c, u] = await Promise.all([
         req<Omit<Catalog, "users" | "assignableUserIds">>("GET", "/api/catalogs"),

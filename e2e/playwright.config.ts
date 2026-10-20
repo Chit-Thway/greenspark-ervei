@@ -21,11 +21,11 @@ export default defineConfig({
   },
   webServer: [
     {
-      command: `rm -rf ${RUNTIME} && npm run start -w api`,
+      command: `rm -rf ${RUNTIME} && mkdir -p ${RUNTIME} && cp data/admin/utility_hardship_mapping.json ${RUNTIME}/flow.json && npm run start -w api`,
       cwd: "..",
       url: `http://localhost:${API_PORT}/api/health`,
       reuseExistingServer: false,
-      env: { PORT: String(API_PORT), GREENSPARK_DB: `${RUNTIME}/e2e.sqlite` },
+      env: { PORT: String(API_PORT), GREENSPARK_DB: `${RUNTIME}/e2e.sqlite`, GREENSPARK_FLOW_FILE: `${RUNTIME}/flow.json` },
     },
     {
       command: `npm run dev -w web -- --port ${WEB_PORT} --strictPort`,

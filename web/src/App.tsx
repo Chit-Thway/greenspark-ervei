@@ -8,7 +8,8 @@ import { FilterSidebar } from "./components/FilterSidebar";
 import { CaseTable } from "./components/CaseTable";
 import { CaseDetails } from "./components/CaseDetails";
 import { NewCasePanel, type NewCaseInput } from "./components/NewCasePanel";
-import { caseHref, isModifiedClick, useRoute } from "./route";
+import { caseHref, isModifiedClick, useRoute, type Page } from "./route";
+import { AdminPage } from "./admin/AdminPage";
 
 interface Notice {
   kind: "success" | "error";
@@ -30,7 +31,7 @@ export function App() {
   const userRef = useRef(userId);
   userRef.current = userId;
   const client = useMemo(() => createApiClient(() => userRef.current), []);
-  const { caseId, navigate } = useRoute();
+  const { caseId, page, navigate } = useRoute();
 
   const loadCatalog = useCallback(() => {
     setError(null);
@@ -47,12 +48,12 @@ export function App() {
   if (error) return <div className="state-screen" role="alert"><h1>We couldn’t load the case queue</h1><p>{error}</p><button className="btn" onClick={loadCatalog}>Try again</button></div>;
   if (!catalog) return <div className="state-screen" role="status"><p>Loading cases…</p></div>;
   const user = catalog.users.find((u) => u.id === userId) ?? catalog.users[0]!;
-  return <Workspace key={user.id} catalog={catalog} user={user} client={client} caseId={caseId} navigate={navigate} onSwitchUser={switchUser} />;
+  return <Workspace key={user.id} catalog={catalog} user={user} client={client} caseId={caseId} page={page} navigate={navigate} onSwitchUser={switchUser} />;
 }
 
 type Client = ReturnType<typeof createApiClient>;
 
-function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; caseId: string | null; navigate: (to: string) => void; onSwitchUser: (id: string) => void }) {
+function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; caseId: string | null; page: Page; navigate: (to: string) => void; onSwitchUser: (id: string) => void }) {
   const { catalog, user, client, navigate } = props;
   const openCaseId = props.caseId;
   const [query, setQuery] = useState<QueueQuery>(DEFAULT_QUERY);
@@ -388,7 +389,7 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; c
 
   return (
     <div className={`app${newCaseOpen && !openCaseId ? " has-panel" : ""}`}>
-      <a className="skip" href="#queue">Skip to case queue</a>
+      <a className="skip" href="#queue">Skip to main content</a>
       <header className="topbar">
         <a
           className="brand"
@@ -403,6 +404,11 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; c
           <span className="logo" aria-hidden="true">🌱</span>
           <span><strong>ERVEI</strong><span className="brand-sub">GREENSPARK · CASEWORK</span></span>
         </a>
+        <nav className="mainnav" aria-label="Main">
+          {([["/", "Case queue", props.page !== "admin"], ["/admin", "Admin", props.page === "admin"]] as const).map(([href, label, current]) => (
+            <a key={href} href={href} aria-current={current ? "page" : undefined} onClick={(e) => { if (isModifiedClick(e)) return; e.preventDefault(); navigate(href); }}>{label}</a>
+          ))}
+        </nav>
         <span className="tagline">Community support workspace</span>
         <span className="demo-pill">Synthetic demo data</span>
         <label className="whoami">
@@ -413,7 +419,9 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; c
         </label>
       </header>
 
-      {openCaseId ? (
+      {props.page === "admin" ? (
+        <AdminPage client={client} />
+      ) : openCaseId ? (
         <main id="queue" className="detail-main" tabIndex={-1}>
           <a
             className="back-link"

@@ -10,6 +10,8 @@ import { ApiError } from "./errors";
 import { MAX_BULK_ITEMS, WorkflowService, type MutationResult } from "./service";
 import type { Store } from "./store";
 import type { Clock } from "./clock";
+import { FlowFile } from "./flow";
+import { FlowError, parseOp } from "@greenspark/shared";
 import { SyntheticModelAdapter, withAssessments, type ModelAdapter } from "./adapters";
 
 const STATUSES = ["new", "in_progress", "waiting", "resolved"] as const;
@@ -50,6 +52,8 @@ function parse<T>(schema: z.ZodType<T>, data: unknown): T {
 export interface AppOptions {
   clock?: Clock;
   modelAdapter?: ModelAdapter;
+  /** The utility hardship flow JSON file behind the Admin page. */
+  flowFile?: string;
   /** Directory of the built web app. When set, this server also serves the pages (single-process hosting). */
   staticDir?: string | null;
   /** Optional "user:password" for HTTP Basic auth in front of everything except /api/health. For shared demo hosting. */
@@ -60,6 +64,7 @@ export function createApp(store: Store, options: AppOptions = {}) {
   const clock = options.clock ?? (() => new Date());
   const model = options.modelAdapter ?? new SyntheticModelAdapter(store);
   const service = new WorkflowService(store, clock);
+  const flow = options.flowFile ? new FlowFile(options.flowFile) : null;
   const enrich = (cases: QueueCase[]) => withAssessments(model, cases);
   const enrichOne = async (c: QueueCase) => (await enrich([c]))[0]!;
   const enrichResult = async (r: MutationResult) => ({ ...r, updated: await enrich(r.updated) });
@@ -123,6 +128,26 @@ export function createApp(store: Store, options: AppOptions = {}) {
   };
 
   // IDs of every case matching the filters (ignores paging); lets the UI drop selections that stopped matching.
+  // Admin: the utility hardship flow. Open to every demo user. The JSON file is the only copy of the data.
+  app.get("/api/admin/flow", async (_req, res) => {
+    if (!flow) throw new ApiError("not_found", "The flow file isn't configured.");
+    res.json(await flow.read());
+  });
+
+  const flowOpsBody = z.object({ ops: z.array(z.unknown()).min(1).max(200) }).strict();
+  app.post("/api/admin/flow/ops", async (req, res) => {
+    if (!flow) throw new ApiError("not_found", "The flow file isn't configured.");
+    const body = parse(flowOpsBody, req.body);
+    let ops;
+    try {
+      ops = body.ops.map((o) => parseOp(o));
+    } catch (e) {
+      if (e instanceof FlowError) throw new ApiError("validation_failed", e.message, [{ message: e.message }]);
+      throw e;
+    }
+    res.json(await flow.apply(ops));
+  });
+
   app.get("/api/cases/ids", async (req, res) => {
     const data = store.dataset();
     data.cases = await enrich(data.cases);

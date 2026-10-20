@@ -49,6 +49,8 @@ Every `/api` route except `/api/health` needs an `X-Demo-User` header naming a f
 | `PATCH /api/cases/:id/notes/:noteId` | `{text (not empty, no character limit), expectedVersion}`: author or manager only; keeps the earlier wording as an audit record |
 | `PATCH /api/cases/:id/review` | `{reviewStatus, expectedVersion}` |
 | `POST /api/workflow-actions/:actionId/undo` | Assignment/status actions only |
+| `GET /api/admin/flow` | Any demo user. The hardship-flow JSON file as `{doc, hash, problems}` (`doc` is null if the file is broken). 404 if no file is configured |
+| `POST /api/admin/flow/ops` | Any demo user. `{ops:[…]}` (1–200 edit operations, all-or-nothing) → `{hash, previousHash, changed}`. See [admin-flowchart.md](admin-flowchart.md) |
 
 Mutations return `{ actionId, updated: [case…], unchanged: [caseId…] }`. A change that matches the current value is reported under `unchanged` and does not bump the version.
 

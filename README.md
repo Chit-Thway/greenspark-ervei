@@ -14,6 +14,7 @@ The approved direction as of **16 October 2026** is the bright green/mint theme 
 - [Proposed data/API/model/profile contract](docs/data-contract.md)
 - [Workflow contract: assignment, bulk actions, versioning, Undo](docs/workflow-contract.md)
 - [Node API: run, reset, endpoints and errors](docs/api.md)
+- [Admin flowchart: edit the hardship-flow JSON](docs/admin-flowchart.md)
 - [Demo script](docs/demo-script.md)
 - [Model integration boundary](docs/integration.md)
 - [Build progress by milestone](docs/progress.md)
@@ -79,6 +80,7 @@ The first screen is a shared staff workspace with a case list, a filter panel on
 | Assigned to me | Show cases assigned to the signed-in support worker. Assignment comes from the case workflow. |
 | Manager assignment | Let managers allocate cases to support workers within the shared interface. |
 | Bulk actions | Single/bulk manager assignment and permitted status changes, with clear selection and reversible-action feedback. |
+| Admin page | `/admin` (any demo user) is an interactive, editable flowchart of the utility-hardship JSON (signals → circumstances → solutions). Every edit is written straight to the JSON file. See [admin-flowchart.md](docs/admin-flowchart.md). |
 | Case page | Each case opens on its own page at `/cases/<caseId>` (it can be bookmarked or opened in a new tab; Back returns to the queue with filters, page and selection kept). It shows minimal identity/context, assignment, status, supporting reported answers, recommendations and short notes. There is no separate full-profile page. |
 
 Recorded answers, illustrative support-area groupings, proposed staff actions and model predictions have distinct roles. Domestic violence and income loss are not established by the inspected source fields and are not included in the supported demo taxonomy. Historical survey answers retain their reporting periods. Staff review suggested actions.

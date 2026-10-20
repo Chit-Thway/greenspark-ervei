@@ -21,3 +21,14 @@ describe("case routes", () => {
     expect(isModifiedClick({ ...base, button: 1 })).toBe(true);
   });
 });
+
+describe("pages", () => {
+  it("knows the queue, case pages and the Admin page", async () => {
+    const { pageFromPath } = await import("./route");
+    expect(pageFromPath("/")).toBe("queue");
+    expect(pageFromPath("/admin")).toBe("admin");
+    expect(pageFromPath("/admin/")).toBe("admin");
+    expect(pageFromPath("/admin/extra")).toBe("queue");
+    expect(pageFromPath("/cases/GS-2011")).toBe("case");
+  });
+});

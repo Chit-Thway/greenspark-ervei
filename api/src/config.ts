@@ -5,6 +5,8 @@ const root = fileURLToPath(new URL("../../", import.meta.url));
 
 export const FIXTURE_PATH = process.env.GREENSPARK_FIXTURE ?? `${root}data/synthetic/case-queue.v1.json`;
 export const DB_PATH = process.env.GREENSPARK_DB ?? `${root}data/runtime/greenspark.sqlite`;
+// The utility hardship flow file edited on the Admin page. Changes are written straight back to it.
+export const FLOW_FILE = process.env.GREENSPARK_FLOW_FILE ?? `${root}data/admin/utility_hardship_mapping.json`;
 export const PORT = Number(process.env.PORT ?? 3001);
 
 

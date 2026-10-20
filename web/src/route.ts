@@ -14,7 +14,14 @@ export function isModifiedClick(e: { metaKey: boolean; ctrlKey: boolean; shiftKe
   return e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0;
 }
 
-/** Minimal path router: the queue lives at "/" and each case at "/cases/:caseId". */
+export type Page = "queue" | "case" | "admin";
+
+export function pageFromPath(path: string): Page {
+  if (/^\/admin\/?$/.test(path)) return "admin";
+  return caseIdFromPath(path) ? "case" : "queue";
+}
+
+/** Minimal path router: the queue lives at "/", each case at "/cases/:caseId" and the Admin page at "/admin". */
 export function useRoute() {
   const [path, setPath] = useState(() => window.location.pathname);
   useEffect(() => {
@@ -27,5 +34,5 @@ export function useRoute() {
     setPath(window.location.pathname);
     window.scrollTo(0, 0);
   }, []);
-  return { caseId: caseIdFromPath(path), navigate };
+  return { caseId: caseIdFromPath(path), page: pageFromPath(path), navigate };
 }
