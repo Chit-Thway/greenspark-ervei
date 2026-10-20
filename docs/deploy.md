@@ -23,3 +23,7 @@ Render supplies `PORT`; the server listens on it.
 ## Coolify (or any Docker host) with a persistent disk
 
 The repo's `Dockerfile` builds one container. In Coolify: **New resource → Public/Private Repository**, build pack **Dockerfile**, port **3001**. Then under **Persistent Storage** add a volume with destination path `/data`. That one volume holds both the case database (`/data/greenspark.sqlite`) and the Admin flow JSON (`/data/utility_hardship_mapping.json`, copied from the repo on first start only). Set `GREENSPARK_BASIC_AUTH` (`user:password`) if the site is public. Keep to one instance. To reset the Admin JSON to the repo's version, delete that file in the volume and redeploy.
+
+## Fly.io (live at https://greenspark-ervei.fly.dev)
+
+`fly.toml` deploys the same `Dockerfile` as one machine in Sydney (`syd`) with a 1 GB volume, `greenspark_data`, mounted at `/data`. As on Coolify, the case database and Admin flow JSON live there and survive deploys and restarts. Redeploy with `fly deploy`. Keep it to one machine and one volume (SQLite). The machine stops when idle and starts on the next request. No `GREENSPARK_BASIC_AUTH` is set, so the site is open. Add one with `fly secrets set GREENSPARK_BASIC_AUTH=user:password`.
