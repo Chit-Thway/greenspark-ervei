@@ -75,6 +75,22 @@ export function UtilityAccount({ account: a, accountNumber }: { account: Custome
   );
 }
 
+const sentimentLabel = (s: number) => (s <= -0.5 ? "Very negative" : s < -0.1 ? "Negative" : s <= 0.1 ? "Neutral" : "Positive");
+
+/**
+ * Splits the dataset's templated agent notes ("Customer contact: … Outcome: … Customer indicated … Balance at contact $…")
+ * into what the customer said and the balance; the reason and outcome repeat fields shown elsewhere, so they are dropped.
+ */
+function noteParts(notes: string): { said: string | null; balance: string | null; rest: string } {
+  let rest = notes;
+  const take = (re: RegExp) => { const m = re.exec(rest); if (!m) return null; rest = rest.replace(m[0], " "); return m[1]!.trim(); };
+  take(/Customer contact:([^.]*)\.?/i);
+  take(/Outcome:([^.]*)\.?/i);
+  const said = take(/Customer indicated ([^.]*)\.?/i);
+  const balance = take(/Balance at contact (\$[\d,]+(?:\.\d+)?)\.?/i);
+  return { said, balance, rest: rest.replace(/\s+/g, " ").trim() };
+}
+
 /** Contacts with the customer, newest first, with the transcript where there is one. */
 export function ContactHistory({ account: a }: { account: CustomerAccount }) {
   const contacts = [...a.contacts].reverse();
@@ -83,15 +99,22 @@ export function ContactHistory({ account: a }: { account: CustomerAccount }) {
       <h3 id="ov-contacts">Contact history <span className="pill">{contacts.length}</span></h3>
       {contacts.length === 0 ? <p className="muted">No contacts recorded.</p> : (
         <ul className="contact-list">
-          {contacts.map((c) => (
+          {contacts.map((c) => { const n = noteParts(c.notes); return (
             <li key={c.id}>
               <div className="contact-head">
                 <strong>{human(c.reason)}</strong>
                 {c.complaint ? <span className="sens sens-safety">Complaint</span> : null}
                 {c.repeatWithin7d ? <span className="sens">Repeat</span> : null}
+                <span className="contact-date">{date(c.date)}</span>
               </div>
-              <span className="sub">{date(c.date)} · {human(c.channel)} ({c.direction}) · {human(c.outcome)}{c.sentiment !== null ? ` · sentiment ${c.sentiment.toFixed(2)}` : ""}</span>
-              <span className="sub">{c.notes}</span>
+              <dl className="contact-facts">
+                <div><dt>Channel</dt><dd>{human(c.channel)} ({c.direction})</dd></div>
+                <div><dt>Outcome</dt><dd>{human(c.outcome)}</dd></div>
+                {c.sentiment !== null ? <div><dt>Sentiment</dt><dd>{sentimentLabel(c.sentiment)} ({c.sentiment.toFixed(2)})</dd></div> : null}
+                {n.balance ? <div><dt>Balance</dt><dd>{n.balance}</dd></div> : null}
+              </dl>
+              {n.said ? <blockquote className="contact-said">“{n.said}”</blockquote> : null}
+              {n.rest ? <span className="sub">{n.rest}</span> : null}
               {c.transcript ? (
                 <details className="transcript">
                   <summary>Transcript</summary>
@@ -99,7 +122,7 @@ export function ContactHistory({ account: a }: { account: CustomerAccount }) {
                 </details>
               ) : null}
             </li>
-          ))}
+          ); })}
         </ul>
       )}
     </section>
@@ -247,6 +270,7 @@ export function AccountHistory({ account: a, asOf }: { account: CustomerAccount;
         </>
       )}
       <p className="subhead">Usage by month</p>
+      <UsageChart usage={recentUsage} />
       <div className="table-scroll">
         <table className="mini-table">
           <thead><tr><th scope="col">Month</th><th scope="col">kWh (last year)</th>{a.solar ? <th scope="col">Solar export</th> : null}<th scope="col">Outage hours</th></tr></thead>
@@ -272,5 +296,30 @@ export function AccountHistory({ account: a, asOf }: { account: CustomerAccount;
         </>
       ) : null}
     </section>
+  );
+}
+
+/** Bars for each month's kWh, oldest on the left, with a line for the same month last year. */
+function UsageChart({ usage }: { usage: { month: string; kWh: number; kWhLastYear: number | null }[] }) {
+  const months = [...usage].sort((a, b) => a.month.localeCompare(b.month));
+  if (months.length < 2) return null;
+  const W = 600, H = 120, top = 8, bottom = 18;
+  const max = Math.max(...months.map((m) => Math.max(m.kWh, m.kWhLastYear ?? 0)), 1);
+  const step = W / months.length, bar = step * 0.6;
+  const y = (v: number) => top + (H - top - bottom) * (1 - v / max);
+  const last = months.map((m, i) => (m.kWhLastYear === null ? null : `${i * step + step / 2},${y(m.kWhLastYear)}`)).filter(Boolean);
+  return (
+    <figure className="usage-chart">
+      <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`Monthly usage from ${months[0]!.month} to ${months.at(-1)!.month}, peaking at ${max} kWh`}>
+        {months.map((m, i) => (
+          <g key={m.month}>
+            <rect x={i * step + (step - bar) / 2} y={y(m.kWh)} width={bar} height={H - bottom - y(m.kWh)} rx={2} className="usage-bar"><title>{`${m.month}: ${m.kWh} kWh${m.kWhLastYear !== null ? ` (last year ${m.kWhLastYear})` : ""}`}</title></rect>
+            <text x={i * step + step / 2} y={H - 4} textAnchor="middle" className="usage-axis">{m.month.slice(5)}</text>
+          </g>
+        ))}
+        {last.length > 1 ? <polyline points={last.join(" ")} className="usage-last" /> : null}
+      </svg>
+      <figcaption className="usage-key"><span className="key-bar" /> This year <span className="key-line" /> Last year</figcaption>
+    </figure>
   );
 }

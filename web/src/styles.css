@@ -274,3 +274,16 @@ textarea { resize: vertical; }
 .transcript .turn-customer .who { color: var(--fg); }
 .history li { font-size: 13px; padding: 3px 0; }
 .history li .sub { display: block; }
+.contact-date { margin-left: auto; color: var(--muted); font-size: 12px; white-space: nowrap; }
+.contact-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 4px 12px; margin: 4px 0 2px; }
+.contact-facts dt { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; }
+.contact-facts dd { margin: 0; }
+.contact-said { margin: 4px 0 0; padding: 4px 10px; border-left: 3px solid var(--border); font-style: italic; }
+.usage-chart { margin: 4px 0 8px; }
+.usage-chart svg { width: 100%; height: auto; display: block; }
+.usage-bar { fill: var(--brand); opacity: .85; }
+.usage-last { fill: none; stroke: var(--muted); stroke-width: 1.5; stroke-dasharray: 4 3; }
+.usage-axis { fill: var(--muted); font-size: 11px; }
+.usage-key { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); margin-top: 2px; }
+.usage-key .key-bar { width: 10px; height: 10px; border-radius: 2px; background: var(--brand); }
+.usage-key .key-line { width: 14px; border-top: 2px dashed var(--muted); margin-left: 8px; }
