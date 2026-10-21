@@ -1,5 +1,5 @@
 import { memo, useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
-import type { FlowCircumstance, FlowDoc, FlowKind, FlowSignal, FlowSolution } from "@greenspark/shared";
+import { signalHasData, type FlowCircumstance, type FlowDoc, type FlowKind, type FlowSignal, type FlowSolution } from "@greenspark/shared";
 import { UTILITY_LETTER, groupCircumstances, groupSignals, groupSolutions, nodeKey, type FlowIndex, type Group, type Ref, type Trace } from "./flowModel";
 
 interface Props {
@@ -138,9 +138,10 @@ export function FlowBoard(props: Props) {
         <Lane
           groups={signalGroups}
           render={(s: FlowSignal) => (
-            <Node key={s.id} kind="signal" id={s.id} label={`Signal: ${s.name}`} selected={isSel("signal", s.id)} on={isOn("signal", s.id)} match={isMatch("signal", s.id)} onSelect={props.onSelect}>
+            <Node key={s.id} kind="signal" id={s.id} label={`Signal: ${s.name}${signalHasData(s) ? "" : ", data is missing"}`} selected={isSel("signal", s.id)} on={isOn("signal", s.id)} match={isMatch("signal", s.id)} onSelect={props.onSelect}>
               <i className={`mk ${s.source === "account" ? "acct" : "ask"}`} aria-hidden="true" />
               <span className="nl">{s.name}</span>
+              {signalHasData(s) ? null : <span className="nodata" aria-hidden="true">No data</span>}
               {s.sensitive ? <i className="dot sensitive" aria-label="Sensitive" /> : null}
             </Node>
           )}
@@ -164,7 +165,7 @@ export function FlowBoard(props: Props) {
           render={(s: FlowSolution) => (
             <Node key={s.id} kind="solution" id={s.id} label={`Solution: ${s.name}`} className="sol" selected={isSel("solution", s.id)} on={isOn("solution", s.id)} match={isMatch("solution", s.id)} onSelect={props.onSelect}>
               <span className="nl">{s.name}</span>
-              <span className="sub">{s.provider}{!s.verified ? <span className="uc"> · not re-checked</span> : null}</span>
+              <span className="sub">{s.provider}</span>
             </Node>
           )}
         />

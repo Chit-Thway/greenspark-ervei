@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { slugId, type FlowCircumstance, type FlowDoc, type FlowKind, type FlowOp, type FlowSignal, type FlowSolution, type Strength } from "@greenspark/shared";
+import { signalHasData, slugId, type FlowCircumstance, type FlowDoc, type FlowKind, type FlowOp, type FlowSignal, type FlowSolution, type Strength } from "@greenspark/shared";
 import { KIND_LABEL, SOURCE_LABEL, UTILITY_LABEL, entityOf, type FlowIndex, type Ref } from "./flowModel";
 import type { DispatchResult } from "./useFlow";
 
@@ -239,6 +239,14 @@ function Facts({ doc, entity, kind }: { doc: FlowDoc; entity: FlowSignal | FlowC
           {s.example_rule ? (<><dt>Example rule</dt><dd><code className="code">{s.example_rule}</code></dd></>) : null}
         </dl>
         {s.sensitive ? <p className="note sensitive">Sensitive. Use only to prompt a trained staff member, and only with the customer's consent.</p> : null}
+        {signalHasData(s) ? null : (
+          <p className="note nodata-note">
+            <strong>Data is missing.</strong>{" "}
+            {s.source === "account"
+              ? "The demo accounts don't hold the data this rule needs, so this signal never fires on a case."
+              : "None of the survey questions ask this, so this signal never fires on a case."}
+          </p>
+        )}
       </>
     );
   }

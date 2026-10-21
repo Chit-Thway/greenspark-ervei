@@ -76,7 +76,6 @@
 .fnode.sol { border-left: 3px solid var(--brand); flex-wrap: wrap; }
 .fnode.sol .nl { flex-basis: 100%; }
 .fnode .sub { font-size: 11px; }
-.fnode .uc { color: var(--high); }
 .fnode.on { border-color: var(--brand); background: var(--selected); opacity: 1; }
 .fnode.is-sel { border-color: var(--brand); box-shadow: 0 0 0 2px var(--brand); background: var(--selected); font-weight: 600; }
 .fnode.match { box-shadow: 0 0 0 2px #f2c94c; }
@@ -172,3 +171,7 @@
 .mainnav a:hover { background: var(--sidebar); }
 .mainnav a[aria-current="page"] { background: var(--selected); color: var(--brand-hover); font-weight: 600; }
 @media (prefers-reduced-motion: reduce) { .lk, .fnode { transition: none; } }
+
+/* Signals the app has no data for (no detection rule, or no matching survey question) */
+.nodata { flex: none; font-size: 10px; font-weight: 600; line-height: 1; padding: 3px 5px; border-radius: 4px; color: var(--muted); background: var(--routine-bg); border: 1px dashed var(--border); white-space: nowrap; }
+.note.nodata-note { background: var(--routine-bg); color: var(--fg); border: 1px dashed var(--border); }

@@ -5,7 +5,7 @@
 //   sensitive and safety circumstances need at least 1 strong signal;
 //   safety circumstances are never actioned automatically (the case page routes them to trained staff).
 // Solutions are the flagged circumstances' solutions. Everything is worked out again whenever the flow changes.
-import { detectAccountSignals } from "./accountSignals";
+import { ACCOUNT_SIGNAL_IDS, detectAccountSignals } from "./accountSignals";
 import type { FlowDoc } from "./flow";
 import type {
   CaseCircumstance, CaseRecommendation, CaseSignal, CircumstanceDefinition, Person, QueueCase, QueueDataset,
@@ -29,6 +29,14 @@ export const SURVEY_SIGNALS: { signalId: string; fieldId: string; answers: strin
 ];
 
 const applies = (utilities: string[]) => utilities.includes(CASE_UTILITY);
+
+/**
+ * Whether the app has data that can raise this signal: an account signal needs a detection rule over the
+ * account data, and a self-report signal needs a survey question that asks the same thing. Others never fire.
+ */
+export function signalHasData(signal: { id: string; source: string }): boolean {
+  return signal.source === "account" ? ACCOUNT_SIGNAL_IDS.includes(signal.id) : SURVEY_SIGNALS.some((m) => m.signalId === signal.id);
+}
 
 /** Support areas, circumstances and recommendations for the queue, built from the flow. */
 export function flowCatalog(doc: FlowDoc): Pick<QueueDataset, "supportAreas" | "circumstances" | "recommendations"> {
