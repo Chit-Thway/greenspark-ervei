@@ -412,7 +412,7 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; o
           </a>
           <NoticeBar notice={notice} busy={busy} onUndo={undo} onDismiss={() => say(null)} />
           {openItem ? (
-            <CaseDetails key={openItem.case.id} data={catalog} item={openItem} user={user} busy={busy} actions={actions} loadPlan={client.supportPlan} />
+            <CaseDetails key={openItem.case.id} data={catalog} item={openItem} user={user} busy={busy} actions={actions} loadPlan={client.supportPlan} client={client} />
           ) : caseLoad?.status === "missing" ? (
             <div className="empty" role="alert"><h1>Case not found</h1><p>There is no case for account {openAccount}. It may have been mistyped.</p></div>
           ) : caseLoad?.status === "error" ? (

@@ -14,6 +14,10 @@ interface Props {
   readOnly: boolean;
   onSelect: (ref: Ref) => void;
   onAdd: (kind: FlowKind) => void;
+  /** When set, only these nodes (nodeKey) are shown, e.g. one case's path. */
+  only?: Set<string> | null;
+  /** Hides the + Add buttons (read-only views). */
+  hideAdd?: boolean;
 }
 
 interface Path { key: string; d: string; supporting: boolean; kind: "signal-circumstance" | "circumstance-solution" }
@@ -62,9 +66,12 @@ export function FlowBoard(props: Props) {
   const [size, setSize] = useState({ w: 0, h: 0 });
   const focus = trace !== null;
 
-  const signalGroups = useMemo(() => groupSignals(doc, utility), [doc, utility]);
-  const circGroups = useMemo(() => groupCircumstances(doc, utility), [doc, utility]);
-  const solGroups = useMemo(() => groupSolutions(doc, utility), [doc, utility]);
+  const { only } = props;
+  const keep = useCallback(<T extends { id: string }>(kind: FlowKind, groups: Group<T>[]) =>
+    only ? groups.map((g) => ({ ...g, items: g.items.filter((i) => only.has(nodeKey(kind, i.id))) })).filter((g) => g.items.length > 0) : groups, [only]);
+  const signalGroups = useMemo(() => keep("signal", groupSignals(doc, utility)), [doc, utility, keep]);
+  const circGroups = useMemo(() => keep("circumstance", groupCircumstances(doc, utility)), [doc, utility, keep]);
+  const solGroups = useMemo(() => keep("solution", groupSolutions(doc, utility)), [doc, utility, keep]);
 
   const visibleLinks = useMemo(() => {
     const shown = new Set<string>();
@@ -103,7 +110,7 @@ export function FlowBoard(props: Props) {
     const observer = new ResizeObserver(() => { cancelAnimationFrame(frame); frame = requestAnimationFrame(measure); });
     observer.observe(board);
     return () => { cancelAnimationFrame(frame); observer.disconnect(); };
-  }, [measure, doc]);
+  }, [measure, doc, only]);
 
   const isOn = (kind: FlowKind, id: string) => !!trace?.nodes.has(nodeKey(kind, id));
   const isSel = (kind: FlowKind, id: string) => selected?.kind === kind && selected.id === id;
@@ -121,17 +128,17 @@ export function FlowBoard(props: Props) {
 
       <div className="fhead" style={{ gridColumn: 1 }}>
         <i className="mk acct" aria-hidden="true" /><h2>Signals</h2><span className="n" data-testid="count-signals">{count(signalGroups)}</span>
-        <button type="button" className="add-btn" disabled={props.readOnly} onClick={() => props.onAdd("signal")} aria-label="Add a signal">+ Add</button>
+        {props.hideAdd ? null : <button type="button" className="add-btn" disabled={props.readOnly} onClick={() => props.onAdd("signal")} aria-label="Add a signal">+ Add</button>}
       </div>
       <div className="fhead arrow" style={{ gridColumn: 2 }} aria-hidden="true">→</div>
       <div className="fhead" style={{ gridColumn: 3 }}>
         <i className="dot ink" aria-hidden="true" /><h2>Circumstances</h2><span className="n" data-testid="count-circumstances">{count(circGroups)}</span>
-        <button type="button" className="add-btn" disabled={props.readOnly} onClick={() => props.onAdd("circumstance")} aria-label="Add a circumstance">+ Add</button>
+        {props.hideAdd ? null : <button type="button" className="add-btn" disabled={props.readOnly} onClick={() => props.onAdd("circumstance")} aria-label="Add a circumstance">+ Add</button>}
       </div>
       <div className="fhead arrow" style={{ gridColumn: 4 }} aria-hidden="true">→</div>
       <div className="fhead" style={{ gridColumn: 5 }}>
         <i className="sq" aria-hidden="true" /><h2>Solutions</h2><span className="n" data-testid="count-solutions">{count(solGroups)}</span>
-        <button type="button" className="add-btn" disabled={props.readOnly} onClick={() => props.onAdd("solution")} aria-label="Add a solution">+ Add</button>
+        {props.hideAdd ? null : <button type="button" className="add-btn" disabled={props.readOnly} onClick={() => props.onAdd("solution")} aria-label="Add a solution">+ Add</button>}
       </div>
 
       <div className="flane" style={{ gridColumn: 1 }}>

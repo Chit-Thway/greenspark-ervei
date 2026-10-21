@@ -1,0 +1,174 @@
+import { useEffect, useMemo, useRef, useState } from "react";
+import { caseSignals, type FlowDoc, type Person, type QueueCase } from "@greenspark/shared";
+import type { ApiClient, Catalog } from "../data/api";
+import { readableDates } from "../domain/format";
+import { FlowBoard } from "./FlowBoard";
+import { SOURCE_LABEL, buildIndex, nodeKey, type FlowIndex, type Ref, type Trace } from "./flowModel";
+import "./admin.css";
+
+interface Props { client: ApiClient; data: Catalog; c: QueueCase; person: Person | null; onClose: () => void }
+
+/** One case's path through the flowchart: the signals seen, the circumstances flagged and the solutions offered. */
+function casePath(c: QueueCase, person: Person | null, data: Catalog, doc: FlowDoc, index: FlowIndex) {
+  const seen = new Map(caseSignals(c, person, data, doc).map((s) => [s.id, s]));
+  const flagged = new Map(c.circumstances.map((x) => [x.circumstanceId, x]));
+  const offered = new Map(c.recommendations.map((r) => [r.recommendationId, r]));
+  const nodes = new Set<string>();
+  const links = new Set<string>();
+  for (const id of seen.keys()) if (index.signals.has(id)) nodes.add(nodeKey("signal", id));
+  for (const x of c.circumstances) {
+    nodes.add(nodeKey("circumstance", x.circumstanceId));
+    for (const s of x.signals ?? []) links.add(`s>c:${s.id}>${x.circumstanceId}`);
+  }
+  for (const r of c.recommendations) {
+    nodes.add(nodeKey("solution", r.recommendationId));
+    for (const cid of r.circumstanceIds) links.add(`c>o:${cid}>${r.recommendationId}`);
+  }
+  return { seen, flagged, offered, trace: { nodes, links } satisfies Trace };
+}
+
+type Path = ReturnType<typeof casePath>;
+
+function Panel({ refr, path, index, onSelect }: { refr: Ref | null; path: Path; index: FlowIndex; onSelect: (r: Ref | null) => void }) {
+  const signalName = (id: string) => index.signals.get(id)?.name ?? id;
+  const circName = (id: string) => index.circumstances.get(id)?.name ?? id;
+  const solName = (id: string) => index.solutions.get(id)?.name ?? id;
+  const pick = (kind: Ref["kind"], id: string, label: string) => <button type="button" className="linkish" onClick={() => onSelect({ kind, id })}>{label}</button>;
+
+  if (!refr) {
+    return (
+      <>
+        <h3>This case’s path</h3>
+        <p className="hint">Highlighted boxes are what this case has. Click any box for its details.</p>
+        <p className="block-label">Signals seen <span className="pill">{path.seen.size}</span></p>
+        {path.seen.size ? (
+          <ul className="plain cf-list">
+            {[...path.seen.values()].map((s) => <li key={s.id}>{pick("signal", s.id, s.name)}<span className="sub">{readableDates(s.evidence)}</span></li>)}
+          </ul>
+        ) : <p className="muted">No signals.</p>}
+        <p className="block-label">Circumstances flagged <span className="pill">{path.flagged.size}</span></p>
+        {path.flagged.size ? <ul className="plain cf-list">{[...path.flagged.keys()].map((id) => <li key={id}>{pick("circumstance", id, circName(id))}</li>)}</ul> : <p className="muted">None flagged.</p>}
+        <p className="block-label">Solutions to offer <span className="pill">{path.offered.size}</span></p>
+        {path.offered.size ? <ul className="plain cf-list">{[...path.offered.keys()].map((id) => <li key={id}>{pick("solution", id, solName(id))}</li>)}</ul> : <p className="muted">None.</p>}
+      </>
+    );
+  }
+
+  const back = <button type="button" className="btn btn-small" onClick={() => onSelect(null)}>Back to this case’s path</button>;
+
+  if (refr.kind === "signal") {
+    const def = index.signals.get(refr.id);
+    const s = path.seen.get(refr.id);
+    const targets = index.circumstancesOfSignal.get(refr.id) ?? [];
+    return (
+      <>
+        {back}
+        <p className="kind">Signal · {def ? SOURCE_LABEL[def.source] ?? def.source : ""}</p>
+        <h3>{signalName(refr.id)}</h3>
+        <p className={s ? "cf-yes" : "cf-no"}>{s ? "Seen for this case" : "Not seen for this case"}</p>
+        {s ? <p>{readableDates(s.evidence)}</p> : null}
+        {def?.detect ? <p className="hint">{def.detect}</p> : null}
+        <p className="block-label">Points to</p>
+        <ul className="plain cf-list">
+          {targets.map((t) => (
+            <li key={t.id}>{pick("circumstance", t.id, circName(t.id))} <span className="sub">{t.strength === "strong" ? "Strong" : "Supporting"} · {path.flagged.has(t.id) ? "flagged for this case" : "not flagged"}</span></li>
+          ))}
+        </ul>
+      </>
+    );
+  }
+
+  if (refr.kind === "circumstance") {
+    const def = index.circumstances.get(refr.id);
+    const x = path.flagged.get(refr.id);
+    const links = def?.signals ?? [];
+    const seenLinks = links.filter((l) => path.seen.has(l.id));
+    const strong = seenLinks.filter((l) => l.strength === "strong").length;
+    return (
+      <>
+        {back}
+        <p className="kind">Circumstance{def && def.sensitivity !== "standard" ? ` · ${def.sensitivity === "safety" ? "Safety" : "Sensitive"}` : ""}</p>
+        <h3>{circName(refr.id)}</h3>
+        <p className={x ? "cf-yes" : "cf-no"}>
+          {x ? "Flagged for this case" : "Not flagged for this case"}: {strong} strong and {seenLinks.length - strong} supporting signal{seenLinks.length - strong === 1 ? "" : "s"} seen.
+          {" "}{def?.sensitivity === "standard" ? "Needs 1 strong or 2 supporting." : "Needs a strong signal."}
+        </p>
+        <p className="block-label">Signals</p>
+        <ul className="plain cf-list">
+          {links.map((l) => {
+            const s = path.seen.get(l.id);
+            return <li key={l.id}>{pick("signal", l.id, signalName(l.id))} <span className="sub">{l.strength === "strong" ? "Strong" : "Supporting"} · {s ? readableDates(s.evidence) : "not seen"}</span></li>;
+          })}
+        </ul>
+        <p className="block-label">Solutions</p>
+        <ul className="plain cf-list">{(def?.solutions ?? []).map((id) => <li key={id}>{pick("solution", id, solName(id))}</li>)}</ul>
+      </>
+    );
+  }
+
+  const def = index.solutions.get(refr.id);
+  const r = path.offered.get(refr.id);
+  return (
+    <>
+      {back}
+      <p className="kind">Solution · {def?.type}</p>
+      <h3>{solName(refr.id)}</h3>
+      <p className={r ? "cf-yes" : "cf-no"}>{r ? "Offered for this case" : "Not offered for this case"}</p>
+      {r ? <><p className="block-label">Because of</p><ul className="plain cf-list">{r.circumstanceIds.map((id) => <li key={id}>{pick("circumstance", id, circName(id))}</li>)}</ul></> : null}
+      {def?.provider ? <><p className="block-label">Who</p><p>{def.provider}</p></> : null}
+      {def?.how_to_access ? <><p className="block-label">What to do</p><p>{def.how_to_access}</p></> : null}
+      {def?.key_facts ? <><p className="block-label">Good to know</p><p>{def.key_facts}</p></> : null}
+    </>
+  );
+}
+
+export function CaseFlowModal({ client, data, c, person, onClose }: Props) {
+  const ref = useRef<HTMLDialogElement>(null);
+  const [doc, setDoc] = useState<FlowDoc | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [selected, setSelected] = useState<Ref | null>(null);
+  const [caseOnly, setCaseOnly] = useState(true);
+
+  useEffect(() => { ref.current?.showModal(); }, []);
+  useEffect(() => {
+    let live = true;
+    client.flow().then((snap) => live && setDoc(snap.doc), (e: unknown) => live && setError(e instanceof Error ? e.message : "Could not load the flowchart."));
+    return () => { live = false; };
+  }, [client]);
+
+  const index = useMemo(() => (doc ? buildIndex(doc) : null), [doc]);
+  const path = useMemo(() => (doc && index ? casePath(c, person, data, doc, index) : null), [c, person, data, doc, index]);
+
+  return (
+    <dialog ref={ref} className="case-flow" aria-labelledby="cf-title" onClose={onClose}>
+      <header className="cf-head">
+        <div>
+          <p className="eyebrow">Flowchart for this case</p>
+          <h2 id="cf-title">{person?.displayName ?? c.id}{person?.accountNumber ? <span className="cf-acct"> · {person.accountNumber}</span> : null}</h2>
+          {path ? <p className="sub">{path.seen.size} signals seen → {path.flagged.size} circumstances flagged → {path.offered.size} solutions</p> : null}
+        </div>
+        <div className="cf-actions">
+          <fieldset className="seg">
+            <legend className="sr-only">Show</legend>
+            <span><input type="radio" name="cf-scope" id="cf-case" checked={caseOnly} onChange={() => setCaseOnly(true)} /><label htmlFor="cf-case">This case only</label></span>
+            <span><input type="radio" name="cf-scope" id="cf-all" checked={!caseOnly} onChange={() => setCaseOnly(false)} /><label htmlFor="cf-all">Whole flowchart</label></span>
+          </fieldset>
+          <button type="button" className="btn" onClick={() => ref.current?.close()}>Close</button>
+        </div>
+      </header>
+      {error ? <p className="notice notice-error" role="alert">{error}</p> : !doc || !index || !path ? <p className="muted cf-loading">Loading the flowchart…</p> : (
+        <div className="cf-body">
+          <div className="board-scroll">
+            <FlowBoard
+              doc={doc} index={index} selected={selected} trace={path.trace} utility="all" showAllLinks strongOnly={false}
+              matches={new Set()} readOnly hideAdd only={caseOnly ? path.trace.nodes : null} onSelect={setSelected} onAdd={() => {}}
+            />
+          </div>
+          <aside className="cf-panel" aria-label="Case details for the flowchart">
+            <Panel refr={selected} path={path} index={index} onSelect={setSelected} />
+          </aside>
+        </div>
+      )}
+    </dialog>
+  );
+}

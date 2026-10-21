@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { CaseStatus, QueueCase, ReviewStatus, StaffUser } from "../domain/types";
-import type { CaseItem, Catalog, PlanKind, SupportPlan } from "../data/api";
+import type { ApiClient, CaseItem, Catalog, PlanKind, SupportPlan } from "../data/api";
+import { CaseFlowModal } from "../admin/CaseFlowModal";
 import { describeFollowUp, formatDateTime, PERIOD_TEXT, readableDates, STATUS_LABELS } from "../domain/format";
 import { isResolved } from "../domain/query";
 import { PriorityBadge } from "./Primitives";
@@ -30,7 +31,7 @@ export interface CaseActions {
   onEditNote: (noteId: string, text: string) => Promise<boolean>;
 }
 
-export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffUser; busy: boolean; actions: CaseActions; loadPlan?: (caseId: string, kind?: PlanKind) => Promise<SupportPlan> }) {
+export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffUser; busy: boolean; actions: CaseActions; loadPlan?: (caseId: string, kind?: PlanKind) => Promise<SupportPlan>; client?: ApiClient }) {
   const { data, item, user } = props;
   const c = item.case;
   const person = item.person ?? undefined;
@@ -58,6 +59,7 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
   const fu = describeFollowUp(c.workflow.followUpAt, isResolved(c), data.asOf);
   const a = c.modelAssessment;
   const fromFlow = data.circumstanceSource === "flow";
+  const [flowOpen, setFlowOpen] = useState(false);
   // One call gives the Suggested plan and the order of Solutions to offer, so the two agree.
   const supportAi = useAiPlan("support", c.id, c.version, c.circumstances.length ? props.loadPlan : undefined);
   const aiOrder = fromFlow && supportAi?.plan?.order?.length ? supportAi.plan.order : undefined;
@@ -383,6 +385,10 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
         </form>
       </section>
       {acct ? <ContactHistory account={acct} /> : null}
+      {fromFlow && props.client ? (
+        <button type="button" className="btn case-flow-btn" onClick={() => setFlowOpen(true)}>Flowchart for this case</button>
+      ) : null}
+      {flowOpen && props.client ? <CaseFlowModal client={props.client} data={data} c={c} person={person ?? null} onClose={() => setFlowOpen(false)} /> : null}
       </div>
       </div>
       </div>
