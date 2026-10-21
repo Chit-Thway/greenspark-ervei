@@ -126,10 +126,6 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
           <div><dt>Mobile</dt><dd>{notRecorded(person?.mobile)}</dd></div>
           <div><dt>Phone</dt><dd>{notRecorded(person?.phone)}</dd></div>
           <div className="wide"><dt>Email</dt><dd>{notRecorded(person?.email)}</dd></div>
-          <div className="wide">
-            <dt>Contact preference</dt>
-            <dd>{person?.contactPreference ? `${person.contactPreference.channel}, ${person.contactPreference.preferredWindow}` : "Not recorded"}</dd>
-          </div>
           <div><dt>Interpreter</dt><dd>{acct ? (acct.interpreterRequired ? "Required" : "Not required") : "Not recorded"}</dd></div>
         </dl>
       </section>
