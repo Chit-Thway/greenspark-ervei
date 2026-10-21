@@ -12,7 +12,7 @@ import { MAX_BULK_ITEMS, WorkflowService, type MutationResult } from "./service"
 import type { Store } from "./store";
 import type { Clock } from "./clock";
 import { FlowFile } from "./flow";
-import { draftPlan, planFacts, type SupportPlan } from "./plan";
+import { draftPlan, PLAN_KINDS, planFacts, type PlanKind, type SupportPlan } from "./plan";
 import { FlowError, evaluateCase, flowCatalog, parseOp, type FlowDoc } from "@greenspark/shared";
 import { SyntheticModelAdapter, withAssessments, type ModelAdapter } from "./adapters";
 
@@ -256,12 +256,15 @@ export function createApp(store: Store, options: AppOptions = {}) {
     const doc = await currentFlow();
     const byDoc = plans.get(doc ?? noFlow) ?? new Map<string, Promise<SupportPlan>>();
     plans.set(doc ?? noFlow, byDoc);
-    const key = `${raw.id}@${raw.version}`;
+    const kind = (PLAN_KINDS.includes(req.query.kind as PlanKind) ? req.query.kind : "support") as PlanKind;
+    const key = `${kind}:${raw.id}@${raw.version}`;
     let plan = byDoc.get(key);
     if (!plan) {
       const c = await enrichOne(raw);
       const cat = doc ? catalogOf(doc) : store.catalog;
-      plan = draftPlan(planFacts(c, store.getPerson(c.personId), cat), options.gemini?.apiKey ?? null, options.gemini?.model ?? "gemini-flash-latest");
+      const facts = planFacts(kind, c, store.getPerson(c.personId), cat, store.catalog.asOf);
+      if (!facts) throw new ApiError("not_found", "Nothing to summarise for this case.");
+      plan = draftPlan(kind, facts, options.gemini?.apiKey ?? null, options.gemini?.model ?? "gemini-flash-latest", c.recommendations.map((r) => r.recommendationId));
       byDoc.set(key, plan);
       plan.catch(() => byDoc.delete(key)); // failures are retried on the next load
     }

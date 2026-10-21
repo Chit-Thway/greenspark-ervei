@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { CaseStatus, QueueCase, ReviewStatus, StaffUser } from "../domain/types";
-import type { CaseItem, Catalog, SupportPlan } from "../data/api";
+import type { CaseItem, Catalog, PlanKind, SupportPlan } from "../data/api";
 import { describeFollowUp, formatDateTime, PERIOD_TEXT, readableDates, STATUS_LABELS } from "../domain/format";
 import { isResolved } from "../domain/query";
 import { PriorityBadge } from "./Primitives";
@@ -30,7 +30,7 @@ export interface CaseActions {
   onEditNote: (noteId: string, text: string) => Promise<boolean>;
 }
 
-export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffUser; busy: boolean; actions: CaseActions; loadPlan?: (caseId: string) => Promise<SupportPlan> }) {
+export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffUser; busy: boolean; actions: CaseActions; loadPlan?: (caseId: string, kind?: PlanKind) => Promise<SupportPlan> }) {
   const { data, item, user } = props;
   const c = item.case;
   const person = item.person ?? undefined;
@@ -58,6 +58,12 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
   const fu = describeFollowUp(c.workflow.followUpAt, isResolved(c), data.asOf);
   const a = c.modelAssessment;
   const fromFlow = data.circumstanceSource === "flow";
+  const solutionsAi = useAiPlan("solutions", c.id, c.version, fromFlow && c.recommendations.length ? props.loadPlan : undefined);
+  const aiOrder = solutionsAi?.plan?.order;
+  const [standardOrder, setStandardOrder] = useState(false);
+  const orderedRecs = aiOrder && !standardOrder
+    ? aiOrder.map((o) => c.recommendations.find((r) => r.recommendationId === o.id)!).filter(Boolean)
+    : c.recommendations;
   const fromSignals = a.provider === PRIORITY_PROVIDER;
   const acct = person?.account ?? null;
 
@@ -148,7 +154,7 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
         )}
       </section>
 
-      {acct ? <AccountSignals account={acct} asOf={data.asOf} /> : null}
+      {acct ? <AccountSignals account={acct} asOf={data.asOf} summary={props.loadPlan ? <AiPlan kind="signals" caseId={c.id} version={c.version} load={props.loadPlan} /> : null} /> : null}
 
       <section className="case-card" aria-labelledby="ov-assist">
         <h3 id="ov-assist">Assistance already reported</h3>
@@ -170,7 +176,7 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
         {fromFlow ? (
           <p className="hint">Worked out from account data and survey answers with the Flowchart&apos;s rules: one strong signal, or two supporting ones. Sensitive circumstances need a strong signal.</p>
         ) : null}
-        {props.loadPlan && c.circumstances.length ? <AiPlan caseId={c.id} version={c.version} load={props.loadPlan} /> : null}
+        {props.loadPlan && c.circumstances.length ? <AiPlan kind="support" caseId={c.id} version={c.version} load={props.loadPlan} /> : null}
         {c.circumstances.length === 0 ? <p className="muted">{fromFlow ? "No circumstances flagged." : "No circumstances flagged from the reported answers."}</p> : null}
         {data.supportAreas.filter((area) => c.supportAreaIds.includes(area.id)).map((area) => (
           <div key={area.id} className="area-block">
@@ -231,13 +237,22 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
         <section className="case-card" aria-labelledby="ov-solutions">
           <h3 id="ov-solutions">Solutions to offer <span className="sim">for staff review</span></h3>
           <p className="hint">What we can offer this customer, or refer them to. Check eligibility before offering.</p>
-          <ul className="suggest-list solutions">
-            {c.recommendations.map((r) => {
+          {solutionsAi ? <AiPlanView kind="solutions" state={solutionsAi} /> : null}
+          {aiOrder ? (
+            <div className="order-toggle" role="group" aria-label="Order of solutions">
+              <span className="sim">Ordered by AI · check before acting</span>
+              <button type="button" className="linkish" onClick={() => setStandardOrder(!standardOrder)}>{standardOrder ? "Show AI order" : "Show standard order"}</button>
+            </div>
+          ) : null}
+          <ol className={`suggest-list solutions${aiOrder && !standardOrder ? " ranked" : ""}`}>
+            {orderedRecs.map((r) => {
+              const why = !standardOrder ? aiOrder?.find((o) => o.id === r.recommendationId)?.reason : undefined;
               const d = data.recommendations.find((x) => x.id === r.recommendationId);
               const forNames = r.circumstanceIds.map((id) => data.circumstances.find((x) => x.id === id)?.label ?? id);
               return (
                 <li key={r.recommendationId} className="solution">
                   <strong>{d?.label ?? r.recommendationId}</strong>
+                  {why ? <p className="rank-why">{why}</p> : null}
                   <dl className="solution-facts">
                     {d?.howToAccess ? <div><dt>What to do</dt><dd>{d.howToAccess}</dd></div> : null}
                     {d?.provider ? <div><dt>Who</dt><dd>{d.provider}</dd></div> : null}
@@ -249,7 +264,7 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
                 </li>
               );
             })}
-          </ul>
+          </ol>
         </section>
       ) : null}
 
@@ -376,20 +391,35 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
 }
 
 /** The Gemini-drafted plan, fetched when the case opens and again whenever the case changes. */
-function AiPlan(props: { caseId: string; version: number; load: (caseId: string) => Promise<SupportPlan> }) {
-  const [state, setState] = useState<{ plan?: SupportPlan; error?: string; loading: boolean }>({ loading: true });
-  const { caseId, version, load } = props;
+const AI_TITLE: Record<PlanKind, string> = { support: "Suggested plan", signals: "What the signals say", solutions: "What to offer first" };
+const AI_SOURCE: Record<PlanKind, string> = { support: "circumstances, signals and solutions below", signals: "account signals below", solutions: "solutions below" };
+
+type AiState = { plan?: SupportPlan; error?: string; loading: boolean };
+
+/** Fetches one AI summary when the case opens and again whenever the case changes. */
+function useAiPlan(kind: PlanKind, caseId: string, version: number, load?: (caseId: string, kind?: PlanKind) => Promise<SupportPlan>): AiState | null {
+  const [state, setState] = useState<AiState>({ loading: true });
   useEffect(() => {
+    if (!load) return;
     let live = true;
     setState({ loading: true });
-    load(caseId).then((plan) => live && setState({ plan, loading: false }), (e: unknown) => live && setState({ error: e instanceof Error ? e.message : "Could not draft a plan.", loading: false }));
+    load(caseId, kind).then((plan) => live && setState({ plan, loading: false }), (e: unknown) => live && setState({ error: e instanceof Error ? e.message : "Could not draft a plan.", loading: false }));
     return () => { live = false; };
-  }, [caseId, version, load]);
+  }, [kind, caseId, version, load]);
+  return load ? state : null;
+}
+
+function AiPlan(props: { kind: PlanKind; caseId: string; version: number; load: (caseId: string, kind?: PlanKind) => Promise<SupportPlan> }) {
+  const state = useAiPlan(props.kind, props.caseId, props.version, props.load)!;
+  return <AiPlanView kind={props.kind} state={state} />;
+}
+
+function AiPlanView({ kind, state }: { kind: PlanKind; state: AiState }) {
   return (
     <div className="ai-plan" aria-live="polite">
-      <p className="block-label">Suggested plan <span className="sim">AI draft · check before acting</span></p>
+      <p className="block-label">{AI_TITLE[kind]} <span className="sim">AI draft · check before acting</span></p>
       {state.loading ? <p className="muted">Drafting a plan…</p> : state.error ? <p className="muted">{state.error}</p> : <p>{state.plan!.text}</p>}
-      {state.plan ? <p className="hint">Drafted by {state.plan.model} from the circumstances, signals and solutions below. No name or contact details were sent.</p> : null}
+      {state.plan ? <p className="hint">Drafted by {state.plan.model} from the {AI_SOURCE[kind]}. No name or contact details were sent.</p> : null}
     </div>
   );
 }

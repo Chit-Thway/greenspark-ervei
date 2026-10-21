@@ -294,3 +294,9 @@ textarea { resize: vertical; }
 .ai-plan { margin: 8px 0 12px; padding: 10px 12px; border: 1px solid var(--border); border-left: 3px solid var(--brand); border-radius: var(--r-control); background: var(--surface); }
 .ai-plan .block-label { margin-top: 0; }
 .ai-plan p { margin: 4px 0 0; }
+.order-toggle { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin: 4px 0 8px; }
+.order-toggle button { background: none; border: 0; padding: 0; color: var(--brand); font: inherit; font-size: 13px; cursor: pointer; text-decoration: underline; }
+ol.suggest-list.solutions:not(.ranked) { list-style: none; }
+ol.suggest-list.solutions.ranked { padding-left: 22px; }
+ol.suggest-list.solutions.ranked > li::marker { font-weight: 700; color: var(--brand); }
+.rank-why { margin: 2px 0 4px; font-size: 13px; color: var(--brand-hover); }

@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { detectAccountSignals, type Bill, type CustomerAccount, type PaymentKind, type PaymentMethod } from "../domain/types";
 import { readableDates, shortDate } from "../domain/format";
 
@@ -24,12 +25,13 @@ function billStatus(b: Bill, asOf: string): { text: string; tone: "ok" | "late" 
 }
 
 /** The account signals a utility account raises, with their evidence. */
-export function AccountSignals({ account, asOf }: { account: CustomerAccount; asOf: string }) {
+export function AccountSignals({ account, asOf, summary }: { account: CustomerAccount; asOf: string; summary?: ReactNode }) {
   const signals = detectAccountSignals(account, asOf);
   return (
     <section className="case-card" aria-labelledby="ov-signals">
       <h3 id="ov-signals">Account signals <span className="sim">from account data</span></h3>
       <p className="hint">Each signal prompts an offer of help, never a penalty. Check it makes sense before acting.</p>
+      {signals.length ? summary : null}
       {signals.length === 0 ? <p className="muted">No account signals.</p> : (
         <ul className="signal-list">
           {signals.map((s) => <li key={s.id}><strong>{s.name}</strong><span className="sub">{readableDates(s.evidence)}</span></li>)}
