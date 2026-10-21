@@ -442,7 +442,7 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; o
           <section className="panel" aria-labelledby="list-title" aria-busy={loading}>
             <div className="panel-head">
               <h2 id="list-title">{({ all: "All cases", mine: "Assigned to me", needs_review: "Needs review" })[query.view]} <span className="pill">{list?.total ?? "–"}</span></h2>
-              <span className="sim">Model suggestions · simulated data</span>
+              <span className="sim">{catalog.circumstanceSource === "flow" ? "Fictional demo data" : "Model suggestions · simulated data"}</span>
             </div>
 
             <div className="toolbar">

@@ -125,7 +125,7 @@ export function FilterSidebar(props: {
       </fieldset>
 
       <fieldset className="group">
-        <legend>Model priority · simulated</legend>
+        <legend>{data.circumstanceSource === "flow" ? "Priority" : "Model priority · simulated"}</legend>
         {PRIORITY_LABELS.map((l: PriorityLabel) => (
           <Checkbox
             key={l}

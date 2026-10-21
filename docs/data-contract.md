@@ -71,9 +71,13 @@ In the fixture itself, `circumstances` are precomputed demo classifications, wit
 
 `assistance` distinguishes current hardship enrolment (`Q37`) and a reported concession (`Z7_8`) from historical support reported in the last twelve months (`Q36b`). A repayment plan reported in that period is not proof of a current active plan.
 
+## Priority
+
+**With the flowchart in use (the normal setup), priority is worked out from each case's signals** by `shared/src/priority.ts`, and the assessment says `provider: "flowchart_signals"`, `isSimulated: false`. Points are added for each flagged circumstance by its flowchart type (knock-on 14, life situation 7, bill or account issue 6, company practice 6, access barrier 4), plus 4 if it is sensitive or 10 if it is a safety circumstance, and for each distinct signal behind them, counted once at its strongest link (strong 4, supporting 1.5). The total is capped at 100 and labelled urgent (80+), high (60+), moderate (35+) or routine. The trend is rising when a worsening signal is present (arrears growing, usage falling, prepay credit running out, a disconnection warning). A case with no account data and no survey answers is `unavailable`, not zero. The explanation names the largest contributors. A model adapter passed to the server (a real prediction model) still supplies the priority instead. Without the flowchart, the fixture's invented assessments below are shown.
+
 ## Mock model adapter
 
-Each `modelAssessment` declares `provider: "synthetic_demo"` and `isSimulated: true`.
+Without the flowchart, each `modelAssessment` declares `provider: "synthetic_demo"` and `isSimulated: true`.
 
 - `status` is `ready`, `pending` or `unavailable`.
 - Ready assessments have a display-only priority score/label, trend and short explanation.

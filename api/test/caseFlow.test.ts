@@ -71,3 +71,30 @@ describe("cases worked out from the Admin flow", () => {
     expect(circumstanceIds(c)).toContain("bill_payment_difficulty");
   });
 });
+
+describe("priority from the flowchart signals", () => {
+  it("replaces the fixture's invented assessments when the flowchart is in use", async () => {
+    const harness = await withFlow();
+    const cases = await allCases(harness);
+    expect(cases.every((c) => c.modelAssessment.provider === "flowchart_signals" && c.modelAssessment.isSimulated === false)).toBe(true);
+    const clean = (await harness.call(M, "GET", "/api/accounts/DEMO-700008")).body.case; // no_flagged_circumstances scenario
+    expect(clean.circumstances).toEqual([]);
+    expect(clean.modelAssessment.priority).toEqual({ score: 0, label: "routine" });
+    const heavy = (await harness.call(M, "GET", "/api/accounts/DEMO-700005")).body.case; // multiple_support_areas scenario
+    expect(heavy.modelAssessment.priority.label).toBe("urgent");
+    // Sorting and the priority filter use the computed priority.
+    const urgent = await harness.call(M, "GET", "/api/cases?priorityLabels=urgent&pageSize=100");
+    expect(urgent.body.items.every((i: any) => i.case.modelAssessment.priority.label === "urgent")).toBe(true);
+  });
+
+  it("still lets a real model adapter supply the priority", async () => {
+    dir = mkdtempSync(join(tmpdir(), "gs-caseflow-"));
+    const file = join(dir, "flow.json");
+    copyFileSync(SOURCE, file);
+    const adapter = { getAssessments: async (ids: string[]) => Object.fromEntries(ids.map((id) => [id, { provider: "real_model", isSimulated: false, status: "ready" as const, priority: { score: 42, label: "moderate" as const }, trend: null, explanation: null }])) };
+    h = await start(":memory:", new TestClock(), { flowFile: file, modelAdapter: adapter });
+    const c = (await h.call(M, "GET", "/api/cases/GS-2001/overview")).body.case;
+    expect(c.modelAssessment).toMatchObject({ provider: "real_model", priority: { score: 42 } });
+    expect(c.circumstances.length).toBeGreaterThan(0); // circumstances still come from the flowchart
+  });
+});

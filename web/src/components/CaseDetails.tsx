@@ -4,7 +4,7 @@ import type { CaseItem, Catalog } from "../data/api";
 import { describeFollowUp, formatDateTime, PERIOD_TEXT, readableDates, STATUS_LABELS } from "../domain/format";
 import { isResolved } from "../domain/query";
 import { PriorityBadge } from "./Primitives";
-import { ageOn } from "../domain/types";
+import { ageOn, PRIORITY_PROVIDER } from "../domain/types";
 import { AccountHistory, AccountSignals, date, UtilityAccount } from "./AccountDetails";
 import { CaseToc, type TocItem } from "./CaseToc";
 
@@ -58,6 +58,7 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
   const fu = describeFollowUp(c.workflow.followUpAt, isResolved(c), data.asOf);
   const a = c.modelAssessment;
   const fromFlow = data.circumstanceSource === "flow";
+  const fromSignals = a.provider === PRIORITY_PROVIDER;
   const acct = person?.account ?? null;
 
   // A new page should start at its heading for keyboard and screen-reader users.
@@ -68,7 +69,7 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
   const toc: TocItem[] = [
     { id: "ov-contact", label: "Customer details" },
     ...(acct ? [{ id: "ov-account", label: "Utility account" }] : []),
-    { id: "ov-model", label: "Model assessment" },
+    { id: "ov-model", label: fromSignals ? "Priority" : "Model assessment" },
     ...(acct ? [{ id: "ov-signals", label: "Account signals" }] : []),
     { id: "ov-assist", label: "Assistance reported" },
     { id: "ov-support", label: "Support areas" },
@@ -131,14 +132,19 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
       {acct ? <UtilityAccount account={acct} accountNumber={person?.accountNumber ?? null} /> : null}
 
       <section className="case-card model" aria-labelledby="ov-model">
-        <h3 id="ov-model">Model assessment <span className="sim">simulated · {a.provider}</span></h3>
+        {fromSignals ? (
+          <h3 id="ov-model">Priority <span className="sim">from signals</span></h3>
+        ) : (
+          <h3 id="ov-model">Model assessment <span className="sim">simulated · {a.provider}</span></h3>
+        )}
         {a.status === "ready" && a.priority ? (
           <>
             <p>Priority {a.priority.score}/100 ({a.priority.label}) · trend: {a.trend ?? "unknown"}</p>
             <p className="hint">{a.explanation}</p>
+            {fromSignals ? <p className="hint">Points for each flagged circumstance (by type, more if sensitive) and each signal behind them. A guide for ordering the queue, not a judgement about the customer.</p> : null}
           </>
         ) : (
-          <p>{a.status === "pending" ? "Assessment pending. No priority has been assigned." : "Assessment unavailable. No priority has been assigned."}</p>
+          <p>{a.explanation ?? (a.status === "pending" ? "Assessment pending. No priority has been assigned." : "Assessment unavailable. No priority has been assigned.")}</p>
         )}
       </section>
 

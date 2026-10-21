@@ -49,12 +49,12 @@ test.describe("states and content rules", () => {
     for (const label of ["Preferred name", "Gender", "Address", "Mobile", "Phone", "Email"]) await expect(panel.locator("dt", { hasText: new RegExp(`^${label}$`) })).toBeVisible();
     await expect(panel.locator("address")).toContainText(/\b\d{4}\b/); // the postcode is shown
     await expect(panel).toContainText(/@example\.com|Not recorded/);
-    await expect(panel).toContainText("Suggested for staff review");
+    await expect(panel).toContainText("Solutions for staff review");
     const suggestions = panel.locator(".suggest").first();
     expect(await suggestions.locator("ul > li").count()).toBeGreaterThan(1); // a bulleted list, one suggestion per bullet
     expect(await suggestions.evaluate((el) => !!el.firstElementChild?.matches(".sim") && el.lastElementChild?.tagName === "UL")).toBe(true); // badge first, then the list
     await expect(panel).toContainText("Assistance already reported");
-    await expect(panel).toContainText("simulated");
+    await expect(panel.locator("#ov-model")).toContainText("Priority from signals"); // worked out from the case's signals
     await expect(panel).not.toContainText(/full profile/i); // there is no separate profile page, so nothing mentions one
     await page.getByRole("link", { name: /Back to case queue/ }).click();
     await expect(page.locator(".case-table")).toBeVisible();

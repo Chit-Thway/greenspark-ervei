@@ -6,6 +6,7 @@
 //   safety circumstances are never actioned automatically (the case page routes them to trained staff).
 // Solutions are the flagged circumstances' solutions. Everything is worked out again whenever the flow changes.
 import { ACCOUNT_SIGNAL_IDS, detectAccountSignals } from "./accountSignals";
+import { priorityFromSignals } from "./priority";
 import type { FlowDoc } from "./flow";
 import type {
   CaseCircumstance, CaseRecommendation, CaseSignal, CircumstanceDefinition, Person, QueueCase, QueueDataset,
@@ -104,7 +105,9 @@ export function evaluateCase(c: QueueCase, person: Person | null, data: Pick<Que
       evidenceFieldIds: [...new Set(uses.flatMap((x) => x.evidenceFieldIds))], reviewStatus,
     });
   }
-  return { circumstances, supportAreaIds, recommendations };
+  const hasData = !!person?.account || Object.values(c.reportedAnswers).some((v) => v !== null);
+  const modelAssessment = priorityFromSignals(circumstances, defs, hasData);
+  return { circumstances, supportAreaIds, recommendations, modelAssessment };
 }
 
 /** The dataset with the flow's catalogs, and every case's circumstances and solutions worked out from the flow. */

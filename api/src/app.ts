@@ -65,14 +65,18 @@ export interface AppOptions {
 
 export function createApp(store: Store, options: AppOptions = {}) {
   const clock = options.clock ?? (() => new Date());
+  // A model adapter passed in (a real prediction model) always supplies the priority. Otherwise, with the flowchart
+  // in use the priority is worked out from each case's signals; without it, the fixture's invented assessments show.
   const model = options.modelAdapter ?? new SyntheticModelAdapter(store);
+  const useModel = async () => !!options.modelAdapter || !(await currentFlowDoc());
   const service = new WorkflowService(store, clock);
   const flow = options.flowFile ? new FlowFile(options.flowFile) : null;
+  async function currentFlowDoc() { return flow ? flow.current() : null; }
   // Circumstances and solutions come from the Admin flow file when it is configured and valid; otherwise the
   // fixture's fixed survey rules stay in place. Assessments are added after.
   const catalogs = new WeakMap<FlowDoc, ReturnType<typeof flowCatalog>>();
   const catalogOf = (doc: FlowDoc) => { let c = catalogs.get(doc); if (!c) catalogs.set(doc, (c = flowCatalog(doc))); return c; };
-  const currentFlow = async () => (flow ? flow.current() : null);
+  const currentFlow = currentFlowDoc;
   const withFlow = async (cases: QueueCase[]) => {
     const doc = await currentFlow();
     if (!doc) return cases;
@@ -83,10 +87,13 @@ export function createApp(store: Store, options: AppOptions = {}) {
     const data = store.dataset();
     const doc = await currentFlow();
     const out = doc ? applyFlow(data, doc) : { ...data, circumstanceSource: "fixture" as const };
-    out.cases = await withAssessments(model, out.cases);
+    if (await useModel()) out.cases = await withAssessments(model, out.cases);
     return out;
   };
-  const enrich = async (cases: QueueCase[]) => withAssessments(model, await withFlow(cases));
+  const enrich = async (cases: QueueCase[]) => {
+    const evaluated = await withFlow(cases);
+    return (await useModel()) ? withAssessments(model, evaluated) : evaluated;
+  };
   const enrichOne = async (c: QueueCase) => (await enrich([c]))[0]!;
   const enrichResult = async (r: MutationResult) => ({ ...r, updated: await enrich(r.updated) });
   const app = express();
