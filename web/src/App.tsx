@@ -379,7 +379,6 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; o
           <span className="logo" aria-hidden="true">🌱</span>
           <span><strong>ERVEI</strong><span className="brand-sub">Community support workspace</span></span>
         </a>
-        <span className="demo-pill">Synthetic demo data</span>
         <nav className="mainnav" aria-label="Main">
           <BtsMenu page={props.page} navigate={navigate} />
         </nav>
@@ -589,7 +588,7 @@ function BtsMenu(props: { page: Page; navigate: (to: string) => void }) {
   return (
     <div className="bts" ref={ref}>
       <button type="button" className={`bts-btn${inside ? " is-current" : ""}`} aria-expanded={open} aria-controls="bts-menu" onClick={() => setOpen(!open)}>
-        BTS <span className="sub-inline">behind the scenes</span> <span aria-hidden="true">▾</span>
+        BTS <span aria-hidden="true">▾</span>
       </button>
       {open ? (
         <ul id="bts-menu" className="bts-menu">
