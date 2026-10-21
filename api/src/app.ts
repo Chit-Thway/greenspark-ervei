@@ -1,17 +1,18 @@
 import { timingSafeEqual } from "node:crypto";
 import { join } from "node:path";
+import compression from "compression";
 import express, { type NextFunction, type Request, type Response } from "express";
 import { z } from "zod";
 import {
   ASSISTANCE_OPTIONS, DEFAULT_QUERY, PRIORITY_LABELS, applyFilters, facetCounts, overviewCounters, paginate, sortCases,
-  type QueueCase, type QueueQuery, type StaffUser,
+  type Person, type QueueCase, type QueueQuery, type StaffUser,
 } from "@greenspark/shared";
 import { ApiError } from "./errors";
 import { MAX_BULK_ITEMS, WorkflowService, type MutationResult } from "./service";
 import type { Store } from "./store";
 import type { Clock } from "./clock";
 import { FlowFile } from "./flow";
-import { FlowError, applyFlow, evaluateCase, flowCatalog, parseOp, type FlowDoc } from "@greenspark/shared";
+import { FlowError, evaluateCase, flowCatalog, parseOp, type FlowDoc } from "@greenspark/shared";
 import { SyntheticModelAdapter, withAssessments, type ModelAdapter } from "./adapters";
 
 const STATUSES = ["new", "in_progress", "waiting", "resolved"] as const;
@@ -63,6 +64,13 @@ export interface AppOptions {
   basicAuth?: string | null;
 }
 
+/** A person as the case list needs them: everything but the utility account. */
+function listPerson(p: Person | undefined): Person | null {
+  if (!p) return null;
+  const { account: _account, ...rest } = p;
+  return rest;
+}
+
 export function createApp(store: Store, options: AppOptions = {}) {
   const clock = options.clock ?? (() => new Date());
   // A model adapter passed in (a real prediction model) always supplies the priority. Otherwise, with the flowchart
@@ -77,16 +85,30 @@ export function createApp(store: Store, options: AppOptions = {}) {
   const catalogs = new WeakMap<FlowDoc, ReturnType<typeof flowCatalog>>();
   const catalogOf = (doc: FlowDoc) => { let c = catalogs.get(doc); if (!c) catalogs.set(doc, (c = flowCatalog(doc))); return c; };
   const currentFlow = currentFlowDoc;
+  // Each case's result is kept per flowchart version until the case changes (every change bumps its version).
+  // People never change once written, and a flowchart edit is a new FlowDoc, so nothing goes stale.
+  const evaluations = new WeakMap<FlowDoc, Map<string, { version: number; result: ReturnType<typeof evaluateCase> }>>();
+  const evaluate = (c: QueueCase, doc: FlowDoc) => {
+    let byCase = evaluations.get(doc);
+    if (!byCase) evaluations.set(doc, (byCase = new Map()));
+    const hit = byCase.get(c.id);
+    if (hit && hit.version === c.version) return hit.result;
+    const result = evaluateCase(c, store.getPerson(c.personId), store.catalog, doc, catalogOf(doc));
+    byCase.set(c.id, { version: c.version, result });
+    return result;
+  };
   const withFlow = async (cases: QueueCase[]) => {
     const doc = await currentFlow();
     if (!doc) return cases;
-    return cases.map((c) => ({ ...c, ...evaluateCase(c, store.getPerson(c.personId), store.catalog, doc, catalogOf(doc)) }));
+    return cases.map((c) => ({ ...c, ...evaluate(c, doc) }));
   };
   /** Every case, with the catalogs that match how its circumstances were worked out. */
   const dataset = async () => {
     const data = store.dataset();
     const doc = await currentFlow();
-    const out = doc ? applyFlow(data, doc) : { ...data, circumstanceSource: "fixture" as const };
+    const out = doc
+      ? { ...data, ...catalogOf(doc), circumstanceSource: "flow" as const, cases: data.cases.map((c) => ({ ...c, ...evaluate(c, doc) })) }
+      : { ...data, circumstanceSource: "fixture" as const };
     if (await useModel()) out.cases = await withAssessments(model, out.cases);
     return out;
   };
@@ -98,6 +120,8 @@ export function createApp(store: Store, options: AppOptions = {}) {
   const enrichResult = async (r: MutationResult) => ({ ...r, updated: await enrich(r.updated) });
   const app = express();
   app.disable("x-powered-by");
+  // Gzip API responses and the web app's files: case data is large and the demo is served across the world.
+  app.use(compression());
 
   if (options.basicAuth) {
     const expected = Buffer.from(options.basicAuth);
@@ -192,7 +216,8 @@ export function createApp(store: Store, options: AppOptions = {}) {
     const people = new Map(data.people.map((x) => [x.id, x]));
     const f = facetCounts(data, q, me);
     res.json({
-      items: page.items.map((c) => ({ case: c, person: people.get(c.personId) ?? null })),
+      // The list leaves out each person's utility account (the case page fetches it), which keeps pages small.
+      items: page.items.map((c) => ({ case: c, person: listPerson(people.get(c.personId)) })),
       total: page.total, page: page.page, pageSize: q.pageSize, pageCount: page.pageCount, from: page.from, to: page.to,
       counters: overviewCounters(data.cases, me),
       facets: {

@@ -166,7 +166,8 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; o
         });
         setOpenItem((o) => {
           const fresh = o && r.items.find((i) => i.case.id === o.case.id);
-          return fresh && fresh.case.version > o.case.version ? fresh : o;
+          // List rows leave out the utility account, so keep the open case's full person record.
+          return fresh && fresh.case.version > o.case.version ? { ...o, case: fresh.case } : o;
         });
       },
       (e: unknown) => {

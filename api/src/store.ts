@@ -201,13 +201,25 @@ export class Store {
     return r ? this.assemble(r, this.notesByCase(id).get(id) ?? []) : null;
   }
 
+  /**
+   * People, parsed once and kept until one is added. Person records never change after they are written (seeded
+   * people are only refreshed when the server starts), so every request can share them. Don't modify them.
+   */
+  private peopleCache: { list: Person[]; byId: Map<string, Person> } | null = null;
+  private people() {
+    if (!this.peopleCache) {
+      const list = (this.db.prepare("SELECT doc FROM people ORDER BY seq").all() as Row[]).map((r) => JSON.parse(r.doc as string) as Person);
+      this.peopleCache = { list, byId: new Map(list.map((p) => [p.id, p])) };
+    }
+    return this.peopleCache;
+  }
+
   allPeople(): Person[] {
-    return (this.db.prepare("SELECT doc FROM people ORDER BY seq").all() as Row[]).map((r) => JSON.parse(r.doc as string) as Person);
+    return this.people().list;
   }
 
   getPerson(id: string): Person | null {
-    const r = this.db.prepare("SELECT doc FROM people WHERE id = ?").get(id) as Row | undefined;
-    return r ? (JSON.parse(r.doc as string) as Person) : null;
+    return this.people().byId.get(id) ?? null;
   }
 
   dataset(): QueueDataset {
@@ -226,6 +238,7 @@ export class Store {
 
   insertPerson(p: Person) {
     this.db.prepare("INSERT INTO people (id, doc, is_created) VALUES (?, ?, 1)").run(p.id, JSON.stringify(p));
+    this.peopleCache = null;
   }
 
   insertCase(c: QueueCase) {

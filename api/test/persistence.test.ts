@@ -80,7 +80,8 @@ describe("databases seeded before people had accounts", () => {
         const { account: _, ...rest } = JSON.parse(r.doc);
         h.store.db.prepare("UPDATE people SET doc = ? WHERE id = ?").run(JSON.stringify(rest), r.id);
       }
-      expect(h.store.getPerson("demo-person-001")!.account).toBeUndefined();
+      // Read the row itself: the store keeps people in memory, since the app never changes them after writing.
+      expect(JSON.parse((h.store.db.prepare("SELECT doc FROM people WHERE id = ?").get("demo-person-001") as { doc: string }).doc).account).toBeUndefined();
       await h.stop();
 
       h = await start(db);
