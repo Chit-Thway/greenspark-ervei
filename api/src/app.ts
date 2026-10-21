@@ -12,6 +12,7 @@ import { MAX_BULK_ITEMS, WorkflowService, type MutationResult } from "./service"
 import type { Store } from "./store";
 import type { Clock } from "./clock";
 import { FlowFile } from "./flow";
+import { draftPlan, planFacts, type SupportPlan } from "./plan";
 import { FlowError, evaluateCase, flowCatalog, parseOp, type FlowDoc } from "@greenspark/shared";
 import { SyntheticModelAdapter, withAssessments, type ModelAdapter } from "./adapters";
 
@@ -62,6 +63,8 @@ export interface AppOptions {
   staticDir?: string | null;
   /** Optional "user:password" for HTTP Basic auth in front of everything except /api/health. For shared demo hosting. */
   basicAuth?: string | null;
+  /** Google Gemini key and model for the AI support plan. No key turns the plan off. */
+  gemini?: { apiKey: string | null; model: string };
 }
 
 /** A person as the case list needs them: everything but the utility account. */
@@ -242,6 +245,27 @@ export function createApp(store: Store, options: AppOptions = {}) {
     const c = store.getCase(String(req.params.caseId));
     if (!c) throw new ApiError("not_found", "Case not found.");
     res.json({ case: await enrichOne(c), person: store.getPerson(c.personId) });
+  });
+
+  // Plans are kept per case version and flowchart version, so each case calls Gemini once until it changes.
+  const plans = new WeakMap<object, Map<string, Promise<SupportPlan>>>();
+  const noFlow = {};
+  app.get("/api/cases/:caseId/plan", async (req, res) => {
+    const raw = store.getCase(String(req.params.caseId));
+    if (!raw) throw new ApiError("not_found", "Case not found.");
+    const doc = await currentFlow();
+    const byDoc = plans.get(doc ?? noFlow) ?? new Map<string, Promise<SupportPlan>>();
+    plans.set(doc ?? noFlow, byDoc);
+    const key = `${raw.id}@${raw.version}`;
+    let plan = byDoc.get(key);
+    if (!plan) {
+      const c = await enrichOne(raw);
+      const cat = doc ? catalogOf(doc) : store.catalog;
+      plan = draftPlan(planFacts(c, store.getPerson(c.personId), cat), options.gemini?.apiKey ?? null, options.gemini?.model ?? "gemini-flash-latest");
+      byDoc.set(key, plan);
+      plan.catch(() => byDoc.delete(key)); // failures are retried on the next load
+    }
+    res.json({ plan: await plan });
   });
 
   app.post("/api/cases", async (req, res) => {

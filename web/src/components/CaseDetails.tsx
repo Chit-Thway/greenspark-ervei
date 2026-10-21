@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { CaseStatus, QueueCase, ReviewStatus, StaffUser } from "../domain/types";
-import type { CaseItem, Catalog } from "../data/api";
+import type { CaseItem, Catalog, SupportPlan } from "../data/api";
 import { describeFollowUp, formatDateTime, PERIOD_TEXT, readableDates, STATUS_LABELS } from "../domain/format";
 import { isResolved } from "../domain/query";
 import { PriorityBadge } from "./Primitives";
@@ -30,7 +30,7 @@ export interface CaseActions {
   onEditNote: (noteId: string, text: string) => Promise<boolean>;
 }
 
-export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffUser; busy: boolean; actions: CaseActions }) {
+export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffUser; busy: boolean; actions: CaseActions; loadPlan?: (caseId: string) => Promise<SupportPlan> }) {
   const { data, item, user } = props;
   const c = item.case;
   const person = item.person ?? undefined;
@@ -170,6 +170,7 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
         {fromFlow ? (
           <p className="hint">Worked out from account data and survey answers with the Flowchart&apos;s rules: one strong signal, or two supporting ones. Sensitive circumstances need a strong signal.</p>
         ) : null}
+        {props.loadPlan && c.circumstances.length ? <AiPlan caseId={c.id} version={c.version} load={props.loadPlan} /> : null}
         {c.circumstances.length === 0 ? <p className="muted">{fromFlow ? "No circumstances flagged." : "No circumstances flagged from the reported answers."}</p> : null}
         {data.supportAreas.filter((area) => c.supportAreaIds.includes(area.id)).map((area) => (
           <div key={area.id} className="area-block">
@@ -371,5 +372,24 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
       </div>
       </div>
     </article>
+  );
+}
+
+/** The Gemini-drafted plan, fetched when the case opens and again whenever the case changes. */
+function AiPlan(props: { caseId: string; version: number; load: (caseId: string) => Promise<SupportPlan> }) {
+  const [state, setState] = useState<{ plan?: SupportPlan; error?: string; loading: boolean }>({ loading: true });
+  const { caseId, version, load } = props;
+  useEffect(() => {
+    let live = true;
+    setState({ loading: true });
+    load(caseId).then((plan) => live && setState({ plan, loading: false }), (e: unknown) => live && setState({ error: e instanceof Error ? e.message : "Could not draft a plan.", loading: false }));
+    return () => { live = false; };
+  }, [caseId, version, load]);
+  return (
+    <div className="ai-plan" aria-live="polite">
+      <p className="block-label">Suggested plan <span className="sim">AI draft · check before acting</span></p>
+      {state.loading ? <p className="muted">Drafting a plan…</p> : state.error ? <p className="muted">{state.error}</p> : <p>{state.plan!.text}</p>}
+      {state.plan ? <p className="hint">Drafted by {state.plan.model} from the circumstances, signals and solutions below. No name or contact details were sent.</p> : null}
+    </div>
   );
 }

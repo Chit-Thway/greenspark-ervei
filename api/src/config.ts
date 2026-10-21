@@ -16,3 +16,7 @@ export const WEB_DIST = existsSync(`${webDist}/index.html`) ? webDist : null;
 
 // Optional "user:password" gate for shared demo hosting. Unset locally.
 export const BASIC_AUTH = process.env.GREENSPARK_BASIC_AUTH || null;
+
+// Google Gemini, for the AI support plan on each case. Unset key: the plan is switched off.
+export const GEMINI_API_KEY = process.env.GEMINI_API_KEY || null;
+export const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-flash-latest";

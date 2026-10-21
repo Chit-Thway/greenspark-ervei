@@ -62,7 +62,11 @@ export interface ApiClient {
   editNote(caseId: string, noteId: string, text: string, expectedVersion: number): Promise<QueueCase>;
   setReview(caseId: string, reviewStatus: ReviewStatus, expectedVersion: number): Promise<MutationResult>;
   undo(actionId: string): Promise<MutationResult>;
+  /** AI-drafted support plan for a case (Gemini). Optional so test clients can leave it out. */
+  supportPlan?(caseId: string): Promise<SupportPlan>;
 }
+
+export interface SupportPlan { text: string; model: string; generatedAt: string }
 
 export interface VersionedId { caseId: string; expectedVersion: number }
 
@@ -127,6 +131,7 @@ export function createApiClient(getUser: () => string, base = ""): ApiClient {
     addNote: async (id, text, expectedVersion) => (await req<{ case: QueueCase }>("POST", `/api/cases/${encodeURIComponent(id)}/notes`, { text, expectedVersion })).case,
     editNote: async (id, noteId, text, expectedVersion) => (await req<{ case: QueueCase }>("PATCH", `/api/cases/${encodeURIComponent(id)}/notes/${encodeURIComponent(noteId)}`, { text, expectedVersion })).case,
     setReview: (id, reviewStatus, expectedVersion) => req("PATCH", `/api/cases/${encodeURIComponent(id)}/review`, { reviewStatus, expectedVersion }),
+    supportPlan: async (id) => (await req<{ plan: SupportPlan }>("GET", `/api/cases/${encodeURIComponent(id)}/plan`)).plan,
     undo: (actionId) => req("POST", `/api/workflow-actions/${encodeURIComponent(actionId)}/undo`),
   };
 }
