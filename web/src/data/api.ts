@@ -66,7 +66,7 @@ export interface ApiClient {
   supportPlan?(caseId: string, kind?: PlanKind): Promise<SupportPlan>;
 }
 
-export type PlanKind = "support" | "signals" | "solutions";
+export type PlanKind = "support" | "signals";
 export interface SupportPlan { text: string; model: string; generatedAt: string; order?: { id: string; reason: string }[] }
 
 export interface VersionedId { caseId: string; expectedVersion: number }

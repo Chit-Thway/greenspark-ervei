@@ -58,8 +58,9 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
   const fu = describeFollowUp(c.workflow.followUpAt, isResolved(c), data.asOf);
   const a = c.modelAssessment;
   const fromFlow = data.circumstanceSource === "flow";
-  const solutionsAi = useAiPlan("solutions", c.id, c.version, fromFlow && c.recommendations.length ? props.loadPlan : undefined);
-  const aiOrder = solutionsAi?.plan?.order;
+  // One call gives the Suggested plan and the order of Solutions to offer, so the two agree.
+  const supportAi = useAiPlan("support", c.id, c.version, c.circumstances.length ? props.loadPlan : undefined);
+  const aiOrder = fromFlow && supportAi?.plan?.order?.length ? supportAi.plan.order : undefined;
   const [standardOrder, setStandardOrder] = useState(false);
   const orderedRecs = aiOrder && !standardOrder
     ? aiOrder.map((o) => c.recommendations.find((r) => r.recommendationId === o.id)!).filter(Boolean)
@@ -176,7 +177,7 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
         {fromFlow ? (
           <p className="hint">Worked out from account data and survey answers with the Flowchart&apos;s rules: one strong signal, or two supporting ones. Sensitive circumstances need a strong signal.</p>
         ) : null}
-        {props.loadPlan && c.circumstances.length ? <AiPlan kind="support" caseId={c.id} version={c.version} load={props.loadPlan} /> : null}
+        {supportAi ? <AiPlanView kind="support" state={supportAi} /> : null}
         {c.circumstances.length === 0 ? <p className="muted">{fromFlow ? "No circumstances flagged." : "No circumstances flagged from the reported answers."}</p> : null}
         {data.supportAreas.filter((area) => c.supportAreaIds.includes(area.id)).map((area) => (
           <div key={area.id} className="area-block">
@@ -237,10 +238,9 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
         <section className="case-card" aria-labelledby="ov-solutions">
           <h3 id="ov-solutions">Solutions to offer <span className="sim">for staff review</span></h3>
           <p className="hint">What we can offer this customer, or refer them to. Check eligibility before offering.</p>
-          {solutionsAi ? <AiPlanView kind="solutions" state={solutionsAi} /> : null}
           {aiOrder ? (
             <div className="order-toggle" role="group" aria-label="Order of solutions">
-              <span className="sim">Ordered by AI · check before acting</span>
+              <span className="sim">Ordered by AI to match the Suggested plan · check before acting</span>
               <button type="button" className="linkish" onClick={() => setStandardOrder(!standardOrder)}>{standardOrder ? "Show AI order" : "Show standard order"}</button>
             </div>
           ) : null}
@@ -391,8 +391,8 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
 }
 
 /** The Gemini-drafted plan, fetched when the case opens and again whenever the case changes. */
-const AI_TITLE: Record<PlanKind, string> = { support: "Suggested plan", signals: "What the signals say", solutions: "What to offer first" };
-const AI_SOURCE: Record<PlanKind, string> = { support: "circumstances, signals and solutions below", signals: "account signals below", solutions: "solutions below" };
+const AI_TITLE: Record<PlanKind, string> = { support: "Suggested plan", signals: "What the signals say" };
+const AI_SOURCE: Record<PlanKind, string> = { support: "circumstances, signals and solutions below", signals: "account signals below" };
 
 type AiState = { plan?: SupportPlan; error?: string; loading: boolean };
 
