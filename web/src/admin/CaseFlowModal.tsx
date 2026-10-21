@@ -3,7 +3,7 @@ import { caseSignals, type FlowDoc, type Person, type QueueCase } from "@greensp
 import type { ApiClient, Catalog } from "../data/api";
 import { readableDates } from "../domain/format";
 import { FlowBoard } from "./FlowBoard";
-import { SOURCE_LABEL, buildIndex, nodeKey, type FlowIndex, type Ref, type Trace } from "./flowModel";
+import { SOURCE_LABEL, buildIndex, nodeKey, trace as traceOf, type FlowIndex, type Ref, type Trace } from "./flowModel";
 import "./admin.css";
 
 interface Props { client: ApiClient; data: Catalog; c: QueueCase; person: Person | null; onClose: () => void }
@@ -39,7 +39,7 @@ function Panel({ refr, path, index, onSelect }: { refr: Ref | null; path: Path; 
     return (
       <>
         <h3>This case’s path</h3>
-        <p className="hint">Highlighted boxes are what this case has. Click any box for its details.</p>
+        <p className="hint">These are the boxes on this case’s path. Click any box to highlight its links and see its details.</p>
         <p className="block-label">Signals seen <span className="pill">{path.seen.size}</span></p>
         {path.seen.size ? (
           <ul className="plain cf-list">
@@ -127,7 +127,6 @@ export function CaseFlowModal({ client, data, c, person, onClose }: Props) {
   const [doc, setDoc] = useState<FlowDoc | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<Ref | null>(null);
-  const [caseOnly, setCaseOnly] = useState(true);
 
   useEffect(() => { ref.current?.showModal(); }, []);
   useEffect(() => {
@@ -138,6 +137,12 @@ export function CaseFlowModal({ client, data, c, person, onClose }: Props) {
 
   const index = useMemo(() => (doc ? buildIndex(doc) : null), [doc]);
   const path = useMemo(() => (doc && index ? casePath(c, person, data, doc, index) : null), [c, person, data, doc, index]);
+  // Nothing is highlighted until a box is chosen; then its links within this case's path light up.
+  const highlight = useMemo((): Trace | null => {
+    if (!index || !path || !selected) return null;
+    const t = traceOf(index, selected);
+    return { nodes: new Set([...t.nodes].filter((k) => path.trace.nodes.has(k))), links: new Set([...t.links].filter((k) => path.trace.links.has(k))) };
+  }, [index, path, selected]);
 
   return (
     <dialog ref={ref} className="case-flow" aria-labelledby="cf-title" onClose={onClose}>
@@ -148,11 +153,6 @@ export function CaseFlowModal({ client, data, c, person, onClose }: Props) {
           {path ? <p className="sub">{path.seen.size} signals seen → {path.flagged.size} circumstances flagged → {path.offered.size} solutions</p> : null}
         </div>
         <div className="cf-actions">
-          <fieldset className="seg">
-            <legend className="sr-only">Show</legend>
-            <span><input type="radio" name="cf-scope" id="cf-case" checked={caseOnly} onChange={() => setCaseOnly(true)} /><label htmlFor="cf-case">This case only</label></span>
-            <span><input type="radio" name="cf-scope" id="cf-all" checked={!caseOnly} onChange={() => setCaseOnly(false)} /><label htmlFor="cf-all">Whole flowchart</label></span>
-          </fieldset>
           <button type="button" className="btn" onClick={() => ref.current?.close()}>Close</button>
         </div>
       </header>
@@ -160,8 +160,8 @@ export function CaseFlowModal({ client, data, c, person, onClose }: Props) {
         <div className="cf-body">
           <div className="board-scroll">
             <FlowBoard
-              doc={doc} index={index} selected={selected} trace={path.trace} utility="all" showAllLinks strongOnly={false}
-              matches={new Set()} readOnly hideAdd only={caseOnly ? path.trace.nodes : null} onSelect={setSelected} onAdd={() => {}}
+              doc={doc} index={index} selected={selected} trace={highlight} utility="all" showAllLinks strongOnly={false}
+              matches={new Set()} readOnly hideAdd only={path.trace.nodes} onSelect={setSelected} onAdd={() => {}}
             />
           </div>
           <aside className="cf-panel" aria-label="Case details for the flowchart">
