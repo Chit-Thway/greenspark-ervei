@@ -26,6 +26,7 @@ const TASK: Record<PlanKind, string> = {
   signals: "In 40 to 70 words: what these account signals show together about the customer's situation, which matter most, and what to check with the customer. Do not recommend specific programs.",
   solutions: "In 50 to 90 words: which solutions to offer first and why, how to bring them up, and what eligibility to check before offering. Only mention solutions in the list. " +
     "Also order EVERY solution id in the list by priority and impact for this customer (stopping harm such as disconnection or safety risks first, then the biggest, quickest relief), each with a reason of at most 12 words. " +
+    "Each reason must be about THIS customer's circumstances and signals only; never mention eligibility groups or situations from a solution's key facts that the case does not show. " +
     "Answer as JSON: {\"summary\": string, \"order\": [{\"id\": string, \"reason\": string}]}.",
 };
 
@@ -89,9 +90,7 @@ const ORDER_SCHEMA = {
  */
 export async function draftPlan(kind: PlanKind, facts: string, apiKey: string | null, model: string, ids: string[] = []): Promise<SupportPlan> {
   if (!apiKey) throw new ApiError("unavailable", "AI plans are switched off: no Gemini API key is set on the server.");
-  let res: Response;
-  try {
-    res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
+  const call = () => fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
       method: "POST",
       headers: { "content-type": "application/json", "x-goog-api-key": apiKey },
       body: JSON.stringify({
@@ -101,9 +100,14 @@ export async function draftPlan(kind: PlanKind, facts: string, apiKey: string | 
       }),
       signal: AbortSignal.timeout(30_000),
     });
-  } catch {
-    throw new ApiError("unavailable", "Could not reach Gemini. Try again in a moment.");
+  // Gemini's busy (503) and server errors are usually brief: try once more after a short wait.
+  let res: Response | null = null;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    if (attempt) await new Promise((r) => setTimeout(r, 3000));
+    try { res = await call(); } catch { res = null; continue; }
+    if (res.status < 500) break;
   }
+  if (!res) throw new ApiError("unavailable", "Could not reach Gemini. Try again in a moment.");
   if (res.status === 429) throw new ApiError("unavailable", "Gemini's free limit was reached. Try again in a minute.");
   const json = (await res.json().catch(() => null)) as { candidates?: { content?: { parts?: { text?: string }[] } }[]; error?: { message?: string } } | null;
   if (!res.ok) throw new ApiError("unavailable", `Gemini returned an error (${res.status})${json?.error?.message ? `: ${json.error.message}` : ""}.`);
