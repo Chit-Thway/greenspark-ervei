@@ -64,7 +64,7 @@ export interface AppOptions {
   /** Optional "user:password" for HTTP Basic auth in front of everything except /api/health. For shared demo hosting. */
   basicAuth?: string | null;
   /** Google Gemini key and model for the AI support plan. No key turns the plan off. */
-  gemini?: { apiKey: string | null; model: string };
+  gemini?: { apiKey: string | null; models: Record<PlanKind, string> };
 }
 
 /** A person as the case list needs them: everything but the utility account. */
@@ -264,7 +264,7 @@ export function createApp(store: Store, options: AppOptions = {}) {
       const cat = doc ? catalogOf(doc) : store.catalog;
       const facts = planFacts(kind, c, store.getPerson(c.personId), cat, store.catalog.asOf);
       if (!facts) throw new ApiError("not_found", "Nothing to summarise for this case.");
-      plan = draftPlan(kind, facts, options.gemini?.apiKey ?? null, options.gemini?.model ?? "gemini-flash-lite-latest", c.recommendations.map((r) => r.recommendationId));
+      plan = draftPlan(kind, facts, options.gemini?.apiKey ?? null, options.gemini?.models[kind] ?? "gemini-flash-latest", c.recommendations.map((r) => r.recommendationId));
       byDoc.set(key, plan);
       plan.catch(() => byDoc.delete(key)); // failures are retried on the next load
     }
