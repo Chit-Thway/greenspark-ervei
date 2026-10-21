@@ -6,6 +6,7 @@ import { isResolved } from "../domain/query";
 import { PriorityBadge } from "./Primitives";
 import { ageOn } from "../domain/types";
 import { AccountHistory, AccountSignals, date, UtilityAccount } from "./AccountDetails";
+import { CaseToc, type TocItem } from "./CaseToc";
 
 /** A missing contact detail is shown as not recorded, so it is never mistaken for "none". */
 function notRecorded(v: string | null | undefined): string {
@@ -63,6 +64,20 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
   useEffect(() => { heading.current?.focus(); }, [c.id]);
 
   const history = c.assistance.reportedHistory;
+  // The table of contents lists the sections this case shows, in reading order (left column, then right).
+  const toc: TocItem[] = [
+    { id: "ov-contact", label: "Customer details" },
+    ...(acct ? [{ id: "ov-account", label: "Utility account" }] : []),
+    { id: "ov-model", label: "Model assessment" },
+    ...(acct ? [{ id: "ov-signals", label: "Account signals" }] : []),
+    { id: "ov-assist", label: "Assistance reported" },
+    { id: "ov-support", label: "Support areas" },
+    ...(fromFlow && c.recommendations.length ? [{ id: "ov-solutions", label: "Solutions to offer" }] : []),
+    ...(acct ? [{ id: "ov-bills", label: acct.prepay ? "Prepaid top-ups" : "Bills" }] : []),
+    { id: "ov-review", label: "Worker review" },
+    { id: "ov-progress", label: "Case progress" },
+    { id: "ov-notes", label: "Case notes" },
+  ];
   return (
     <article className="case-page" aria-labelledby="case-title">
       <header className="case-head">
@@ -75,6 +90,8 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
         </div>
       </header>
 
+      <div className="case-layout">
+      <CaseToc items={toc} />
       <div className="case-grid">
       <div className="case-col">
       <dl className="facts case-card">
@@ -341,6 +358,7 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
           </div>
         </form>
       </section>
+      </div>
       </div>
       </div>
     </article>

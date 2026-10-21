@@ -375,14 +375,13 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; o
           }}
         >
           <span className="logo" aria-hidden="true">🌱</span>
-          <span><strong>ERVEI</strong><span className="brand-sub">GREENSPARK · CASEWORK</span></span>
+          <span><strong>ERVEI</strong><span className="brand-sub">Community support workspace</span></span>
         </a>
         <nav className="mainnav" aria-label="Main">
           {([["/", "Case queue", props.page !== "admin"], ["/flowchart", "Flowchart", props.page === "admin"]] as const).map(([href, label, current]) => (
             <a key={href} href={href} aria-current={current ? "page" : undefined} onClick={(e) => { if (isModifiedClick(e)) return; e.preventDefault(); navigate(href); }}>{label}</a>
           ))}
         </nav>
-        <span className="tagline">Community support workspace</span>
         <span className="demo-pill">Synthetic demo data</span>
         <label className="whoami">
           <span className="whoami-label">Demo view</span>
