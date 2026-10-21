@@ -18,16 +18,24 @@ const saved = (page: Page) => expect(page.getByRole("status").filter({ hasText: 
 
 test.describe.configure({ mode: "serial" });
 
-test("Flowchart is in the main navigation and shows the three columns", async ({ page }) => {
+test("Flowchart and Data sources are in the BTS menu", async ({ page }) => {
   await page.addInitScript((u) => localStorage.setItem("greenspark.demoUser", u), "staff-manager");
   await page.goto("/");
-  await page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Flowchart" }).click();
-  await expect(page).toHaveURL(/\/flowchart$/);
+  const nav = page.getByRole("navigation", { name: "Main" });
+  await expect(nav.getByRole("link", { name: "Case queue" })).toHaveCount(0); // the logo leads to the queue
+  await nav.getByRole("button", { name: /BTS/ }).click();
+  await nav.getByRole("link", { name: "Flowchart" }).click();
+  await expect(page).toHaveURL(/\/bts\/flowchart$/);
   await expect(page.getByRole("heading", { name: "Utility hardship flow" })).toBeVisible();
   await expect(page.getByTestId("count-signals")).toHaveText("107");
   await expect(page.getByTestId("count-circumstances")).toHaveText("99");
   await expect(page.getByTestId("count-solutions")).toHaveText("49");
-  await page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Case queue" }).click();
+  await nav.getByRole("button", { name: /BTS/ }).click();
+  await nav.getByRole("link", { name: "Data sources" }).click();
+  await expect(page).toHaveURL(/\/bts\/data-sources$/);
+  await expect(page.getByRole("heading", { name: "Data sources", level: 1 })).toBeVisible();
+  await expect(page.locator(".ds-table tbody tr")).toHaveCount(22);
+  await page.getByRole("link", { name: /ERVEI casework/ }).click();
   await expect(page.locator(".case-table")).toBeVisible();
 });
 

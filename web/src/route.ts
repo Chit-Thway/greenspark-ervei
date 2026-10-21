@@ -15,14 +15,19 @@ export function isModifiedClick(e: { metaKey: boolean; ctrlKey: boolean; shiftKe
   return e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0;
 }
 
-export type Page = "queue" | "case" | "admin";
+export type Page = "queue" | "case" | "admin" | "data";
+
+/** Behind-the-scenes pages, under the BTS menu. */
+export const FLOWCHART_PATH = "/bts/flowchart";
+export const DATA_SOURCES_PATH = "/bts/data-sources";
 
 export function pageFromPath(path: string): Page {
-  if (/^\/(flowchart|admin)\/?$/.test(path)) return "admin"; // the Flowchart page; old /admin links still work
+  if (/^\/(bts\/flowchart|flowchart|admin)\/?$/.test(path)) return "admin"; // the Flowchart page; old /flowchart and /admin links still work
+  if (/^\/bts\/data-sources\/?$/.test(path)) return "data";
   return accountFromPath(path) ? "case" : "queue";
 }
 
-/** Minimal path router: the queue lives at "/", each case at "/accounts/:accountNumber" and the Flowchart page at "/flowchart". */
+/** Minimal path router: the queue lives at "/", each case at "/accounts/:accountNumber" and the BTS pages under "/bts/". */
 export function useRoute() {
   const [path, setPath] = useState(() => window.location.pathname);
   useEffect(() => {

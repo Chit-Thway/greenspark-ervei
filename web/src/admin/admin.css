@@ -175,3 +175,28 @@
 /* Signals the app has no data for (no detection rule, or no matching survey question) */
 .nodata { flex: none; font-size: 10px; font-weight: 600; line-height: 1; padding: 3px 5px; border-radius: 4px; color: var(--muted); background: var(--routine-bg); border: 1px dashed var(--border); white-space: nowrap; }
 .note.nodata-note { background: var(--routine-bg); color: var(--fg); border: 1px dashed var(--border); }
+
+/* BTS (behind the scenes) menu in the header */
+.bts { position: relative; }
+.bts-btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px; border: 0; border-radius: var(--r-control); background: none; color: var(--muted); font-weight: 600; cursor: pointer; }
+.bts-btn:hover, .bts-btn[aria-expanded="true"] { background: var(--sidebar); }
+.bts-btn.is-current { background: var(--selected); color: var(--brand-hover); }
+.bts-btn .sub-inline { font-weight: 400; font-size: 12px; }
+.bts-menu { position: absolute; top: calc(100% + 4px); left: 0; z-index: 30; min-width: 190px; list-style: none; margin: 0; padding: 4px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-panel); box-shadow: 0 8px 24px rgba(9, 30, 66, .14); }
+.bts-menu a { display: block; padding: 8px 10px; border-radius: var(--r-control); color: var(--fg); text-decoration: none; }
+.bts-menu a:hover { background: var(--sidebar); }
+.bts-menu a[aria-current="page"] { background: var(--selected); color: var(--brand-hover); font-weight: 600; }
+
+/* Data sources page */
+.bts-page { padding: var(--pad); max-width: 1400px; margin: 0 auto; outline: 0; }
+.bts-head { margin-bottom: 16px; }
+.bts-head h1 { margin: 2px 0 6px; }
+.bts-head .sub { max-width: 80ch; font-size: 14px; }
+.bts-page h2 { font-size: 15px; margin-bottom: 8px; }
+.ds-table th[scope="row"] { text-align: left; font-weight: 500; white-space: nowrap; }
+.ds-table td, .ds-table th { vertical-align: top; }
+.ds-table .num { text-align: right; white-space: nowrap; }
+/* The BTS menu sits on the right, just before Demo view. */
+.topbar .mainnav { margin-left: auto; }
+.topbar .mainnav + .whoami { margin-left: 4px; }
+.bts-menu { left: auto; right: 0; }

@@ -7,7 +7,8 @@ import { PRIORITY_TEXT, STATUS_LABELS } from "./domain/format";
 import { FilterSidebar } from "./components/FilterSidebar";
 import { CaseTable } from "./components/CaseTable";
 import { CaseDetails } from "./components/CaseDetails";
-import { accountHref, isModifiedClick, useRoute, type Page } from "./route";
+import { accountHref, DATA_SOURCES_PATH, FLOWCHART_PATH, isModifiedClick, useRoute, type Page } from "./route";
+import { DataSourcesPage } from "./components/DataSourcesPage";
 import { AdminPage } from "./admin/AdminPage";
 
 interface Notice {
@@ -378,12 +379,10 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; o
           <span className="logo" aria-hidden="true">🌱</span>
           <span><strong>ERVEI</strong><span className="brand-sub">Community support workspace</span></span>
         </a>
-        <nav className="mainnav" aria-label="Main">
-          {([["/", "Case queue", props.page !== "admin"], ["/flowchart", "Flowchart", props.page === "admin"]] as const).map(([href, label, current]) => (
-            <a key={href} href={href} aria-current={current ? "page" : undefined} onClick={(e) => { if (isModifiedClick(e)) return; e.preventDefault(); navigate(href); }}>{label}</a>
-          ))}
-        </nav>
         <span className="demo-pill">Synthetic demo data</span>
+        <nav className="mainnav" aria-label="Main">
+          <BtsMenu page={props.page} navigate={navigate} />
+        </nav>
         <label className="whoami">
           <span className="whoami-label">Demo view</span>
           <select value={user.id} onChange={(e) => props.onSwitchUser(e.target.value)} aria-label="Demo user (not real sign-in)">
@@ -394,6 +393,8 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; o
 
       {props.page === "admin" ? (
         <AdminPage client={client} />
+      ) : props.page === "data" ? (
+        <DataSourcesPage />
       ) : openAccount ? (
         <main id="queue" className="detail-main" tabIndex={-1}>
           <a
@@ -567,5 +568,44 @@ function NoticeBar(props: { notice: Notice | null; busy: boolean; onUndo: (id: s
 function Chip({ label, onRemove }: { label: string; onRemove: () => void }) {
   return (
     <span className="chip">{label}<button type="button" aria-label={`Remove filter ${label}`} onClick={onRemove}>✕</button></span>
+  );
+}
+
+/** "BTS" (behind the scenes): a menu of the pages about how the demo works. */
+function BtsMenu(props: { page: Page; navigate: (to: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const close = (e: MouseEvent | KeyboardEvent) => {
+      if (e instanceof KeyboardEvent ? e.key === "Escape" : !ref.current?.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", close);
+    document.addEventListener("keydown", close);
+    return () => { document.removeEventListener("mousedown", close); document.removeEventListener("keydown", close); };
+  }, [open]);
+  const items = [[FLOWCHART_PATH, "Flowchart", "admin"], [DATA_SOURCES_PATH, "Data sources", "data"]] as const;
+  const inside = items.some(([, , page]) => page === props.page);
+  return (
+    <div className="bts" ref={ref}>
+      <button type="button" className={`bts-btn${inside ? " is-current" : ""}`} aria-expanded={open} aria-controls="bts-menu" onClick={() => setOpen(!open)}>
+        BTS <span className="sub-inline">behind the scenes</span> <span aria-hidden="true">▾</span>
+      </button>
+      {open ? (
+        <ul id="bts-menu" className="bts-menu">
+          {items.map(([href, label, page]) => (
+            <li key={href}>
+              <a
+                href={href}
+                aria-current={props.page === page ? "page" : undefined}
+                onClick={(e) => { if (isModifiedClick(e)) return; e.preventDefault(); setOpen(false); props.navigate(href); }}
+              >
+                {label}
+              </a>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </div>
   );
 }
