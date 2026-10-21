@@ -287,3 +287,7 @@ textarea { resize: vertical; }
 .usage-key { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); margin-top: 2px; }
 .usage-key .key-bar { width: 10px; height: 10px; border-radius: 2px; background: var(--brand); }
 .usage-key .key-line { width: 14px; border-top: 2px dashed var(--muted); margin-left: 8px; }
+.contact-prefs { list-style: none; padding: 0; margin: 4px 0 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 6px; }
+.contact-prefs li { display: grid; gap: 1px; padding: 6px 8px; border: 1px solid var(--border); border-radius: var(--r-control); }
+.contact-prefs span { font-size: 12px; color: var(--muted); }
+.contact-prefs strong { font-weight: 600; font-size: 13px; }

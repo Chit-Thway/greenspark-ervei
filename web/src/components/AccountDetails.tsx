@@ -66,8 +66,14 @@ export function UtilityAccount({ account: a, accountNumber }: { account: Custome
         <div className="wide">
           <dt>Contact settings</dt>
           <dd>
-            Prefers {cp.preferredChannel} · SMS {cp.smsOptIn ? "on" : "off"} · email {cp.emailOptIn ? "on" : "off"}{cp.doNotCall ? " · do not call" : ""} ·
-            {" "}proactive support contact: {cp.proactiveSupportConsent === "not_asked" ? "not asked" : cp.proactiveSupportConsent} · online account {cp.onlineAccountActive ? "active" : "not active"}
+            <ul className="contact-prefs">
+              <li><span>Preferred channel</span><strong>{human(cp.preferredChannel)}</strong></li>
+              <li><span>SMS</span><strong>{cp.smsOptIn ? "Opted in" : "Opted out"}</strong></li>
+              <li><span>Email</span><strong>{cp.emailOptIn ? "Opted in" : "Opted out"}</strong></li>
+              <li><span>Phone calls</span><strong>{cp.doNotCall ? "Do not call" : "OK to call"}</strong></li>
+              <li><span>Proactive support contact</span><strong>{cp.proactiveSupportConsent === "not_asked" ? "Not asked" : cp.proactiveSupportConsent === "yes" ? "Consented" : "Declined"}</strong></li>
+              <li><span>Online account</span><strong>{cp.onlineAccountActive ? "Active" : "Not active"}</strong></li>
+            </ul>
           </dd>
         </div>
       </dl>
