@@ -28,7 +28,8 @@ const TASK: Record<PlanKind, string> = {
     "The order must match the paragraph: anything the paragraph says to do first or the same day must be near the top. " +
     "Give each a reason of at most 12 words, about THIS customer's circumstances and signals only; never mention eligibility groups or situations from a solution's key facts that the case does not show. " +
     "Answer as JSON: {\"summary\": string, \"order\": [{\"id\": string, \"reason\": string}]}.",
-  signals: "In 40 to 70 words: what these account signals show together about the customer's situation, which matter most, and what to check with the customer. Do not recommend specific programs.",
+  signals: "In 40 to 70 words: summarise what these account signals show together about the customer's situation and which stand out. " +
+    "Only describe the signals: give no suggestions, advice, next steps or questions to ask, and do not address the worker.",
 };
 
 const ISO = /\b(\d{4})-(\d{2})-(\d{2})\b/g;

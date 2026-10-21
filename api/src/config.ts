@@ -19,4 +19,4 @@ export const BASIC_AUTH = process.env.GREENSPARK_BASIC_AUTH || null;
 
 // Google Gemini, for the AI support plan on each case. Unset key: the plan is switched off.
 export const GEMINI_API_KEY = process.env.GEMINI_API_KEY || null;
-export const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-flash-latest";
+export const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-flash-lite-latest";

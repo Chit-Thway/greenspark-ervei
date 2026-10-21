@@ -264,7 +264,7 @@ export function createApp(store: Store, options: AppOptions = {}) {
       const cat = doc ? catalogOf(doc) : store.catalog;
       const facts = planFacts(kind, c, store.getPerson(c.personId), cat, store.catalog.asOf);
       if (!facts) throw new ApiError("not_found", "Nothing to summarise for this case.");
-      plan = draftPlan(kind, facts, options.gemini?.apiKey ?? null, options.gemini?.model ?? "gemini-flash-latest", c.recommendations.map((r) => r.recommendationId));
+      plan = draftPlan(kind, facts, options.gemini?.apiKey ?? null, options.gemini?.model ?? "gemini-flash-lite-latest", c.recommendations.map((r) => r.recommendationId));
       byDoc.set(key, plan);
       plan.catch(() => byDoc.delete(key)); // failures are retried on the next load
     }
