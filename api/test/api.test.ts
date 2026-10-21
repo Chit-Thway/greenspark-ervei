@@ -32,13 +32,13 @@ describe("identity and reads", () => {
 
   it("lists, filters and paginates", async () => {
     const r = await h.call(M, "GET", "/api/cases");
-    expect(r.body).toMatchObject({ total: 100, page: 1, pageSize: 50, pageCount: 2, from: 1, to: 50 }); // 50 per page by default
+    expect(r.body).toMatchObject({ total: 200, page: 1, pageSize: 50, pageCount: 4, from: 1, to: 50 }); // 50 per page by default
     expect(r.body.items).toHaveLength(50);
     const second = await h.call(M, "GET", "/api/cases?page=2");
     expect(second.body.items).toHaveLength(50);
     expect(second.body).toMatchObject({ from: 51, to: 100 });
     const small = await h.call(M, "GET", "/api/cases?pageSize=8"); // other sizes still work
-    expect(small.body).toMatchObject({ pageSize: 8, pageCount: 13 });
+    expect(small.body).toMatchObject({ pageSize: 8, pageCount: 25 });
     expect(small.body.items).toHaveLength(8);
     expect(r.body.counters).toEqual({ urgent: expect.any(Number), myActive: expect.any(Number) });
     const warm = await h.call(M, "GET", "/api/cases?circumstanceIds=keeping_warm_difficulty&pageSize=100");
@@ -51,7 +51,7 @@ describe("identity and reads", () => {
 
   it("returns matching ids across all pages for selection pruning", async () => {
     const r = await h.call(M, "GET", "/api/cases/ids?status=resolved");
-    expect(r.body.ids).toHaveLength(10);
+    expect(r.body.ids).toHaveLength(20);
     expect((await h.call(M, "GET", "/api/cases/ids?status=bogus")).status).toBe(422);
   });
 
@@ -280,7 +280,7 @@ describe("new case", () => {
     expect(Object.values(c.answerAvailability).every((v) => v === "unknown")).toBe(true);
     expect(r.body.person).toMatchObject({ displayName: "Jordan Test", suburb: "Perth" });
     expect(r.body.person).toMatchObject({ gender: null, preferredName: null, address: null, mobile: null, phone: null, email: null }); // not recorded
-    expect((await h.call(M, "GET", "/api/cases")).body.total).toBe(101);
+    expect((await h.call(M, "GET", "/api/cases")).body.total).toBe(201);
   });
 
   it("keeps one case per account, and rejects unknown people or empty input", async () => {
@@ -297,9 +297,9 @@ describe("new case", () => {
   it("gives each new person the next account number, and finds the case by it", async () => {
     const a = await h.call("staff-alex", "POST", "/api/cases", { displayName: "First New", suburb: "Perth" });
     const b = await h.call("staff-alex", "POST", "/api/cases", { displayName: "Second New", suburb: "Perth" });
-    expect(a.body.person.accountNumber).toBe("DEMO-700101");
-    expect(b.body.person.accountNumber).toBe("DEMO-700102");
-    const byAccount = await h.call(M, "GET", "/api/accounts/DEMO-700102");
+    expect(a.body.person.accountNumber).toBe("DEMO-700201");
+    expect(b.body.person.accountNumber).toBe("DEMO-700202");
+    const byAccount = await h.call(M, "GET", "/api/accounts/DEMO-700202");
     expect(byAccount.status).toBe(200);
     expect(byAccount.body.case.id).toBe(b.body.case.id);
     expect((await h.call(M, "GET", "/api/accounts/DEMO-700001")).body.case.id).toBe("GS-2001");

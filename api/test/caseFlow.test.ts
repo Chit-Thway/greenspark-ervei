@@ -58,10 +58,10 @@ describe("cases worked out from the Admin flow", () => {
   });
 
   it("filters the queue by flow circumstances", async () => {
-    const r = await (await withFlow()).call(M, "GET", "/api/cases?circumstanceIds=estimated_catchup&pageSize=100");
+    const r = await (await withFlow()).call(M, "GET", "/api/cases?circumstanceIds=prepay_self_disconnection&pageSize=100");
     expect(r.body.total).toBeGreaterThan(0);
-    for (const i of r.body.items) expect(circumstanceIds(i.case)).toContain("estimated_catchup");
-    expect(r.body.facets.circumstances.estimated_catchup).toBe(r.body.total);
+    for (const i of r.body.items) expect(circumstanceIds(i.case)).toContain("prepay_self_disconnection");
+    expect(r.body.facets.circumstances.prepay_self_disconnection).toBe(r.body.total);
   });
 
   it("keeps the fixture's survey rules when no flow file is configured", async () => {

@@ -5,7 +5,7 @@ import { describeFollowUp, formatDateTime, PERIOD_TEXT, readableDates, STATUS_LA
 import { isResolved } from "../domain/query";
 import { PriorityBadge } from "./Primitives";
 import { ageOn, PRIORITY_PROVIDER } from "../domain/types";
-import { AccountHistory, AccountSignals, date, UtilityAccount } from "./AccountDetails";
+import { AccountHistory, AccountSignals, ContactHistory, date, SupplyAndCollections, SupportHistory, UtilityAccount } from "./AccountDetails";
 import { CaseToc, type TocItem } from "./CaseToc";
 
 /** A missing contact detail is shown as not recorded, so it is never mistaken for "none". */
@@ -74,10 +74,15 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
     { id: "ov-assist", label: "Assistance reported" },
     { id: "ov-support", label: "Support areas" },
     ...(fromFlow && c.recommendations.length ? [{ id: "ov-solutions", label: "Solutions to offer" }] : []),
-    ...(acct ? [{ id: "ov-bills", label: acct.prepay ? "Prepaid top-ups" : "Bills" }] : []),
+    ...(acct ? [
+      { id: "ov-bills", label: acct.prepay ? "Prepaid top-ups" : "Bills" },
+      { id: "ov-support-history", label: "Support history" },
+      { id: "ov-supply", label: "Collections and supply" },
+    ] : []),
     { id: "ov-review", label: "Worker review" },
     { id: "ov-progress", label: "Case progress" },
     { id: "ov-notes", label: "Case notes" },
+    ...(acct ? [{ id: "ov-contacts", label: "Contact history" }] : []),
   ];
   return (
     <article className="case-page" aria-labelledby="case-title">
@@ -125,8 +130,7 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
             <dt>Contact preference</dt>
             <dd>{person?.contactPreference ? `${person.contactPreference.channel}, ${person.contactPreference.preferredWindow}` : "Not recorded"}</dd>
           </div>
-          <div><dt>Language</dt><dd>{acct ? `${acct.languagePreference}${acct.interpreterUsed ? " (interpreter)" : ""}` : "Not recorded"}</dd></div>
-          <div><dt>Access needs</dt><dd>{acct ? acct.accessNeeds ?? "None recorded" : "Not recorded"}</dd></div>
+          <div><dt>Interpreter</dt><dd>{acct ? (acct.interpreterRequired ? "Required" : "Not required") : "Not recorded"}</dd></div>
         </dl>
       </section>
       {acct ? <UtilityAccount account={acct} accountNumber={person?.accountNumber ?? null} /> : null}
@@ -253,6 +257,8 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
       ) : null}
 
       {acct ? <AccountHistory account={acct} asOf={data.asOf} /> : null}
+      {acct ? <SupportHistory account={acct} /> : null}
+      {acct ? <SupplyAndCollections account={acct} /> : null}
 
       </div>
       <div className="case-col">
@@ -364,6 +370,7 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
           </div>
         </form>
       </section>
+      {acct ? <ContactHistory account={acct} /> : null}
       </div>
       </div>
       </div>

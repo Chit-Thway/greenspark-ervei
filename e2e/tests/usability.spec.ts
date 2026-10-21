@@ -17,25 +17,21 @@ async function seriousViolations(page: Page) {
 }
 
 test.describe("states and content rules", () => {
-  test("empty results, pending and unavailable model states, and unknown evidence", async ({ page }) => {
+  test("empty results, priority from signals, and unknown evidence", async ({ page }) => {
     await openQueue(page);
     await page.getByPlaceholder("Search name, account number or suburb…").fill("zzzz-no-match");
     await expect(page.getByRole("heading", { name: "No cases match" })).toBeVisible();
     await page.getByRole("button", { name: "Reset filters" }).click();
-    await expectTotal(page, 100);
+    await expectTotal(page, 200);
 
+    // With the flowchart in use every seeded case has a priority worked out from its signals, so none are pending.
     await page.locator(".sidebar").getByLabel("Assessment availability").selectOption("pending");
-    await expectTotal(page, 5);
-    await expect(page.locator(".badge-none").first()).toHaveText("Assessment pending");
-    await expect(page.locator(".badge-routine")).toHaveCount(0);
-    await page.locator(".sidebar").getByLabel("Assessment availability").selectOption("unavailable");
-    await expectTotal(page, 5);
-    await expect(page.locator(".badge-none").first()).toHaveText("Assessment unavailable");
+    await expect(page.getByRole("heading", { name: "No cases match" })).toBeVisible();
     await page.getByRole("button", { name: "Reset", exact: true }).click();
 
-    // Minimum score excludes unscored cases rather than treating them as zero.
+    // A minimum score of 1 leaves out the cases with nothing flagged (score 0).
     await page.locator(".sidebar input[type=range]").fill("1");
-    await expectTotal(page, 90);
+    await expectTotal(page, 165);
     await page.getByRole("button", { name: "Reset", exact: true }).click();
 
     // The highest-priority case explains why it is flagged, with staff-review suggestions.
@@ -91,7 +87,7 @@ test.describe("case pages", () => {
     await openQueue(page);
     await page.getByRole("combobox", { name: "Sort cases" }).selectOption("name");
     await page.getByRole("button", { name: "Next" }).click();
-    await expect(page.getByText("Page 2 of 2")).toBeVisible();
+    await expect(page.getByText("Page 2 of 4")).toBeVisible();
     const row = page.locator("tbody tr").nth(1);
     const id = (await row.locator(".name-link").getAttribute("data-account-link"))!; // the account number is the main ID
     await row.locator(".name-link").click();
@@ -102,7 +98,7 @@ test.describe("case pages", () => {
     await expect(page.locator("#sidebar")).toHaveCount(0);
     await page.goBack();
     await expect(page).toHaveURL(/\/$/);
-    await expect(page.getByText("Page 2 of 2")).toBeVisible(); // same page of results
+    await expect(page.getByText("Page 2 of 4")).toBeVisible(); // same page of results
     await expect(page.getByRole("combobox", { name: "Sort cases" })).toHaveValue("name"); // and the same sort
     await page.goForward();
     await expect(page.locator(".case-page")).toBeVisible();
@@ -166,16 +162,16 @@ test.describe("keyboard and accessibility", () => {
 
   test("filters work with the keyboard", async ({ page }) => {
     await openQueue(page);
-    const toggle = page.getByRole("button", { name: /^(Expand|Collapse) Billing and meters/ }); // its name flips when toggled
-    await expect(page.getByRole("checkbox", { name: /^Estimated reads then catch-up bill/ })).toHaveCount(0); // areas start collapsed
+    const toggle = page.getByRole("button", { name: /^(Expand|Collapse) Payments/ }); // its name flips when toggled
+    await expect(page.getByRole("checkbox", { name: /^Prepayment self-disconnection/ })).toHaveCount(0); // areas start collapsed
     await toggle.focus();
     await page.keyboard.press("Enter");
     await expect(toggle).toHaveAttribute("aria-expanded", "true");
-    const box = page.getByRole("checkbox", { name: /^Estimated reads then catch-up bill/ });
+    const box = page.getByRole("checkbox", { name: /^Prepayment self-disconnection/ });
     await box.focus();
     await page.keyboard.press("Space");
-    await expect(page.locator(".chip")).toContainText("Estimated reads then catch-up bill");
-    await expect(page.getByRole("checkbox", { name: /^Billing and meters/ })).toHaveJSProperty("indeterminate", true);
+    await expect(page.locator(".chip")).toContainText("Prepayment self-disconnection");
+    await expect(page.getByRole("checkbox", { name: /^Payments/ })).toHaveJSProperty("indeterminate", true);
   });
 
   test("queue and case page have no serious or critical WCAG A/AA violations", async ({ page }) => {
@@ -196,9 +192,9 @@ test.describe("small screen", () => {
     await expect(page.locator("#sidebar")).toBeHidden();
     await page.getByRole("button", { name: /^Filters/ }).click();
     await expect(page.locator("#sidebar")).toBeVisible();
-    await page.getByRole("button", { name: "Expand Billing and meters" }).click();
-    await page.getByRole("checkbox", { name: /^Estimated reads then catch-up bill/ }).check();
-    await expectTotal(page, 10);
+    await page.getByRole("button", { name: "Expand Payments" }).click();
+    await page.getByRole("checkbox", { name: /^Prepayment self-disconnection/ }).check();
+    await expectTotal(page, 20);
     await page.getByRole("button", { name: /^Filters/ }).click();
     await page.locator("tbody tr").first().locator(".name-link").click();
     const panel = page.locator(".case-page");
@@ -206,7 +202,7 @@ test.describe("small screen", () => {
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     await page.getByRole("link", { name: /Back to case queue/ }).click();
     await expect(panel).toHaveCount(0);
-    await expectTotal(page, 10); // the filter is still applied
+    await expectTotal(page, 20); // the filter is still applied
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   });
 });

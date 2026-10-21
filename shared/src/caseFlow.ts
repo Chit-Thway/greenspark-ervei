@@ -29,14 +29,42 @@ export const SURVEY_SIGNALS: { signalId: string; fieldId: string; answers: strin
   { signalId: "ask_concession_card", fieldId: "Z7_8", answers: ["Yes"] }, // has an energy-bill concession
 ];
 
+/**
+ * Things customers say in contact transcripts that are the same as a self-report signal in the flow. Only the
+ * customer's own words count, from the last 12 months. Vaguer remarks ("things are a bit tight") are left out.
+ */
+export const TRANSCRIPT_SIGNALS: { signalId: string; pattern: RegExp }[] = [
+  { signalId: "ask_lost_job", pattern: /lost my job/i },
+  { signalId: "ask_less_hours", pattern: /hours got cut back/i },
+  { signalId: "ask_housing_costs", pattern: /rent went up/i },
+  { signalId: "ask_unexpected_cost", pattern: /big car repair/i },
+  { signalId: "ask_rationing", pattern: /sitting in the dark|not to run the air con/i },
+  { signalId: "ask_other_debts", pattern: /behind on a few bills/i },
+  { signalId: "ask_illness", pattern: /off work sick/i },
+  { signalId: "ask_payment_problem", pattern: /payments haven't come through/i },
+  { signalId: "ask_single_parent", pattern: /on my own with the kids/i },
+  { signalId: "ask_bill_higher", pattern: /bill is way higher|bill was a lot higher|nearly double/i },
+  { signalId: "ask_bill_wrong", pattern: /doesn't look right|meter reading is wrong|meter being read properly/i },
+  { signalId: "ask_concession_card", pattern: /got a concession card/i },
+  { signalId: "ask_bad_experience", pattern: /formal complaint|third time I've called|nobody has fixed this/i },
+  { signalId: "ask_moving", pattern: /moving house|move the account to a new address/i },
+];
+
+/** Facts recorded on the account that mean the same as a self-report signal. */
+const ACCOUNT_FACT_SIGNALS: { signalId: string; holds: (p: Person) => string | null }[] = [
+  { signalId: "ask_temperature_need", holds: (p) => (p.account?.medicalCoolingSubsidy ? "Account: receives the medical cooling subsidy (TDES)" : null) },
+];
+
 const applies = (utilities: string[]) => utilities.includes(CASE_UTILITY);
 
 /**
  * Whether the app has data that can raise this signal: an account signal needs a detection rule over the
- * account data, and a self-report signal needs a survey question that asks the same thing. Others never fire.
+ * account data; a self-report signal needs a survey question, a transcript phrase or an account fact that says
+ * the same thing. Others never fire.
  */
 export function signalHasData(signal: { id: string; source: string }): boolean {
-  return signal.source === "account" ? ACCOUNT_SIGNAL_IDS.includes(signal.id) : SURVEY_SIGNALS.some((m) => m.signalId === signal.id);
+  if (signal.source === "account") return ACCOUNT_SIGNAL_IDS.includes(signal.id);
+  return [...SURVEY_SIGNALS, ...TRANSCRIPT_SIGNALS, ...ACCOUNT_FACT_SIGNALS].some((m) => m.signalId === signal.id);
 }
 
 /** Support areas, circumstances and recommendations for the queue, built from the flow. */
@@ -74,7 +102,26 @@ export function caseSignals(c: QueueCase, person: Person | null, data: Pick<Queu
       evidence: `Survey: ${label}: ${answer}${c.reportedAt ? ` (reported ${c.reportedAt})` : ""}`,
     });
   }
-  return out;
+  if (person) {
+    for (const m of ACCOUNT_FACT_SIGNALS) {
+      const evidence = m.holds(person);
+      if (evidence && names.has(m.signalId)) out.push({ id: m.signalId, name: names.get(m.signalId)!, source: "self_report", evidence });
+    }
+  }
+  // Newest contacts first, so the evidence quotes the latest time the customer said it.
+  const year = (person?.account?.contacts ?? []).filter((x) => x.transcript && x.date <= data.asOf && Date.parse(data.asOf) - Date.parse(x.date) <= 365 * 86_400_000);
+  for (const contact of [...year].reverse()) {
+    for (const turn of contact.transcript!) {
+      if (turn.speaker !== "customer") continue;
+      for (const m of TRANSCRIPT_SIGNALS) {
+        if (!m.pattern.test(turn.text) || !names.has(m.signalId)) continue;
+        out.push({ id: m.signalId, name: names.get(m.signalId)!, source: "self_report", evidence: `Said on ${contact.channel.replace(/_/g, " ")}, ${contact.date}: "${turn.text}"` });
+      }
+    }
+  }
+  // One entry per signal: account data first, then the survey, then account facts and transcripts.
+  const seen = new Set<string>();
+  return out.filter((s) => (seen.has(s.id) ? false : (seen.add(s.id), true)));
 }
 
 /** The flagged circumstances, support areas and solutions for one case. */

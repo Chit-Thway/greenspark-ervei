@@ -14,7 +14,7 @@ Render supplies `PORT`; the server listens on it.
 
 ## Things to know
 
-- **Data is temporary on the free plan.** The SQLite file lives on the service's disk, which is wiped on every deploy and restart (free services also sleep after about 15 minutes idle). Each wake-up starts from the original 100 fictional cases. For data that survives, attach a paid persistent disk and set `GREENSPARK_DB` to a path on it.
+- **Data is temporary on the free plan.** The SQLite file lives on the service's disk, which is wiped on every deploy and restart (free services also sleep after about 15 minutes idle). Each wake-up starts from the original 200 cases. For data that survives, attach a paid persistent disk and set `GREENSPARK_DB` to a path on it.
 - **Flowchart edits are temporary too.** The hardship-flow JSON (`data/admin/utility_hardship_mapping.json`) is part of the repository, so edits made on the live site reset on every deploy and restart. To keep them, put the file on a persistent disk and set `GREENSPARK_FLOW_FILE` to it (copy the repo's file there first).
 - **Single instance only.** SQLite is a local file, so do not scale to more than one instance.
 - **Auto-deploy** follows the branch you connect. Merge the pull request and switch the service to `main` when ready.

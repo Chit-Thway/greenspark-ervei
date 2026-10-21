@@ -261,3 +261,16 @@ textarea { resize: vertical; }
   .case-toc a { border: 1px solid var(--border); border-radius: 99px; padding: 4px 10px; background: var(--surface); }
   .case-toc a[aria-current="location"] { border-color: var(--brand); }
 }
+
+/* Contact, support and supply history from the utility dataset */
+.contact-list { list-style: none; padding: 0; margin: 6px 0 0; display: grid; gap: 8px; }
+.contact-list > li { display: grid; gap: 2px; padding: 8px 10px; border: 1px solid var(--border); border-radius: var(--r-control); font-size: 13px; }
+.contact-head { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.contact-head .sens { margin-left: 0; }
+.transcript summary { cursor: pointer; font-size: 12px; color: var(--brand-hover); font-weight: 600; margin-top: 2px; }
+.transcript ol { list-style: none; padding: 6px 0 0; margin: 0; display: grid; gap: 4px; }
+.transcript .turn { font-size: 12px; line-height: 1.4; }
+.transcript .who { font-weight: 600; color: var(--muted); margin-right: 4px; }
+.transcript .turn-customer .who { color: var(--fg); }
+.history li { font-size: 13px; padding: 3px 0; }
+.history li .sub { display: block; }

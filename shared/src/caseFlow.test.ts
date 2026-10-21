@@ -29,8 +29,22 @@ const tiny = {
 } as unknown as FlowDoc;
 
 // GS-2001: an overdue account (missed payment, repeated late, partial payments) whose survey says Q35_8 = Yes.
+// GS-2001's survey says Q35_8 = Yes. Its account is replaced with one that is overdue, late on every bill and paid
+// in small part-payments (missed payment, repeated late and partial payments).
 const c = data.cases[0] as QueueCase;
-const person = data.people[0] as Person;
+const bill = (issuedAt: string) => ({
+  id: issuedAt, periodStart: issuedAt, periodEnd: issuedAt, issuedAt, dueAt: issuedAt.replace(/-01$/, "-15"), originalDueAt: issuedAt.replace(/-01$/, "-15"), dueDateExtended: false,
+  usageKwh: 500, usageKwhLastYear: null, charges: { usage: 220, supply: 80, feedInCredit: 0, concessionCredit: 0, govtCredit: 0 }, amount: 300, amountPaid: 0, paidInFullAt: null, paidOnTime: false, finalBill: false, openingBalance: false,
+});
+const person = {
+  ...(data.people[0] as Person),
+  account: {
+    ...(data.people[0] as Person).account!,
+    bills: ["2026-01-01", "2026-03-01", "2026-05-01", "2026-07-01"].map(bill),
+    payments: ["2026-07-05", "2026-07-20", "2026-08-05"].map((date) => ({ date, amount: 40, method: "bpay" as const, kind: "bill_payment" as const, status: "cleared" as const })),
+    contacts: [],
+  },
+} as Person;
 
 describe("flagging circumstances with the flow's rules", () => {
   const flagged = evaluateCase(c, person, data, tiny).circumstances.map((x) => x.circumstanceId);
@@ -80,11 +94,17 @@ describe("the real flow over the fixture", () => {
     }
   });
 
+  it("raises self-report signals from what customers said in transcripts, quoting them", () => {
+    const quoted = out.cases.flatMap((x) => x.circumstances.flatMap((y) => y.signals ?? [])).filter((s) => s.evidence.startsWith("Said on"));
+    expect(quoted.length).toBeGreaterThan(0);
+    expect(quoted.every((s) => s.source === "self_report" && /"[^"]+"$/.test(s.evidence))).toBe(true);
+  });
+
   it("leaves the clean control unflagged and flags what each scenario is shaped for", () => {
     for (const list of ids("no_flagged_circumstances")) expect(list).toEqual([]);
-    for (const list of ids("new_financial")) expect(list).toEqual(expect.arrayContaining(["hardship_not_offered", "debt_spiral"]));
-    for (const list of ids("historical_payment_plan")) expect(list).toContain("unaffordable_plan");
-    for (const list of ids("incomplete_assessment")) expect(list).toContain("estimated_catchup");
-    for (const list of ids("support_access_review")) expect(list).toContain("concession_lost");
+    for (const list of ids("new_financial")) expect(list).toEqual(expect.arrayContaining(["cost_of_living", "food_vs_bills"]));
+    for (const list of ids("multiple_support_areas")) expect(list).toContain("life_support_equipment");
+    for (const list of ids("home_comfort")) expect(list).toContain("prepay_self_disconnection");
+    for (const list of ids("health_related")) expect(list).toContain("temperature_medical"); // the medical cooling subsidy
   });
 });

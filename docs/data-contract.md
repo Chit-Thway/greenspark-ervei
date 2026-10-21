@@ -14,7 +14,7 @@ Version: 1.0.0 draft. This is a development proposal for this team's interface, 
 | `circumstanceDefinitions` | Child circumstances, supporting field IDs and candidate recommendation IDs |
 | `evidenceFieldDefinitions` | Source survey variable IDs, answer domains, labels and reporting periods |
 | `recommendationDefinitions` | Proposed staff-review actions and their labels |
-| `people` | 100 fictional identities with minimal queue/overview display fields |
+| `people` | 200 fictional identities with minimal queue/overview display fields and a utility account from the synthetic dataset |
 | `cases` | 100 queue cases, each referencing a person and optional assigned worker |
 
 The JSON is an envelope rather than a bare array so every consumer receives the synthetic-data declaration and the shared catalogs.
@@ -33,23 +33,39 @@ Each person also has invented contact details, shown on the case page as "Custom
 
 Safety: landlines are in the `(08) 5550 xxxx` block and mobiles come from a short list of `0491 57x xxx` numbers, which Australia's communications regulator (ACMA) sets aside for fiction. Emails use `example.com`. People created in the queue start with all of these null.
 
-## Utility accounts and account signals (fictional)
+## Utility accounts and account signals (synthetic dataset)
 
 **Account number.** Every person has a fictional `accountNumber` (`DEMO-7xxxxx`), on the person rather than in `account`. It is the customer's main ID on screen: the case list, case page, tab title, links (`/accounts/DEMO-700001`), search and messages all use it. Each account has exactly one case. Case IDs (`GS-2001`) and person IDs stay as internal keys for the database, API paths and undo logs, and are not shown. People added in the queue get the next free number; on start, the server numbers any older ones that have none.
 
-Each seeded person also has an invented electricity `account`, shown on the case page as "Utility account", "Account signals" and "Bills" (or "Prepaid top-ups").
+**Where the accounts come from.** Each of the 200 seeded people has the `account` of one customer from a synthetic WA electricity retail dataset (5,150 customers, 1 Jul 2023 to 30 Jun 2025). `scripts/import-utility-dataset.mts` reads the source files (CSV and JSONL; not kept in the repo) and writes `data/synthetic/utility-accounts.v1.json`, which the fixture generator attaches. Run it only when the source changes:
 
-| Field | Notes |
+```sh
+npx tsx scripts/import-utility-dataset.mts <folder with the source files>
+node scripts/generate-synthetic-cases.mjs
+```
+
+- **Selection.** 20 customers per testing scenario, each chosen to fit it: overdue with no hardship help (`new_financial`, preferring anyone disconnected now); in hardship with a concession (`assigned_financial`); prepay customers (`home_comfort`); the medical cooling subsidy (`health_related`); life support with arrears or warnings (`multiple_support_areas`); a broken plan and a concession (`historical_payment_plan`); completed help, nothing overdue (`resolved_case`); no online account and no contacts (`incomplete_assessment`); an interpreter or authorised representative (`support_access_review`); and, for `no_flagged_circumstances`, customers checked to raise no account signal at all. Only open accounts are used.
+- **Dates.** Every date is shifted forward 473 days so the data ends on the app's as-of date (16 Oct 2026). Seasons move by about 3.5 months as a result.
+- **Kept from the fixture.** Names, contact details, dates of birth and survey answers stay fictional. The suburb, postcode and preferred contact channel come from the dataset. Survey answers that the account also records (`Z7_8` concession, `Z7_4` life support, `Q37` hardship enrolment) are set from the account so they agree, except for `incomplete_assessment`, where the survey wasn't done.
+- **Left out.** The monthly panel's `label_*` columns and the interventions' outcome measurements are future outcomes for training a model and must not feed signals or priority. Trial arms, the postcode "PLACEHOLDER" quintile, the empty census columns and the half-hourly reads (a few event windows in 2024 only) are also left out.
+
+| Field | From |
 | --- | --- |
-| `customerSince`, `dateOfBirth` | Every holder is an adult; the page shows age on the dataset's `asOf` date. |
-| `plan`, `paymentMethod`, `supplyType` | Postpaid (billed every two months) or prepaid; direct debit, card, BPAY, Centrepay or cash/in person; standard or embedded network. |
-| `bills` | Six bills (oldest first): period, issue and due dates, kWh and the same period last year, estimated read, amount, amount paid and the date paid in full. Prepaid accounts have none. |
-| `payments`, `prepay` | Payment date, amount, method and cleared/dishonoured result. Payments pay the oldest open bill first. Prepaid accounts have top-ups and the dates the meter ran out of credit. |
-| `usage` | Twelve months of kWh with the same month last year. |
-| `concession`, `thirdPartyAuthority`, `lifeSupport`, `hardshipProgram`, `paymentPlan`, `extensions` | Concession status matches the case's `Z7_8` answer (active) or is lapsed/none; life support matches `Z7_4`; an active hardship program matches `Q37`. |
-| `contacts`, `complaintOpen`, `disconnectionWarningAt`, `collectionsStatus`, `digital`, `returnedMail`, `accessNeeds`, `languagePreference`, `interpreterUsed` | Contact history and service flags. |
+| `retailer`, `region`, `customerSince`, `plan`, `meterType`, `solar`, `paymentMethod`, `medicalCoolingSubsidy`, `lifeSupport`, `interpreterRequired` | customers, postcode context |
+| `contactPreferences`, `thirdPartyAuthority` | contact preferences (an authorised representative has no name in the data) |
+| `bills` | bills: period, issue and due dates (and extensions), kWh with the same period last year from the daily reads, charges and credits, amount due, date paid in full, paid on time. What is still owed comes from the month-end balance, newest bills first. |
+| `payments` | payments: date, amount, method, kind (bill payment, instalment, HUGS grant, write-off) and result |
+| `usage` | daily reads summed by month: kWh, solar export, outage hours and days disconnected, with last year's month when both are complete |
+| `monthly` | month-end balance, overdue amount, days overdue and concession, from the panel (no labels) |
+| `concession` | active, lapsed (removed in the last six months) or none, from the panel |
+| `hardshipProgram`, `hardshipHistory`, `paymentPlan`, `paymentPlans`, `extensions`, `hugsGrants`, `interventions` | hardship programs, payment arrangements, HUGS grants, interventions |
+| `contacts` | contacts with the transcript joined where there is one |
+| `collectionEvents`, `disconnections`, `supplyStatus` | collection events, disconnections (disconnected now when the latest has no reconnection) |
+| `outages` | outage impacts joined with outage events (planned or not, cause, notice date) |
+| `prepay` | credit now, top-ups (last 6 months) and self-disconnections (last 12 months) |
+| `communications` | the last message opened, and messages not delivered in the last 12 months |
 
-Each testing scenario shapes its accounts so specific account signals from the flowchart fire, for example overdue and growing arrears for `new_financial`, a broken plan for `historical_payment_plan`, estimates followed by a catch-up bill for `incomplete_assessment`. `no_flagged_circumstances` is a clean control with none. `shared/src/accountSignals.ts` detects 29 of the flow's account signals using each signal's `example_rule`, under the same id and name as the flow. Signals are display-only: they do not change circumstances, priorities or recommendations. The tariff is illustrative, not a real price. Existing databases pick up new fixture fields for seeded people on start, without a reset. The fixture schema version is 1.2.0.
+**Signals.** `shared/src/accountSignals.ts` detects 33 of the flowchart's account signals from these fields using each signal's `example_rule`, under the same id and name. Rules the dataset can't support (estimated reads, catch-up bills, embedded networks, access needs and others) are absent, so the Flowchart page tags those signals "No data". Self-report signals come from three places: matching survey answers, things customers say in transcripts in the last 12 months (for example "I lost my job a few weeks ago" for Lost job; see `TRANSCRIPT_SIGNALS` in `shared/src/caseFlow.ts`), and the medical cooling subsidy for a medical need for heating or cooling. When the fixture's `datasetId` changes, the server empties its database and reseeds on start, so workflow changes on an old dataset are lost. The fixture schema version is 2.0.0.
 
 ## Identity and ownership
 
@@ -110,7 +126,7 @@ The queue's case statuses are `new`, `in_progress`, `waiting` and `resolved`. Th
 
 Proposed list query fields are `search`, `view`, `circumstanceIds`, `assistanceIds`, `priorityLabels`, `minPriorityScore`, `assessmentStatus`, `status`, `assignedToUserId`, `sort`, `page` and `pageSize`. Use explicit IDs from the catalogs, default to 50 cases per page, and use one definition of each filter in the mock and live data adapters.
 
-The overview counters are global active-case shortcuts: Urgent cases counts ready urgent assessments on unresolved cases; My active cases counts unresolved cases assigned to the current user. Every case has an assigned worker, so there is no unassigned count. Label their global scope if needed so users do not mistake them for filtered table totals. The table's result total and pagination reflect the active query. All cases initially includes all statuses, so all 100 fixture cases are accessible.
+The overview counters are global active-case shortcuts: Urgent cases counts ready urgent assessments on unresolved cases; My active cases counts unresolved cases assigned to the current user. Every case has an assigned worker, so there is no unassigned count. Label their global scope if needed so users do not mistake them for filtered table totals. The table's result total and pagination reflect the active query. All cases initially includes all statuses, so all 200 fixture cases are accessible.
 
 ## Source definitions inspected
 
@@ -129,6 +145,6 @@ node scripts/generate-synthetic-cases.mjs
 node scripts/generate-synthetic-cases.mjs --check
 ```
 
-The default produces exactly 100 people and cases with a fixed seed and demo date. `--count=200 --seed=17` can generate another deliberately synthetic test set, between 20 and 400 unique fictional names. Keep the default checked-in fixture at 100 records unless the team intentionally changes it.
+The default produces exactly 200 people and cases (20 per scenario, one per imported utility account) with a fixed seed and demo date. `--count=100 --seed=17` can generate another deliberately synthetic test set, between 20 and 400 unique fictional names. Keep the default checked-in fixture at 100 records unless the team intentionally changes it.
 
 The validator checks IDs, references, assignments, source-defined answer values, questionnaire branching, evidence/circumstance consistency, model null handling, recommendation references, dates and required scenario coverage. It does not establish model validity or population representativeness.

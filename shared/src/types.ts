@@ -67,55 +67,124 @@ export interface Person {
   email?: string | null;
   /** The customer's main ID on screen (fictional, DEMO-7xxxxx). Every person has one, including people added in the queue. */
   accountNumber?: string | null;
-  // Fictional utility account. Missing for people added in the queue.
+  // Utility account, from the synthetic WA utility dataset (data/synthetic/utility-accounts.v1.json).
+  // Missing for people added in the queue.
   account?: CustomerAccount | null;
 }
 
-export type PaymentMethod = "direct_debit" | "card" | "bpay" | "centrepay" | "cash_counter";
+export type PaymentMethod = "direct_debit" | "card" | "bpay" | "centrepay" | "cash_counter" | "prepay_topup" | "hugs_grant" | "write_off";
+export type PaymentKind = "bill_payment" | "hardship_instalment" | "plan_instalment" | "final_payment" | "hugs_grant" | "reconnection_payment" | "debt_write_off";
 
 export interface Bill {
   id: string;
-  periodStart: string;
-  periodEnd: string;
+  /** Null for the opening-balance bill that carries arrears from before the data starts. */
+  periodStart: string | null;
+  periodEnd: string | null;
   issuedAt: string;
   dueAt: string;
-  usageKwh: number;
-  usageKwhLastYear: number;
-  estimatedRead: boolean;
+  originalDueAt: string;
+  dueDateExtended: boolean;
+  usageKwh: number | null;
+  /** kWh for the same period a year earlier, when the data covers it. */
+  usageKwhLastYear: number | null;
+  charges: { usage: number; supply: number; feedInCredit: number; concessionCredit: number; govtCredit: number } | null;
+  /** Amount due after credits. */
   amount: number;
   amountPaid: number;
   paidInFullAt: string | null;
+  paidOnTime: boolean;
+  finalBill: boolean;
+  openingBalance: boolean;
 }
 
-export interface Payment { date: string; amount: number; method: PaymentMethod; status: "cleared" | "dishonoured" }
+export interface Payment { date: string; amount: number; method: PaymentMethod; kind: PaymentKind; status: "cleared" | "dishonoured" }
+
+export interface AccountContact {
+  id: string;
+  date: string;
+  channel: string;
+  direction: "inbound" | "outbound";
+  reason: string;
+  outcome: string;
+  sentiment: number | null;
+  complaint: boolean;
+  complaintCategory: string | null;
+  repeatWithin7d: boolean;
+  notes: string;
+  transcript: { speaker: "agent" | "customer"; text: string }[] | null;
+}
+
+export interface PaymentArrangement {
+  status: "active" | "broken" | "completed" | "closed_account" | "transferred_to_hardship";
+  startedAt: string;
+  endedAt: string | null;
+  amount: number;
+  instalment: number;
+  instalments: number;
+  trigger: string;
+}
+
+export interface HardshipRecord {
+  assessedAt: string;
+  trigger: string;
+  outcome: "accepted" | "denied";
+  startedAt: string | null;
+  instalment: number | null;
+  exitedAt: string | null;
+  exitReason: string | null;
+  debtAtEntry: number | null;
+  writeOff: number;
+  financialCounsellingReferral: boolean;
+  energyEfficiencyAdvice: boolean;
+}
 
 export interface CustomerAccount {
-  utility: string;
+  /** The customer's ID in the source dataset (internal; never shown). */
+  sourceCustomerId: string;
+  utility: "electricity";
+  retailer: string;
+  region: { name: string; climateZone: string; northOf26th: boolean };
   customerSince: string;
   dateOfBirth: string;
-  supplyType: "standard" | "embedded";
-  plan: { type: "postpaid" | "prepaid"; name: string; billingCycle: "bimonthly" | null };
-  tariff: { centsPerKwh: number; supplyCentsPerDay: number; provenance: string };
+  supplyStatus: "connected" | "disconnected";
+  plan: { type: "postpaid" | "prepaid"; tariff: string; name: string; billingCycle: "bimonthly" | null };
+  meterType: string;
+  solar: { kw: number } | null;
   paymentMethod: PaymentMethod;
-  concession: { status: "active" | "lapsed" | "none"; type: string | null; endDate: string | null };
-  thirdPartyAuthority: { type: string; name: string; since: string } | null;
+  concession: { status: "active" | "lapsed" | "none"; endDate: string | null };
+  medicalCoolingSubsidy: boolean;
+  thirdPartyAuthority: { type: string; name: string | null; since: string | null } | null;
   lifeSupport: boolean;
-  accessNeeds: string | null;
-  languagePreference: string;
-  interpreterUsed: boolean;
-  hardshipProgram: { status: "none" | "active" | "exited"; exitReason: string | null; assessmentOffered: boolean };
-  paymentPlan: { status: "active" | "broken" | "completed"; startedAt: string; frequency: string; instalment: number } | null;
-  extensions: { requestedAt: string }[];
+  lifeSupportSince: string | null;
+  interpreterRequired: boolean;
+  contactPreferences: {
+    preferredChannel: string; smsOptIn: boolean; emailOptIn: boolean; doNotCall: boolean;
+    proactiveSupportConsent: "yes" | "no" | "not_asked"; onlineAccountActive: boolean;
+  };
+  hardshipProgram: { status: "none" | "active" | "exited"; exitReason: string | null; assessedAt: string | null };
+  hardshipHistory: HardshipRecord[];
+  /** The latest payment plan, and every plan. */
+  paymentPlan: PaymentArrangement | null;
+  paymentPlans: PaymentArrangement[];
+  extensions: { requestedAt: string; amount: number; until: string | null }[];
+  hugsGrants: { appliedAt: string; paidAt: string | null; debt: number; amount: number; outcome: "approved" | "declined" }[];
+  interventions: { date: string; type: string; trigger: string; offeredBy: string; accepted: boolean | null; detail: string | null }[];
   bills: Bill[];
   payments: Payment[];
-  usage: { month: string; kWh: number; kWhLastYear: number }[];
-  prepay: { recharges: { date: string; amount: number; method: PaymentMethod }[]; zeroCreditEvents: string[] } | null;
-  contacts: { date: string; channel: string; topic: string }[];
-  complaintOpen: boolean;
-  disconnectionWarningAt: string | null;
-  collectionsStatus: string | null;
-  digital: { lastLoginAt: string | null; lastEmailOpenAt: string | null };
-  returnedMail: boolean;
+  /** Usage by month, from daily meter data. */
+  usage: { month: string; kWh: number; kWhLastYear: number | null; exportKwh: number; exportKwhLastYear: number | null; outageHours: number; disconnectedDays: number }[];
+  /** Account position at each month end (no outcome labels). */
+  monthly: { date: string; balance: number; overdue: number; daysOverdueOldest: number; concessionActive: boolean }[];
+  prepay: {
+    creditNow: number;
+    recharges: { date: string; amount: number; context: string }[];
+    selfDisconnections: { start: string; hours: number; hotDay: boolean }[];
+  } | null;
+  contacts: AccountContact[];
+  collectionEvents: { date: string; action: string; overdue: number | null }[];
+  disconnections: { date: string; overdue: number; reconnectedAt: string | null }[];
+  outages: { start: string; end: string; hours: number; type: "planned" | "unplanned"; cause: string; noticeDate: string | null }[];
+  communications: { lastOpenedAt: string | null; undelivered: { date: string; channel: string; type: string }[] };
 }
 
 /** A flow signal seen for a case: from the account, or from a survey answer that matches a self-report signal. */

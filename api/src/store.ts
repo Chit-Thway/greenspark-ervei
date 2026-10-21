@@ -33,7 +33,8 @@ export class Store {
 
   constructor(dbPath: string, fixturePath: string) {
     const raw = JSON.parse(readFileSync(fixturePath, "utf8")) as RawFixture;
-    this.catalog = toDataset(raw);
+    // People and cases are always read from the database, so the catalog keeps only the fixed catalogs.
+    this.catalog = { ...toDataset(raw), people: [], cases: [] };
     if (dbPath !== ":memory:") mkdirSync(dirname(dbPath), { recursive: true });
     this.db = new DatabaseSync(dbPath);
     this.db.exec("PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;");
@@ -41,6 +42,9 @@ export class Store {
     // Databases created before notes could be edited lack the edit columns.
     const noteColumns = (this.db.prepare("PRAGMA table_info(notes)").all() as Row[]).map((c) => c.name);
     if (!noteColumns.includes("edited_at")) this.db.exec("ALTER TABLE notes ADD COLUMN edited_at TEXT; ALTER TABLE notes ADD COLUMN edited_by TEXT;");
+    // A new fixture dataset (a different datasetId) replaces everything, including workflow changes.
+    const seeded = this.getMeta("seeded_dataset");
+    if (seeded && seeded !== raw.metadata.datasetId) this.clear();
     if (!this.getMeta("seeded_dataset")) this.seed(raw);
     else this.refreshSeededPeople(raw);
     this.assignCasesWithoutWorker(raw);
@@ -115,6 +119,13 @@ export class Store {
   getMeta(key: string): string | null {
     const r = this.db.prepare("SELECT value FROM meta WHERE key = ?").get(key) as Row | undefined;
     return r ? (r.value as string) : null;
+  }
+
+  /** Empties every table, ready to seed a new dataset. */
+  private clear() {
+    this.transaction(() => {
+      for (const t of ["workflow_action_items", "workflow_actions", "note_edits", "notes", "cases", "people", "meta"]) this.db.exec(`DELETE FROM ${t}`);
+    });
   }
 
   private seed(raw: RawFixture) {

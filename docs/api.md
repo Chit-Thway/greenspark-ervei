@@ -23,7 +23,7 @@ Needs Node.js 22 or newer. SQLite uses Node's built-in `node:sqlite`, so there i
 
 - On first start the database is seeded from the fixture: people, cases, evidence, recommendations, model results and notes. Workflow changes (assignment, status, review, notes, new cases) are written to SQLite and survive restarts.
 - The fixture file is never written to. A test checks its hash before and after.
-- `npm run reset` removes the database file (and its `-wal`/`-shm` files). The next start reseeds the original 100 cases.
+- `npm run reset` removes the database file (and its `-wal`/`-shm` files). The next start reseeds the original 200 cases.
 - Evidence, circumstances, recommendations and model assessments are read-only seed data. Staff workflow data is stored in separate columns and tables, as the plan requires.
 
 ## Identity (demo only)

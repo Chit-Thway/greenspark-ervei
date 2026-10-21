@@ -27,17 +27,17 @@ describe("persistence and reset", () => {
 
       h = await start(db);
       const cases = await allCases(h);
-      expect(cases).toHaveLength(101);
+      expect(cases).toHaveLength(201);
       expect(cases.find((x) => x.id === c.id)!.workflow.assignedToUserId).toBe("staff-alex");
       expect(cases.find((x) => x.id === a.id)!.workflow.notes.at(-1).text).toBe("Persisted note");
       await h.stop();
 
-      // The reset command removes the database; the next start reseeds the original 100 cases.
+      // The reset command removes the database; the next start reseeds the original 200 cases.
       execFileSync("npx", ["tsx", "src/reset.ts"], { cwd: fileURLToPath(new URL("..", import.meta.url)), env: { ...process.env, GREENSPARK_DB: db }, stdio: "pipe" });
       expect(existsSync(db)).toBe(false);
       h = await start(db);
       const fresh = await allCases(h);
-      expect(fresh).toHaveLength(100);
+      expect(fresh).toHaveLength(200);
       expect(fresh.find((x) => x.id === c.id)!.workflow.assignedToUserId).toBe(c.workflow.assignedToUserId);
       await h.stop();
       expect(hash()).toBe(before);
@@ -85,8 +85,8 @@ describe("databases seeded before people had accounts", () => {
 
       h = await start(db);
       const people = h.store.allPeople();
-      expect(people).toHaveLength(101);
-      expect(people.filter((p) => p.account)).toHaveLength(100);
+      expect(people).toHaveLength(201);
+      expect(people.filter((p) => p.account)).toHaveLength(200);
       expect(people.find((p) => p.displayName === "Queue Person")!.account).toBeUndefined();
       await h.stop();
     } finally {
@@ -104,7 +104,7 @@ describe("databases from before every case had a worker", () => {
       await h.call("staff-alex", "POST", "/api/cases", { displayName: "Queue Person", suburb: "Perth" });
       const before = await allCases(h);
       // Simulate an older database where some cases had no worker.
-      h.store.db.prepare("UPDATE cases SET assigned_to = NULL WHERE id IN ('GS-2001', 'GS-2009', 'GS-2101')").run();
+      h.store.db.prepare("UPDATE cases SET assigned_to = NULL WHERE id IN ('GS-2001', 'GS-2009', 'GS-2201')").run();
       await h.stop();
 
       h = await start(db);
@@ -116,7 +116,7 @@ describe("databases from before every case had a worker", () => {
         expect(now.workflow.assignedToUserId).toBe(was.workflow.assignedToUserId);
         expect(now.version).toBe(was.version + 1);
       }
-      expect(after.find((c) => c.id === "GS-2101")!.workflow.assignedToUserId).toMatch(/^staff-/);
+      expect(after.find((c) => c.id === "GS-2201")!.workflow.assignedToUserId).toMatch(/^staff-/);
       await h.stop();
     } finally {
       rmSync(dir, { recursive: true, force: true });
@@ -137,8 +137,32 @@ describe("databases from before every person had an account number", () => {
       await h.stop();
 
       h = await start(db);
-      expect(h.store.getPerson(id)!.accountNumber).toBe("DEMO-700101");
+      expect(h.store.getPerson(id)!.accountNumber).toBe("DEMO-700201");
       expect(h.store.allPeople().every((p) => p.accountNumber)).toBe(true);
+      await h.stop();
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("databases seeded from an older dataset", () => {
+  it("are emptied and reseeded from the new fixture on start, workflow changes included", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "gs-reseed-"));
+    const db = join(dir, "reseed.sqlite");
+    try {
+      let h = await start(db);
+      const c = (await allCases(h))[0]!;
+      await h.call("staff-manager", "POST", `/api/cases/${c.id}/notes`, { text: "Note on the old data", expectedVersion: c.version });
+      await h.call("staff-alex", "POST", "/api/cases", { displayName: "Old Queue Person", suburb: "Perth" });
+      h.store.db.prepare("UPDATE meta SET value = 'an-older-dataset' WHERE key = 'seeded_dataset'").run();
+      await h.stop();
+
+      h = await start(db);
+      const cases = await allCases(h);
+      expect(cases).toHaveLength(200);
+      expect(cases.find((x) => x.id === c.id)!.workflow.notes.some((n: { text: string }) => n.text === "Note on the old data")).toBe(false);
+      expect(h.store.allPeople().some((p) => p.displayName === "Old Queue Person")).toBe(false);
       await h.stop();
     } finally {
       rmSync(dir, { recursive: true, force: true });

@@ -8,8 +8,8 @@ const me = "staff-alex";
 const q = (over: Partial<typeof DEFAULT_QUERY>) => ({ ...DEFAULT_QUERY, ...over });
 
 describe("queue filters", () => {
-  it("returns all 100 cases by default", () => {
-    expect(applyFilters(data, DEFAULT_QUERY, me)).toHaveLength(100);
+  it("returns all 200 cases by default", () => {
+    expect(applyFilters(data, DEFAULT_QUERY, me)).toHaveLength(200);
   });
 
   it("ORs within circumstances and ANDs across groups", () => {
@@ -24,7 +24,7 @@ describe("queue filters", () => {
 
   it("excludes unscored cases when a minimum score is set instead of treating them as zero", () => {
     const res = applyFilters(data, q({ minPriorityScore: 1 }), me);
-    expect(res).toHaveLength(90);
+    expect(res).toHaveLength(180);
     expect(res.every((c) => c.modelAssessment.priority !== null)).toBe(true);
   });
 
@@ -56,24 +56,24 @@ describe("sorting, paging and counters", () => {
   it("sorts by priority with unscored cases last", () => {
     const sorted = sortCases(data.cases, data.people, "priority_desc");
     const scores = sorted.map((c) => c.modelAssessment.priority?.score ?? null);
-    expect(scores.slice(0, 90).every((s) => s !== null)).toBe(true);
-    expect(scores.slice(90).every((s) => s === null)).toBe(true);
+    expect(scores.slice(0, 180).every((s) => s !== null)).toBe(true);
+    expect(scores.slice(180).every((s) => s === null)).toBe(true);
     const asc = sortCases(data.cases, data.people, "priority_asc").map((c) => c.modelAssessment.priority?.score ?? null);
-    expect(asc.slice(90).every((s) => s === null)).toBe(true);
+    expect(asc.slice(180).every((s) => s === null)).toBe(true);
   });
 
   it("shows 50 cases per page by default", () => {
     expect(DEFAULT_QUERY.pageSize).toBe(50);
     const p = paginate(data.cases, 1, DEFAULT_QUERY.pageSize);
-    expect([p.items.length, p.pageCount, p.from, p.to]).toEqual([50, 2, 1, 50]);
+    expect([p.items.length, p.pageCount, p.from, p.to]).toEqual([50, 4, 1, 50]);
   });
 
   it("paginates in other sizes and clamps the page", () => {
     const p = paginate(data.cases, 99, 8);
-    expect(p.pageCount).toBe(13);
-    expect(p.page).toBe(13);
-    expect(p.from).toBe(97);
-    expect(p.to).toBe(100);
+    expect(p.pageCount).toBe(25);
+    expect(p.page).toBe(25);
+    expect(p.from).toBe(193);
+    expect(p.to).toBe(200);
     expect(paginate([], 1, 8)).toMatchObject({ total: 0, from: 0, to: 0, pageCount: 1 });
   });
 
@@ -86,7 +86,7 @@ describe("sorting, paging and counters", () => {
 
   it("facet counts follow the other active filters", () => {
     const f = facetCounts(data, q({ status: "resolved" }), me);
-    expect(f.view.all).toBe(10);
+    expect(f.view.all).toBe(20);
   });
 
   it("counts active filters for the reset control", () => {

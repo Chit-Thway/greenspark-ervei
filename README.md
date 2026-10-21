@@ -41,7 +41,7 @@ npm run build
 npm run check:fixture
 ```
 
-Use the **Demo view** menu in the header to switch between the manager and support workers. It is a labelled stand-in, not sign-in. Changes are saved in the local SQLite file and persist across restarts; run `npm run reset` to restore the original 100 cases. The first `npm run test:e2e` needs a Chromium browser: run `npx playwright install chromium`, or set `PW_CHROMIUM_PATH`.
+Use the **Demo view** menu in the header to switch between the manager and support workers. It is a labelled stand-in, not sign-in. Changes are saved in the local SQLite file and persist across restarts; run `npm run reset` to restore the original 200 cases. The first `npm run test:e2e` needs a Chromium browser: run `npx playwright install chromium`, or set `PW_CHROMIUM_PATH`.
 
 ## Start from milestone 1
 

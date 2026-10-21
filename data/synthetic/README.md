@@ -1,6 +1,6 @@
 # Synthetic case-queue development fixture
 
-`case-queue.v1.json` contains 100 fictional people and 100 queue cases for the approved GreenSpark interface.
+`case-queue.v1.json` contains 200 fictional people and 200 queue cases for the approved GreenSpark interface.
 
 This is **synthetic demo/test data**, deliberately requested for website development. It is not real customer data, an extract of source respondents, a trained prediction output or statistically representative training data. The old root-level `customers.json` was removed because it was confusing; this versioned fixture is explicitly labelled and kept separately.
 
@@ -21,6 +21,6 @@ The seed covers all four case statuses; every case is assigned to one of the fou
 
 Each person also has invented contact details: gender, preferred name, address (line 1, optional line 2, postcode), mobile, phone and email. They use phone ranges reserved for fiction and `example.com` emails so they cannot reach a real person, and the generator's check enforces that. See the "Customer contact details" section of [the contract](../../docs/data-contract.md).
 
-Each person also has an invented electricity account: bills, payments, usage, plan (postpaid or prepaid), payment method, concession, third-party authority, date of birth and service flags. Each scenario's account is shaped so specific account signals from the flowchart fire. See the "Utility accounts and account signals" section of [the contract](../../docs/data-contract.md).
+Each person also has a utility account from a synthetic WA electricity dataset (5,150 customers): bills, payments, monthly usage, plan, payment method, concession, hardship and payment plans, HUGS grants, contacts with transcripts, collection notices, disconnections, outages and prepay data. `utility-accounts.v1.json` holds the 200 chosen accounts, 20 per testing scenario, with every date shifted forward so the data ends on the as-of date. It is written by `scripts/import-utility-dataset.mts` from the source files, which are not kept here. See the "Utility accounts and account signals" section of [the contract](../../docs/data-contract.md).
 
 An existing local database picks up new fields for the seeded people when the server starts, so no reset is needed.
