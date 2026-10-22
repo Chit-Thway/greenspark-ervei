@@ -318,4 +318,11 @@ ol.suggest-list.solutions { list-style: none; padding-left: 0; }
   .bts-btn .sub-inline { display: none; }
   .topbar .mainnav + .whoami { margin-left: 0; width: 100%; }
   .whoami select { flex: 1; min-width: 0; }
-}
+}.timeline { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border); }
+.tl-days { list-style: none; margin: 6px 0 0; padding: 0 0 0 14px; border-left: 2px solid var(--border); display: grid; gap: 12px; }
+.tl-day { position: relative; }
+.tl-day::before { content: ""; position: absolute; left: -21px; top: 4px; width: 10px; height: 10px; border-radius: 50%; background: var(--brand); border: 2px solid var(--surface); }
+.tl-date { font-weight: 600; font-size: 13px; }
+.tl-steps { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 4px; }
+.tl-steps li { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; }
+.tl-method { color: var(--muted); white-space: nowrap; }

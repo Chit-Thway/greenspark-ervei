@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { CaseStatus, QueueCase, ReviewStatus, StaffUser } from "../domain/types";
-import type { ApiClient, CaseItem, Catalog, ContactMethod, PlanKind, SupportPlan } from "../data/api";
+import type { ApiClient, CaseItem, Catalog, ContactMethod, PlanKind, PlanStep, SupportPlan } from "../data/api";
 import { CaseFlowModal } from "../admin/CaseFlowModal";
 import { describeFollowUp, formatDateTime, PERIOD_TEXT, readableDates, STATUS_LABELS } from "../domain/format";
 import { isResolved } from "../domain/query";
@@ -277,6 +277,7 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
               );
             })}
           </ol>
+          {aiOrder?.some((o) => o.due) ? <SolutionTimeline steps={aiOrder} names={(id) => data.recommendations.find((x) => x.id === id)?.label ?? id} interpreter={!!supportAi?.plan?.interpreter} /> : null}
         </section>
       ) : null}
 
@@ -440,6 +441,32 @@ function AiPlanView({ kind, state }: { kind: PlanKind; state: AiState }) {
       <p className="block-label">{AI_TITLE[kind]} <span className="sim">AI draft · check before acting</span></p>
       {state.loading ? <p className="muted">{AI_LOADING[kind]}</p> : state.error ? <p className="muted">{state.error}</p> : <p>{state.plan!.text}</p>}
       {state.plan ? <p className="hint">Drafted by {state.plan.model} from the {AI_SOURCE[kind]}. No name or contact details were sent.</p> : null}
+    </div>
+  );
+}
+
+/** The AI order's steps by date: each day once, with what to offer and how to get in touch. */
+function SolutionTimeline({ steps, names, interpreter }: { steps: PlanStep[]; names: (id: string) => string; interpreter: boolean }) {
+  const dated = steps.map((s, rank) => ({ ...s, rank })).filter((s) => s.due).sort((a, b) => a.due!.localeCompare(b.due!) || a.rank - b.rank);
+  const days = [...new Set(dated.map((s) => s.due!))];
+  return (
+    <div className="timeline">
+      <p className="block-label">Timeline <span className="sim">AI draft · check before acting</span></p>
+      <ol className="tl-days">
+        {days.map((day) => (
+          <li key={day} className="tl-day">
+            <span className="tl-date">{dueDate(day)}</span>
+            <ul className="tl-steps">
+              {dated.filter((s) => s.due === day).map((s) => (
+                <li key={s.id}>
+                  <span className="tl-name">{names(s.id)}</span>
+                  {s.method ? <span className="tl-method">{METHOD_LABEL[s.method]}{interpreter && s.method === "phone" ? " with an interpreter" : ""}</span> : null}
+                </li>
+              ))}
+            </ul>
+          </li>
+        ))}
+      </ol>
     </div>
   );
 }
