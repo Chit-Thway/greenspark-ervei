@@ -66,7 +66,7 @@ export function PriorityModelPage() {
       <section className="case-card" aria-labelledby="pm-weights">
         <h2 id="pm-weights">Points</h2>
         <div className="table-scroll">
-          <table className="mini-table">
+          <table className="mini-table pm-table">
             <thead><tr><th scope="col">For each</th><th scope="col">Points</th></tr></thead>
             <tbody>
               {TYPES.map(([id, label, pts]) => <tr key={id}><th scope="row">{label}</th><td className="num">{pts}</td></tr>)}
@@ -82,7 +82,7 @@ export function PriorityModelPage() {
       <section className="case-card" aria-labelledby="pm-labels">
         <h2 id="pm-labels">Labels</h2>
         <div className="table-scroll">
-          <table className="mini-table">
+          <table className="mini-table pm-table">
             <thead><tr><th scope="col">Label</th><th scope="col">Score</th><th scope="col">Meaning</th></tr></thead>
             <tbody>
               {LABELS.map(([label, range, meaning]) => (
@@ -96,7 +96,7 @@ export function PriorityModelPage() {
       <section className="case-card" aria-labelledby="pm-example">
         <h2 id="pm-example">Worked example</h2>
         <div className="table-scroll">
-          <table className="mini-table">
+          <table className="mini-table pm-table">
             <tbody>
               {EXAMPLE.parts.map((p) => <tr key={p.label}><th scope="row">{p.label}</th><td className="num">+{p.points}</td></tr>)}
               <tr><th scope="row">{EXAMPLE.strong} strong signals</th><td className="num">+{EXAMPLE.strong * w.strongSignal}</td></tr>

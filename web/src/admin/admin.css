@@ -229,3 +229,8 @@
   .cf-body .board-scroll { max-height: 60vh; }
 }
 .cf-acct { font-size: 15px; font-weight: 400; color: var(--muted); }
+
+/* Priority model page: tables only as wide as their content, plain row labels */
+.mini-table.pm-table { width: auto; }
+.mini-table.pm-table th, .mini-table.pm-table td { padding-right: 32px; }
+.mini-table.pm-table tbody th { font-weight: 400; }
