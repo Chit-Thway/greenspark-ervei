@@ -303,7 +303,8 @@ textarea { resize: vertical; }
 .order-seg button[aria-pressed="true"] { background: var(--brand); color: var(--on-brand); }
 ol.suggest-list.solutions { list-style: none; padding-left: 0; }
 .rank-num { display: inline-grid; place-items: center; min-width: 20px; height: 20px; margin-right: 8px; border-radius: 10px; background: var(--brand); color: var(--on-brand); font-size: 12px; vertical-align: 2px; }
-.rank-why { margin: 2px 0 4px; font-size: 13px; color: var(--brand-hover); }
+.rank-why { margin: 2px 0 0; font-size: 13px; color: var(--brand-hover); }
+.rank-when { margin: 2px 0 4px; font-size: 13px; color: var(--fg); }
 
 /* Mobile header: logo and BTS on one row, Demo view full width below.
    Kept here, after the base .topbar rule, so it wins over it. */

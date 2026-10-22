@@ -12,7 +12,7 @@ import { MAX_BULK_ITEMS, WorkflowService, type MutationResult } from "./service"
 import type { Store } from "./store";
 import type { Clock } from "./clock";
 import { FlowFile } from "./flow";
-import { draftPlan, PLAN_KINDS, planFacts, type PlanKind, type SupportPlan } from "./plan";
+import { draftPlan, PLAN_KINDS, perthToday, planFacts, type ContactRules, type PlanKind, type SupportPlan } from "./plan";
 import { FlowError, evaluateCase, flowCatalog, parseOp, type FlowDoc } from "@greenspark/shared";
 import { SyntheticModelAdapter, withAssessments, type ModelAdapter } from "./adapters";
 
@@ -262,9 +262,15 @@ export function createApp(store: Store, options: AppOptions = {}) {
     if (!plan) {
       const c = await enrichOne(raw);
       const cat = doc ? catalogOf(doc) : store.catalog;
-      const facts = planFacts(kind, c, store.getPerson(c.personId), cat, store.catalog.asOf);
+      const person = store.getPerson(c.personId);
+      const facts = planFacts(kind, c, person, cat, store.catalog.asOf);
+      const acct = person?.account;
+      const contact: ContactRules | undefined = acct ? {
+        preferred: acct.contactPreferences.preferredChannel, sms: acct.contactPreferences.smsOptIn, email: acct.contactPreferences.emailOptIn,
+        doNotCall: acct.contactPreferences.doNotCall, interpreter: acct.interpreterRequired,
+      } : undefined;
       if (!facts) throw new ApiError("not_found", "Nothing to summarise for this case.");
-      plan = draftPlan(kind, facts, options.gemini?.apiKey ?? null, options.gemini?.models[kind] ?? "gemini-flash-lite-latest", c.recommendations.map((r) => r.recommendationId));
+      plan = draftPlan(kind, facts, options.gemini?.apiKey ?? null, options.gemini?.models[kind] ?? "gemini-flash-lite-latest", c.recommendations.map((r) => r.recommendationId), contact, perthToday(clock()));
       byDoc.set(key, plan);
       plan.catch(() => byDoc.delete(key)); // failures are retried on the next load
     }

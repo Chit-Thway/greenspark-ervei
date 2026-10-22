@@ -6,8 +6,45 @@
 import { detectAccountSignals, type CircumstanceDefinition, type Person, type QueueCase, type RecommendationDefinition } from "@greenspark/shared";
 import { ApiError } from "./errors";
 
-/** `order` (support only): every solution id, most important first, each with a short reason. */
-export interface SupportPlan { text: string; model: string; generatedAt: string; order?: { id: string; reason: string }[] }
+/**
+ * `order` (support only): every solution id, most important first, each with a short reason, the date to act by
+ * (worked out here from Gemini's number of working days) and how to contact the customer about it.
+ */
+export interface PlanStep { id: string; reason: string; due: string; method: Method }
+export interface SupportPlan { text: string; model: string; generatedAt: string; order?: PlanStep[]; interpreter?: boolean }
+
+export type Method = "phone" | "sms" | "email" | "letter";
+const METHODS: Method[] = ["phone", "sms", "email", "letter"];
+
+/** What the customer's contact settings allow. */
+export interface ContactRules { preferred: string; sms: boolean; email: boolean; doNotCall: boolean; interpreter: boolean }
+const OPEN: ContactRules = { preferred: "phone", sms: true, email: true, doNotCall: false, interpreter: false };
+
+export const allowedMethods = (r: ContactRules): Method[] =>
+  METHODS.filter((m) => (m === "phone" ? !r.doNotCall : m === "sms" ? r.sms : m === "email" ? r.email : true));
+
+/** Gemini's method if the settings allow it; otherwise the preferred channel, or a letter. */
+export function checkMethod(m: string, r: ContactRules): Method {
+  const allowed = allowedMethods(r);
+  if (allowed.includes(m as Method)) return m as Method;
+  const preferred = (r.preferred === "post" ? "letter" : r.preferred) as Method;
+  return allowed.includes(preferred) ? preferred : "letter";
+}
+
+/** Today's date in Perth, where the customers are. */
+export const perthToday = (now: Date) => new Intl.DateTimeFormat("en-CA", { timeZone: "Australia/Perth" }).format(now);
+
+/** The date `n` working days after `today` (0 is today, or the next weekday if today is a weekend). */
+export function addWorkingDays(today: string, n: number): string {
+  const d = new Date(`${today}T00:00:00Z`);
+  const weekend = () => d.getUTCDay() === 0 || d.getUTCDay() === 6;
+  while (weekend()) d.setUTCDate(d.getUTCDate() + 1);
+  for (let left = Math.max(0, Math.min(60, Math.round(n))); left > 0;) {
+    d.setUTCDate(d.getUTCDate() + 1);
+    if (!weekend()) left--;
+  }
+  return d.toISOString().slice(0, 10);
+}
 
 interface Catalog { circumstances: CircumstanceDefinition[]; recommendations: RecommendationDefinition[]; supportAreas: { id: string; label: string }[] }
 
@@ -27,7 +64,10 @@ const TASK: Record<PlanKind, string> = {
     "Also order EVERY solution id in the list by priority and impact for this customer (stopping harm such as being without power or safety risks first, then the biggest, quickest relief). " +
     "The order must match the paragraph: anything the paragraph says to do first or the same day must be near the top. " +
     "Give each a reason of at most 12 words, about THIS customer's circumstances and signals only; never mention eligibility groups or situations from a solution's key facts that the case does not show. " +
-    "Answer as JSON: {\"summary\": string, \"order\": [{\"id\": string, \"reason\": string}]}.",
+    "For each solution also give dueInWorkingDays (0 = today; anything urgent, safety-related or about being without power is 0) and a sensible sequence " +
+    "(for example a grant that needs other options tried first comes after them), and the method to contact the customer about it, " +
+    "chosen only from the allowed methods in the facts, preferring their preferred channel unless another suits the step better. " +
+    "Answer as JSON: {\"summary\": string, \"order\": [{\"id\": string, \"reason\": string, \"dueInWorkingDays\": number, \"method\": string}]}.",
   signals: "In 40 to 70 words: summarise what these account signals show together about the customer's situation and which stand out. " +
     "Only describe the signals: give no suggestions, advice, next steps or questions to ask, and do not address the worker.",
 };
@@ -66,7 +106,7 @@ function supportFacts(c: QueueCase, person: Person | null, cat: Catalog): string
   const a = person?.account;
   if (a) {
     const cp = a.contactPreferences;
-    lines.push(`Contact: prefers ${cp.preferredChannel}${cp.doNotCall ? ", do not call" : ""}${a.interpreterRequired ? ", interpreter required" : ""}${a.lifeSupport ? ", life support registered" : ""}.`);
+    lines.push(`Contact: prefers ${cp.preferredChannel}${cp.doNotCall ? ", do not call" : ""}, SMS ${cp.smsOptIn ? "on" : "off"}, email ${cp.emailOptIn ? "on" : "off"}${a.interpreterRequired ? ", interpreter required" : ""}${a.lifeSupport ? ", life support registered" : ""}.`);
   }
   return lines.join("\n");
 }
@@ -75,7 +115,14 @@ const ORDER_SCHEMA = {
   type: "OBJECT",
   properties: {
     summary: { type: "STRING" },
-    order: { type: "ARRAY", items: { type: "OBJECT", properties: { id: { type: "STRING" }, reason: { type: "STRING" } }, required: ["id", "reason"] } },
+    order: {
+      type: "ARRAY",
+      items: {
+        type: "OBJECT",
+        properties: { id: { type: "STRING" }, reason: { type: "STRING" }, dueInWorkingDays: { type: "INTEGER" }, method: { type: "STRING", enum: METHODS } },
+        required: ["id", "reason", "dueInWorkingDays", "method"],
+      },
+    },
   },
   required: ["summary", "order"],
 };
@@ -83,15 +130,19 @@ const ORDER_SCHEMA = {
 /**
  * Calls the Gemini API. Throws an ApiError the page can show when the key is missing or the call fails.
  * For the support plan, `ids` are the case's solutions: the order is kept only if it has exactly those, each once.
+ * Dates count from `today` (Perth), and each method is checked against the customer's contact settings.
  */
-export async function draftPlan(kind: PlanKind, facts: string, apiKey: string | null, model: string, ids: string[] = []): Promise<SupportPlan> {
+export async function draftPlan(
+  kind: PlanKind, facts: string, apiKey: string | null, model: string,
+  ids: string[] = [], contact: ContactRules = OPEN, today = perthToday(new Date()),
+): Promise<SupportPlan> {
   if (!apiKey) throw new ApiError("unavailable", "AI plans are switched off: no Gemini API key is set on the server.");
   const call = () => fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
       method: "POST",
       headers: { "content-type": "application/json", "x-goog-api-key": apiKey },
       body: JSON.stringify({
         systemInstruction: { parts: [{ text: `${COMMON} ${TASK[kind]}` }] },
-        contents: [{ role: "user", parts: [{ text: facts }] }],
+        contents: [{ role: "user", parts: [{ text: kind === "support" ? `${facts}\nAllowed methods: ${allowedMethods(contact).join(", ")}.` : facts }] }],
         generationConfig: { temperature: 0.3, ...(kind === "support" ? { responseMimeType: "application/json", responseSchema: ORDER_SCHEMA } : {}) },
       }),
       signal: AbortSignal.timeout(30_000),
@@ -111,10 +162,13 @@ export async function draftPlan(kind: PlanKind, facts: string, apiKey: string | 
   if (!text) throw new ApiError("unavailable", "Gemini returned no text.");
   const generatedAt = new Date().toISOString();
   if (kind !== "support") return { text, model, generatedAt };
-  let parsed: { summary?: unknown; order?: { id?: unknown; reason?: unknown }[] };
+  let parsed: { summary?: unknown; order?: { id?: unknown; reason?: unknown; dueInWorkingDays?: unknown; method?: unknown }[] };
   try { parsed = JSON.parse(text); } catch { throw new ApiError("unavailable", "Gemini's answer could not be read."); }
   if (typeof parsed.summary !== "string" || !parsed.summary.trim()) throw new ApiError("unavailable", "Gemini returned no summary.");
-  const order = (Array.isArray(parsed.order) ? parsed.order : []).map((o) => ({ id: String(o.id ?? ""), reason: String(o.reason ?? "").trim() }));
+  const order: PlanStep[] = (Array.isArray(parsed.order) ? parsed.order : []).map((o) => ({
+    id: String(o.id ?? ""), reason: String(o.reason ?? "").trim(),
+    due: addWorkingDays(today, Number(o.dueInWorkingDays) || 0), method: checkMethod(String(o.method ?? ""), contact),
+  }));
   const valid = order.length === ids.length && new Set(order.map((o) => o.id)).size === ids.length && order.every((o) => ids.includes(o.id));
-  return { text: parsed.summary.trim(), model, generatedAt, ...(valid ? { order } : {}) };
+  return { text: parsed.summary.trim(), model, generatedAt, interpreter: contact.interpreter, ...(valid ? { order } : {}) };
 }

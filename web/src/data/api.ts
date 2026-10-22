@@ -67,7 +67,9 @@ export interface ApiClient {
 }
 
 export type PlanKind = "support" | "signals";
-export interface SupportPlan { text: string; model: string; generatedAt: string; order?: { id: string; reason: string }[] }
+export type ContactMethod = "phone" | "sms" | "email" | "letter";
+export interface PlanStep { id: string; reason: string; due?: string; method?: ContactMethod }
+export interface SupportPlan { text: string; model: string; generatedAt: string; order?: PlanStep[]; interpreter?: boolean }
 
 export interface VersionedId { caseId: string; expectedVersion: number }
 

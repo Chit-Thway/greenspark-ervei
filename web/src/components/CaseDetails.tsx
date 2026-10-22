@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { CaseStatus, QueueCase, ReviewStatus, StaffUser } from "../domain/types";
-import type { ApiClient, CaseItem, Catalog, PlanKind, SupportPlan } from "../data/api";
+import type { ApiClient, CaseItem, Catalog, ContactMethod, PlanKind, SupportPlan } from "../data/api";
 import { CaseFlowModal } from "../admin/CaseFlowModal";
 import { describeFollowUp, formatDateTime, PERIOD_TEXT, readableDates, STATUS_LABELS } from "../domain/format";
 import { isResolved } from "../domain/query";
@@ -252,13 +252,19 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
           ) : null}
           <ol className="suggest-list solutions">
             {orderedRecs.map((r, rank) => {
-              const why = !standardOrder ? aiOrder?.find((o) => o.id === r.recommendationId)?.reason : undefined;
+              const step = !standardOrder ? aiOrder?.find((o) => o.id === r.recommendationId) : undefined;
+              const why = step?.reason;
               const d = data.recommendations.find((x) => x.id === r.recommendationId);
               const forNames = r.circumstanceIds.map((id) => data.circumstances.find((x) => x.id === id)?.label ?? id);
               return (
                 <li key={r.recommendationId} className="solution">
                   <strong>{why ? <span className="rank-num">{rank + 1}</span> : null}{d?.label ?? r.recommendationId}</strong>
                   {why ? <p className="rank-why">{why}</p> : null}
+                  {step?.due ? (
+                    <p className="rank-when">
+                      By <strong>{dueDate(step.due)}</strong>{step.method ? <> · {METHOD_LABEL[step.method]}{supportAi?.plan?.interpreter && step.method === "phone" ? " with an interpreter" : ""}</> : null}
+                    </p>
+                  ) : null}
                   <dl className="solution-facts">
                     {d?.howToAccess ? <div><dt>What to do</dt><dd>{d.howToAccess}</dd></div> : null}
                     {d?.provider ? <div><dt>Who</dt><dd>{d.provider}</dd></div> : null}
@@ -402,6 +408,10 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
 
 /** The Gemini-drafted plan, fetched when the case opens and again whenever the case changes. */
 const AI_TITLE: Record<PlanKind, string> = { support: "Suggested plan", signals: "What the signals say" };
+const METHOD_LABEL: Record<ContactMethod, string> = { phone: "Phone call", sms: "SMS", email: "Email", letter: "Letter" };
+const dueDate = (iso: string) => new Date(`${iso}T00:00:00Z`).toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
+
+const AI_LOADING: Record<PlanKind, string> = { support: "Drafting a support plan…", signals: "Summarising the signals…" };
 const AI_SOURCE: Record<PlanKind, string> = { support: "circumstances, signals and solutions below", signals: "account signals below" };
 
 type AiState = { plan?: SupportPlan; error?: string; loading: boolean };
@@ -428,7 +438,7 @@ function AiPlanView({ kind, state }: { kind: PlanKind; state: AiState }) {
   return (
     <div className="ai-plan" aria-live="polite">
       <p className="block-label">{AI_TITLE[kind]} <span className="sim">AI draft · check before acting</span></p>
-      {state.loading ? <p className="muted">Drafting a plan…</p> : state.error ? <p className="muted">{state.error}</p> : <p>{state.plan!.text}</p>}
+      {state.loading ? <p className="muted">{AI_LOADING[kind]}</p> : state.error ? <p className="muted">{state.error}</p> : <p>{state.plan!.text}</p>}
       {state.plan ? <p className="hint">Drafted by {state.plan.model} from the {AI_SOURCE[kind]}. No name or contact details were sent.</p> : null}
     </div>
   );
