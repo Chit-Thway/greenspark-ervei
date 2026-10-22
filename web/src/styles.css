@@ -300,3 +300,17 @@ ol.suggest-list.solutions:not(.ranked) { list-style: none; }
 ol.suggest-list.solutions.ranked { padding-left: 22px; }
 ol.suggest-list.solutions.ranked > li::marker { font-weight: 700; color: var(--brand); }
 .rank-why { margin: 2px 0 4px; font-size: 13px; color: var(--brand-hover); }
+
+/* Mobile header: logo and BTS on one row, Demo view full width below.
+   Kept here, after the base .topbar rule, so it wins over it. */
+@media (max-width: 640px) {
+  .topbar { gap: 12px; padding: 20px 16px 18px; min-height: 0; }
+  .topbar .brand strong { font-size: 16px; }
+  .topbar .brand-sub { font-size: 11px; }
+  .topbar .logo { width: 32px; height: 32px; }
+  .topbar .mainnav { margin-left: auto; }
+  .bts-btn { padding: 6px 10px; }
+  .bts-btn .sub-inline { display: none; }
+  .topbar .mainnav + .whoami { margin-left: 0; width: 100%; }
+  .whoami select { flex: 1; min-width: 0; }
+}

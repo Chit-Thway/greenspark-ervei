@@ -201,18 +201,7 @@
 .topbar .mainnav + .whoami { margin-left: 4px; }
 .bts-menu { left: auto; right: 0; }
 
-/* Mobile header: logo and BTS on one row, Demo view full width below */
-@media (max-width: 640px) {
-  .topbar { gap: 12px; padding: 16px 16px 14px; min-height: 0; }
-  .topbar .brand strong { font-size: 16px; }
-  .topbar .brand-sub { font-size: 11px; }
-  .topbar .logo { width: 32px; height: 32px; }
-  .topbar .mainnav { margin-left: auto; }
-  .bts-btn { padding: 6px 10px; }
-  .bts-btn .sub-inline { display: none; }
-  .topbar .mainnav + .whoami { margin-left: 0; width: 100%; }
-  .whoami select { flex: 1; min-width: 0; }
-}
+
 
 /* one case's path through the flowchart, in a full-page dialog */
 .case-flow-btn { width: 100%; justify-content: center; }
