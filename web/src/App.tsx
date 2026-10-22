@@ -7,9 +7,10 @@ import { PRIORITY_TEXT, STATUS_LABELS } from "./domain/format";
 import { FilterSidebar } from "./components/FilterSidebar";
 import { CaseTable } from "./components/CaseTable";
 import { CaseDetails } from "./components/CaseDetails";
-import { accountHref, DATA_SOURCES_PATH, FLOWCHART_PATH, PRIORITY_MODEL_PATH, isModifiedClick, useRoute, type Page } from "./route";
+import { accountHref, DATA_SOURCES_PATH, FLOWCHART_PATH, PRIORITY_MODEL_PATH, CASE_PAGE_PATH, isModifiedClick, useRoute, type Page } from "./route";
 import { DataSourcesPage } from "./components/DataSourcesPage";
 import { PriorityModelPage } from "./components/PriorityModelPage";
+import { CasePageGuide } from "./components/CasePageGuide";
 import { AdminPage } from "./admin/AdminPage";
 
 interface Notice {
@@ -397,6 +398,8 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; o
         <DataSourcesPage />
       ) : props.page === "priority" ? (
         <PriorityModelPage />
+      ) : props.page === "casepage" ? (
+        <CasePageGuide />
       ) : openAccount ? (
         <main id="queue" className="detail-main" tabIndex={-1}>
           <a
@@ -586,7 +589,7 @@ function BtsMenu(props: { page: Page; navigate: (to: string) => void }) {
     document.addEventListener("keydown", close);
     return () => { document.removeEventListener("mousedown", close); document.removeEventListener("keydown", close); };
   }, [open]);
-  const items = [[FLOWCHART_PATH, "Flowchart", "admin"], [DATA_SOURCES_PATH, "Data sources", "data"], [PRIORITY_MODEL_PATH, "Priority model", "priority"]] as const;
+  const items = [[FLOWCHART_PATH, "Flowchart", "admin"], [DATA_SOURCES_PATH, "Data sources", "data"], [PRIORITY_MODEL_PATH, "Priority model", "priority"], [CASE_PAGE_PATH, "Case page", "casepage"]] as const;
   const inside = items.some(([, , page]) => page === props.page);
   return (
     <div className="bts" ref={ref}>

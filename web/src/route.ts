@@ -15,17 +15,19 @@ export function isModifiedClick(e: { metaKey: boolean; ctrlKey: boolean; shiftKe
   return e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0;
 }
 
-export type Page = "queue" | "case" | "admin" | "data" | "priority";
+export type Page = "queue" | "case" | "admin" | "data" | "priority" | "casepage";
 
 /** Behind-the-scenes pages, under the BTS menu. */
 export const FLOWCHART_PATH = "/bts/flowchart";
 export const DATA_SOURCES_PATH = "/bts/data-sources";
 export const PRIORITY_MODEL_PATH = "/bts/priority-model";
+export const CASE_PAGE_PATH = "/bts/case-page";
 
 export function pageFromPath(path: string): Page {
   if (/^\/(bts\/flowchart|flowchart|admin)\/?$/.test(path)) return "admin"; // the Flowchart page; old /flowchart and /admin links still work
   if (/^\/bts\/data-sources\/?$/.test(path)) return "data";
   if (/^\/bts\/priority-model\/?$/.test(path)) return "priority";
+  if (/^\/bts\/case-page\/?$/.test(path)) return "casepage";
   return accountFromPath(path) ? "case" : "queue";
 }
 
