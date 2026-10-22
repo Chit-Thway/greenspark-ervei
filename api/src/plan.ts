@@ -66,7 +66,7 @@ const TASK: Record<PlanKind, string> = {
     "Give each a reason of at most 12 words, about THIS customer's circumstances and signals only; never mention eligibility groups or situations from a solution's key facts that the case does not show. " +
     "For each solution also give dueInWorkingDays (0 = today; anything urgent, safety-related or about being without power is 0) and a sensible sequence " +
     "(for example a grant that needs other options tried first comes after them), and the method to contact the customer about it, " +
-    "chosen only from the allowed methods in the facts, preferring their preferred channel unless another suits the step better. " +
+    "chosen only from the allowed methods in the facts, preferring their preferred channel unless another suits the step better; use phone for anything due today when phone is allowed. " +
     "Answer as JSON: {\"summary\": string, \"order\": [{\"id\": string, \"reason\": string, \"dueInWorkingDays\": number, \"method\": string}]}.",
   signals: "In 40 to 70 words: summarise what these account signals show together about the customer's situation and which stand out. " +
     "Only describe the signals: give no suggestions, advice, next steps or questions to ask, and do not address the worker.",
@@ -167,7 +167,9 @@ export async function draftPlan(
   if (typeof parsed.summary !== "string" || !parsed.summary.trim()) throw new ApiError("unavailable", "Gemini returned no summary.");
   const order: PlanStep[] = (Array.isArray(parsed.order) ? parsed.order : []).map((o) => ({
     id: String(o.id ?? ""), reason: String(o.reason ?? "").trim(),
-    due: addWorkingDays(today, Number(o.dueInWorkingDays) || 0), method: checkMethod(String(o.method ?? ""), contact),
+    due: addWorkingDays(today, Number(o.dueInWorkingDays) || 0),
+    // Same-day (urgent) steps are a phone call whenever calling is allowed, whatever the preferred channel.
+    method: (Number(o.dueInWorkingDays) || 0) <= 0 && !contact.doNotCall ? "phone" : checkMethod(String(o.method ?? ""), contact),
   }));
   const valid = order.length === ids.length && new Set(order.map((o) => o.id)).size === ids.length && order.every((o) => ids.includes(o.id));
   return { text: parsed.summary.trim(), model, generatedAt, interpreter: contact.interpreter, ...(valid ? { order } : {}) };
