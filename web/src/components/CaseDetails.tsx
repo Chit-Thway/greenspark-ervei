@@ -63,8 +63,7 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
   // One call gives the Suggested plan and the order of Solutions to offer, so the two agree.
   const supportAi = useAiPlan("support", c.id, c.version, c.circumstances.length ? props.loadPlan : undefined);
   const aiOrder = fromFlow && supportAi?.plan?.order?.length ? supportAi.plan.order : undefined;
-  const [standardOrder, setStandardOrder] = useState(false);
-  const orderedRecs = aiOrder && !standardOrder
+  const orderedRecs = aiOrder
     ? aiOrder.map((o) => c.recommendations.find((r) => r.recommendationId === o.id)!).filter(Boolean)
     : c.recommendations;
   const fromSignals = a.provider === PRIORITY_PROVIDER;
@@ -241,18 +240,13 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
           <h3 id="ov-solutions">Solutions to offer <span className="sim">for staff review</span></h3>
           <p className="hint">What we can offer this customer, or refer them to. Check eligibility before offering.</p>
           {aiOrder ? (
-            <div className="order-toggle" role="group" aria-label="Order of solutions">
-              <span className="order-label">Order</span>
-              <span className="order-seg">
-                <button type="button" aria-pressed={!standardOrder} onClick={() => setStandardOrder(false)}>AI order</button>
-                <button type="button" aria-pressed={standardOrder} onClick={() => setStandardOrder(true)}>Standard</button>
-              </span>
-              <span className="hint">AI order matches the Suggested plan. Check before acting.</span>
+            <div className="order-toggle">
+              <span className="hint">Ordered by AI to match the Suggested plan. Check before acting.</span>
             </div>
           ) : null}
           <ol className="suggest-list solutions">
             {orderedRecs.map((r, rank) => {
-              const step = !standardOrder ? aiOrder?.find((o) => o.id === r.recommendationId) : undefined;
+              const step = aiOrder?.find((o) => o.id === r.recommendationId);
               const why = step?.reason;
               const d = data.recommendations.find((x) => x.id === r.recommendationId);
               const forNames = r.circumstanceIds.map((id) => data.circumstances.find((x) => x.id === id)?.label ?? id);
