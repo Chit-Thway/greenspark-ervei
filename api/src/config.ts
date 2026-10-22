@@ -19,8 +19,8 @@ export const BASIC_AUTH = process.env.GREENSPARK_BASIC_AUTH || null;
 
 // Google Gemini, for the AI support plan on each case. Unset key: the plan is switched off.
 export const GEMINI_API_KEY = process.env.GEMINI_API_KEY || null;
-// The plan needs the stronger model; the signals summary only describes, so the lighter, less busy one is enough.
+// Flash-Lite for both: it is far less often overloaded than Flash. Set GEMINI_MODEL to use another model for the plan.
 export const GEMINI_MODELS = {
-  support: process.env.GEMINI_MODEL || "gemini-flash-latest",
+  support: process.env.GEMINI_MODEL || "gemini-flash-lite-latest",
   signals: process.env.GEMINI_SIGNALS_MODEL || "gemini-flash-lite-latest",
 };
