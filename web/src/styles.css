@@ -294,11 +294,15 @@ textarea { resize: vertical; }
 .ai-plan { margin: 8px 0 12px; padding: 10px 12px; border: 1px solid var(--border); border-left: 3px solid var(--brand); border-radius: var(--r-control); background: var(--surface); }
 .ai-plan .block-label { margin-top: 0; }
 .ai-plan p { margin: 4px 0 0; }
-.order-toggle { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin: 4px 0 8px; }
-.order-toggle button { background: none; border: 0; padding: 0; color: var(--brand); font: inherit; font-size: 13px; cursor: pointer; text-decoration: underline; }
-ol.suggest-list.solutions:not(.ranked) { list-style: none; }
-ol.suggest-list.solutions.ranked { padding-left: 22px; }
-ol.suggest-list.solutions.ranked > li::marker { font-weight: 700; color: var(--brand); }
+.order-toggle { display: flex; align-items: center; gap: 6px 10px; flex-wrap: wrap; margin: 4px 0 8px; }
+.order-toggle .hint { flex-basis: 100%; margin: 0; }
+.order-label { font-size: 12px; color: var(--muted); }
+.order-seg { display: inline-flex; border: 1px solid var(--border); border-radius: var(--r-control); overflow: hidden; }
+.order-seg button { background: var(--surface); border: 0; padding: 4px 12px; font: inherit; font-size: 13px; color: var(--fg); cursor: pointer; }
+.order-seg button + button { border-left: 1px solid var(--border); }
+.order-seg button[aria-pressed="true"] { background: var(--brand); color: var(--on-brand); }
+ol.suggest-list.solutions { list-style: none; padding-left: 0; }
+.rank-num { display: inline-grid; place-items: center; min-width: 20px; height: 20px; margin-right: 8px; border-radius: 10px; background: var(--brand); color: var(--on-brand); font-size: 12px; vertical-align: 2px; }
 .rank-why { margin: 2px 0 4px; font-size: 13px; color: var(--brand-hover); }
 
 /* Mobile header: logo and BTS on one row, Demo view full width below.

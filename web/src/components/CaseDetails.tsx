@@ -242,18 +242,22 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
           <p className="hint">What we can offer this customer, or refer them to. Check eligibility before offering.</p>
           {aiOrder ? (
             <div className="order-toggle" role="group" aria-label="Order of solutions">
-              <span className="sim">Ordered by AI to match the Suggested plan · check before acting</span>
-              <button type="button" className="linkish" onClick={() => setStandardOrder(!standardOrder)}>{standardOrder ? "Show AI order" : "Show standard order"}</button>
+              <span className="order-label">Order</span>
+              <span className="order-seg">
+                <button type="button" aria-pressed={!standardOrder} onClick={() => setStandardOrder(false)}>AI order</button>
+                <button type="button" aria-pressed={standardOrder} onClick={() => setStandardOrder(true)}>Standard</button>
+              </span>
+              <span className="hint">AI order matches the Suggested plan. Check before acting.</span>
             </div>
           ) : null}
-          <ol className={`suggest-list solutions${aiOrder && !standardOrder ? " ranked" : ""}`}>
-            {orderedRecs.map((r) => {
+          <ol className="suggest-list solutions">
+            {orderedRecs.map((r, rank) => {
               const why = !standardOrder ? aiOrder?.find((o) => o.id === r.recommendationId)?.reason : undefined;
               const d = data.recommendations.find((x) => x.id === r.recommendationId);
               const forNames = r.circumstanceIds.map((id) => data.circumstances.find((x) => x.id === id)?.label ?? id);
               return (
                 <li key={r.recommendationId} className="solution">
-                  <strong>{d?.label ?? r.recommendationId}</strong>
+                  <strong>{why ? <span className="rank-num">{rank + 1}</span> : null}{d?.label ?? r.recommendationId}</strong>
                   {why ? <p className="rank-why">{why}</p> : null}
                   <dl className="solution-facts">
                     {d?.howToAccess ? <div><dt>What to do</dt><dd>{d.howToAccess}</dd></div> : null}
