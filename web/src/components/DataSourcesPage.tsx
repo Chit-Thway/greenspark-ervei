@@ -116,6 +116,44 @@ export function DataSourcesPage({ client, isManager }: { client: ApiClient; isMa
         </ul>
       </section>
 
+      <section className="case-card" aria-labelledby="ds-ai">
+        <h2 id="ds-ai">Written by AI</h2>
+        <p className="hint">Drafted by Claude or Gemini (whichever the server is set to) when a case is opened, from the case's facts only. Each is labelled "AI draft · check before acting" on the page.</p>
+        <div className="table-scroll">
+          <table className="mini-table ds-table">
+            <thead><tr><th scope="col">What</th><th scope="col">Where it appears</th><th scope="col">Made from</th></tr></thead>
+            <tbody>
+              <tr><th scope="row">Suggested plan</th><td>Case page, top of Support areas and why</td><td>Priority, flagged circumstances and their signals, solutions, contact settings</td></tr>
+              <tr><th scope="row">What the signals say</th><td>Case page, Account signals</td><td>The account and weather signals and their evidence</td></tr>
+              <tr><th scope="row">Order of Solutions to offer, and each reason</th><td>Case page, Solutions to offer</td><td>The same call as the Suggested plan</td></tr>
+              <tr><th scope="row">Date to act by and contact method</th><td>Solutions to offer and its Timeline</td><td>The AI picks working days and a method; the server turns them into dates and checks the method against the contact settings</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section className="case-card" aria-labelledby="ds-made">
+        <h2 id="ds-made">Not from the data files</h2>
+        <p className="hint">Not written by AI either: invented by the demo's scripts, or worked out by the app from the data.</p>
+        <div className="table-scroll">
+          <table className="mini-table ds-table">
+            <thead><tr><th scope="col">What</th><th scope="col">How it is made</th></tr></thead>
+            <tbody>
+              <tr><th scope="row">Names, gender, preferred name, address, phone, email</th><td>Invented by <code>scripts/generate-synthetic-cases.mjs</code> and <code>generate-all-cases.mts</code>. Phone numbers are from ranges reserved for fiction and emails use example.com. Suburb and postcode do come from the dataset.</td></tr>
+              <tr><th scope="row">Dates of birth</th><td>Invented (the dataset has none); every holder is an adult.</td></tr>
+              <tr><th scope="row">Survey answers</th><td>Invented for the 200 scenario cases to fit each testing scenario; answers about a concession, life support and hardship enrolment are set from the account so they agree. The other customers have none.</td></tr>
+              <tr><th scope="row">Account numbers (DEMO-7xxxxx) and case IDs</th><td>Numbered by the scripts.</td></tr>
+              <tr><th scope="row">Workers, case status, assignments and starting notes</th><td>Invented for the demo; changes made in the app are real and saved.</td></tr>
+              <tr><th scope="row">Signals, circumstances and solutions</th><td>Worked out by the app's rules and the Flowchart file from the data.</td></tr>
+              <tr><th scope="row">Priority</th><td>Worked out by the Priority model's points (see Priority model).</td></tr>
+              <tr><th scope="row">Predicted risk</th><td>A statistical model trained on the monthly panel (see Risk model). Not generative AI.</td></tr>
+              <tr><th scope="row">Sample heatwave</th><td>Built into the app, used when the weather source is set to Sample heatwave; marked "(sample forecast)".</td></tr>
+              <tr><th scope="row">Map locations</th><td>Approximate suburb centres added for the map; the dataset has no coordinates.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
       <section className="case-card" aria-labelledby="ds-weather">
         <h2 id="ds-weather">Live data: Bureau of Meteorology</h2>
         <p className="hint">Fetched by the server every hour, matched to each customer's postcode, and used for the three weather signals. Free anonymous products, under the Bureau's copyright terms.</p>
