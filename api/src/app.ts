@@ -69,10 +69,10 @@ export interface AppOptions {
   weather?: { current(): WeatherSnapshot | null; status(): unknown; setMode(mode: "live" | "demo" | "off"): Promise<void> };
 }
 
-/** A person as the case list needs them: everything but the utility account. */
+/** A person as the case list needs them: everything but the utility account and its signal summary. */
 function listPerson(p: Person | undefined): Person | null {
   if (!p) return null;
-  const { account: _account, ...rest } = p;
+  const { account: _account, signalSummary: _summary, ...rest } = p;
   return rest;
 }
 
@@ -93,7 +93,7 @@ export function createApp(store: Store, options: AppOptions = {}) {
   /** The weather signals for a person's postcode, from the latest forecast, looking ahead from today in Perth. */
   const weatherFor = (person: Person | null): WeatherSignal[] => {
     const w = options.weather?.current() ?? null;
-    return person ? detectWeatherSignals(person.address?.postcode, person.account?.region.northOf26th ?? false, w, perthToday(clock())) : [];
+    return person ? detectWeatherSignals(person.address?.postcode, (person.account?.region.northOf26th ?? person.signalSummary?.northOf26th ?? false), w, perthToday(clock())) : [];
   };
   const weatherKey = () => { const w = options.weather?.current(); return w ? `${w.fetchedAt}` : ""; };
   // Each case's result is kept per flowchart version until the case changes (every change bumps its version)
@@ -245,7 +245,8 @@ export function createApp(store: Store, options: AppOptions = {}) {
 
   // The account number is the customer's main ID; each account has one case.
   app.get("/api/accounts/:accountNumber", async (req, res) => {
-    const person = store.getPersonByAccount(String(req.params.accountNumber));
+    const found = store.getPersonByAccount(String(req.params.accountNumber));
+    const person = found && store.getPersonWithAccount(found.id);
     const c = person && store.getCaseForPerson(person.id);
     if (!person || !c) throw new ApiError("not_found", "No case was found for that account number.");
     res.json({ case: await enrichOne(c), person, weatherSignals: weatherFor(person) });
@@ -254,7 +255,7 @@ export function createApp(store: Store, options: AppOptions = {}) {
   app.get("/api/cases/:caseId/overview", async (req, res) => {
     const c = store.getCase(String(req.params.caseId));
     if (!c) throw new ApiError("not_found", "Case not found.");
-    const person = store.getPerson(c.personId);
+    const person = store.getPersonWithAccount(c.personId);
     res.json({ case: await enrichOne(c), person, weatherSignals: weatherFor(person) });
   });
 
@@ -285,7 +286,7 @@ export function createApp(store: Store, options: AppOptions = {}) {
     if (!plan) {
       const c = await enrichOne(raw);
       const cat = doc ? catalogOf(doc) : store.catalog;
-      const person = store.getPerson(c.personId);
+      const person = store.getPersonWithAccount(c.personId);
       const facts = planFacts(kind, c, person, cat, store.catalog.asOf, wxSignals);
       const acct = person?.account;
       const contact: ContactRules | undefined = acct ? {
@@ -302,7 +303,7 @@ export function createApp(store: Store, options: AppOptions = {}) {
 
   app.post("/api/cases", async (req, res) => {
     const c = service.createCase(actor(res), parse(newCaseBody, req.body));
-    res.status(201).json({ case: await enrichOne(c), person: store.getPerson(c.personId) });
+    res.status(201).json({ case: await enrichOne(c), person: store.getPersonWithAccount(c.personId) });
   });
 
   app.post("/api/cases/bulk/assignment", async (req, res) => {

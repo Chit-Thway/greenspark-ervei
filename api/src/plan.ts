@@ -33,7 +33,8 @@ export function checkMethod(m: string, r: ContactRules): Method {
 }
 
 /** Today's date in Perth, where the customers are. */
-export const perthToday = (now: Date) => new Intl.DateTimeFormat("en-CA", { timeZone: "Australia/Perth" }).format(now);
+const PERTH_DAY = new Intl.DateTimeFormat("en-CA", { timeZone: "Australia/Perth" });
+export const perthToday = (now: Date) => PERTH_DAY.format(now);
 
 /** The date `n` working days after `today` (0 is today, or the next weekday if today is a weekend). */
 export function addWorkingDays(today: string, n: number): string {

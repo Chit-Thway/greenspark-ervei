@@ -3,3 +3,6 @@ node_modules
 data/runtime
 e2e/.runtime
 .git
+# Full import: only the compressed accounts and the case file are sent; the build unpacks the accounts.
+data/synthetic/utility-accounts.all.jsonl
+data/synthetic/accounts.all.jsonl

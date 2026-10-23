@@ -1,9 +1,9 @@
 import { createApp } from "./app";
-import { DB_PATH, FIXTURE_PATH, PORT, WEB_DIST, BASIC_AUTH, FLOW_FILE, AI, WEATHER_MODE } from "./config";
+import { ACCOUNTS_PATH, DB_PATH, FIXTURE_PATH, PORT, WEB_DIST, BASIC_AUTH, FLOW_FILE, AI, WEATHER_MODE } from "./config";
 import { Store } from "./store";
 import { WeatherService } from "./weather";
 
-const store = new Store(DB_PATH, FIXTURE_PATH);
+const store = new Store(DB_PATH, FIXTURE_PATH, ACCOUNTS_PATH);
 const weather = new WeatherService(WEATHER_MODE);
 weather.start();
 const server = createApp(store, { flowFile: FLOW_FILE, staticDir: WEB_DIST, basicAuth: BASIC_AUTH, ai: AI, weather }).listen(PORT, "0.0.0.0", () => {

@@ -4,9 +4,19 @@ import type { AiConfig, AiProvider } from "./plan";
 
 const root = fileURLToPath(new URL("../../", import.meta.url));
 
-export const FIXTURE_PATH = process.env.GREENSPARK_FIXTURE ?? `${root}data/synthetic/case-queue.v1.json`;
+// GREENSPARK_DATASET=all uses the full import (every open account; scripts/generate-all-cases.mts) when its files
+// are present, and falls back to the 200 scenario cases otherwise (the files are too big for Git).
+const ALL_FIXTURE = `${root}data/synthetic/case-queue.all.json`;
+const ALL_ACCOUNTS = `${root}data/synthetic/accounts.all.jsonl`;
+const wantAll = process.env.GREENSPARK_DATASET === "all";
+const haveAll = existsSync(ALL_FIXTURE) && existsSync(ALL_ACCOUNTS);
+if (wantAll && !haveAll) console.warn("GREENSPARK_DATASET=all, but the full import files are missing; using the 200 scenario cases.");
+const useAll = wantAll && haveAll;
+export const FIXTURE_PATH = process.env.GREENSPARK_FIXTURE ?? (useAll ? ALL_FIXTURE : `${root}data/synthetic/case-queue.v1.json`);
 export const DB_PATH = process.env.GREENSPARK_DB ?? `${root}data/runtime/greenspark.sqlite`;
 // The utility hardship flow file edited on the Admin page. Changes are written straight back to it.
+// Optional JSON Lines file of { personId, account } for a fixture whose accounts are not inline (the full import).
+export const ACCOUNTS_PATH = process.env.GREENSPARK_ACCOUNTS || (useAll ? ALL_ACCOUNTS : null);
 export const FLOW_FILE = process.env.GREENSPARK_FLOW_FILE ?? `${root}data/admin/utility_hardship_mapping.json`;
 export const PORT = Number(process.env.PORT ?? 3001);
 

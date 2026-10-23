@@ -68,8 +68,19 @@ export interface Person {
   /** The customer's main ID on screen (fictional, DEMO-7xxxxx). Every person has one, including people added in the queue. */
   accountNumber?: string | null;
   // Utility account, from the synthetic WA utility dataset (data/synthetic/utility-accounts.v1.json).
-  // Missing for people added in the queue.
+  // Missing for people added in the queue. The server keeps accounts apart and sends them only with one case.
   account?: CustomerAccount | null;
+  /** What the account says, worked out once when it is stored, so the queue never needs the account itself. */
+  signalSummary?: AccountSignalSummary | null;
+}
+
+/** The signals an account raises, in the order caseSignals uses them, plus the facts weather signals need. */
+export interface AccountSignalSummary {
+  /** From the account rules (accountSignals.ts). */
+  account: { id: string; evidence: string }[];
+  /** Account facts and what the customer said in transcripts (self-report signals), newest first. */
+  selfReport: { id: string; evidence: string }[];
+  northOf26th: boolean;
 }
 
 export type PaymentMethod = "direct_debit" | "card" | "bpay" | "centrepay" | "cash_counter" | "prepay_topup" | "hugs_grant" | "write_off";

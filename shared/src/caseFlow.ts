@@ -10,7 +10,7 @@ import { priorityFromSignals } from "./priority";
 import { WEATHER_SIGNAL_IDS, type WeatherSignal } from "./weather";
 import type { FlowDoc } from "./flow";
 import type {
-  CaseCircumstance, CaseRecommendation, CaseSignal, CircumstanceDefinition, Person, QueueCase, QueueDataset,
+  AccountSignalSummary, CaseCircumstance, CaseRecommendation, CaseSignal, CircumstanceDefinition, Person, QueueCase, QueueDataset,
   RecommendationDefinition, SupportArea,
 } from "./types";
 
@@ -87,15 +87,40 @@ export function flowCatalog(doc: FlowDoc): Pick<QueueDataset, "supportAreas" | "
 }
 
 /** Every flow signal seen for one case, without strengths (strength belongs to each signal-circumstance link). */
+/**
+ * What a person's account says, for caseSignals: account-rule signals, then account facts and transcript phrases.
+ * Worked out once when an account is stored, so the queue can find every case's signals without the accounts.
+ */
+export function accountSignalSummary(person: Person, asOf: string): AccountSignalSummary | null {
+  const account = person.account;
+  if (!account) return null;
+  const selfReport: AccountSignalSummary["selfReport"] = [];
+  for (const m of ACCOUNT_FACT_SIGNALS) { const evidence = m.holds(person); if (evidence) selfReport.push({ id: m.signalId, evidence }); }
+  // Newest contacts first, so the evidence quotes the latest time the customer said it.
+  const year = account.contacts.filter((x) => x.transcript && x.date <= asOf && Date.parse(asOf) - Date.parse(x.date) <= 365 * 86_400_000);
+  for (const contact of [...year].reverse()) {
+    for (const turn of contact.transcript!) {
+      if (turn.speaker !== "customer") continue;
+      for (const m of TRANSCRIPT_SIGNALS) {
+        if (m.pattern.test(turn.text)) selfReport.push({ id: m.signalId, evidence: `Said on ${contact.channel.replace(/_/g, " ")}, ${contact.date}: "${turn.text}"` });
+      }
+    }
+  }
+  return {
+    account: detectAccountSignals(account, asOf).map((s) => ({ id: s.id, evidence: s.evidence })),
+    selfReport, northOf26th: account.region.northOf26th,
+  };
+}
+
 export function caseSignals(
   c: QueueCase, person: Person | null, data: Pick<QueueDataset, "asOf" | "evidenceFields">, doc: FlowDoc, weather: WeatherSignal[] = [],
 ): Omit<CaseSignal, "strength">[] {
   const names = new Map(doc.signals.map((s) => [s.id, s.name]));
   const out: Omit<CaseSignal, "strength">[] = [];
-  if (person?.account) {
-    for (const s of detectAccountSignals(person.account, data.asOf)) {
-      if (names.has(s.id)) out.push({ id: s.id, name: names.get(s.id)!, source: "account", evidence: s.evidence });
-    }
+  // The full account when there is one (the case page), otherwise the summary stored with the person (the queue).
+  const summary = person?.account ? accountSignalSummary(person, data.asOf) : person?.signalSummary ?? null;
+  for (const s of summary?.account ?? []) {
+    if (names.has(s.id)) out.push({ id: s.id, name: names.get(s.id)!, source: "account", evidence: s.evidence });
   }
   for (const m of SURVEY_SIGNALS) {
     const answer = c.reportedAnswers[m.fieldId];
@@ -106,22 +131,8 @@ export function caseSignals(
       evidence: `Survey: ${label}: ${answer}${c.reportedAt ? ` (reported ${c.reportedAt})` : ""}`,
     });
   }
-  if (person) {
-    for (const m of ACCOUNT_FACT_SIGNALS) {
-      const evidence = m.holds(person);
-      if (evidence && names.has(m.signalId)) out.push({ id: m.signalId, name: names.get(m.signalId)!, source: "self_report", evidence });
-    }
-  }
-  // Newest contacts first, so the evidence quotes the latest time the customer said it.
-  const year = (person?.account?.contacts ?? []).filter((x) => x.transcript && x.date <= data.asOf && Date.parse(data.asOf) - Date.parse(x.date) <= 365 * 86_400_000);
-  for (const contact of [...year].reverse()) {
-    for (const turn of contact.transcript!) {
-      if (turn.speaker !== "customer") continue;
-      for (const m of TRANSCRIPT_SIGNALS) {
-        if (!m.pattern.test(turn.text) || !names.has(m.signalId)) continue;
-        out.push({ id: m.signalId, name: names.get(m.signalId)!, source: "self_report", evidence: `Said on ${contact.channel.replace(/_/g, " ")}, ${contact.date}: "${turn.text}"` });
-      }
-    }
+  for (const s of summary?.selfReport ?? []) {
+    if (names.has(s.id)) out.push({ id: s.id, name: names.get(s.id)!, source: "self_report", evidence: s.evidence });
   }
   for (const s of weather) if (names.has(s.id)) out.push({ id: s.id, name: names.get(s.id)!, source: "weather", evidence: s.evidence });
   // One entry per signal: account data first, then the survey, then account facts, transcripts and weather.
@@ -159,7 +170,7 @@ export function evaluateCase(
       evidenceFieldIds: [...new Set(uses.flatMap((x) => x.evidenceFieldIds))], reviewStatus,
     });
   }
-  const hasData = !!person?.account || Object.values(c.reportedAnswers).some((v) => v !== null);
+  const hasData = !!person?.account || !!person?.signalSummary || Object.values(c.reportedAnswers).some((v) => v !== null);
   const modelAssessment = priorityFromSignals(circumstances, defs, hasData);
   return { circumstances, supportAreaIds, recommendations, modelAssessment };
 }

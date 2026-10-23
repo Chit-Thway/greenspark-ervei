@@ -3,6 +3,8 @@ FROM node:22-slim
 WORKDIR /app
 COPY . .
 RUN npm ci && npm run build
+# The full import's accounts arrive compressed (see .dockerignore); unpack them when present.
+RUN if [ -f data/synthetic/accounts.all.jsonl.gz ]; then gunzip -f data/synthetic/accounts.all.jsonl.gz; fi
 ENV NODE_ENV=production PORT=3001 \
     GREENSPARK_DB=/data/greenspark.sqlite \
     GREENSPARK_FLOW_FILE=/data/utility_hardship_mapping.json

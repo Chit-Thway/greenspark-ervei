@@ -16,3 +16,9 @@ test-results/
 data/runtime/
 e2e/.runtime/
 e2e/test-results/
+
+# Full dataset import (large; regenerate with scripts/import-utility-dataset.mts --all and scripts/generate-all-cases.mts)
+data/synthetic/utility-accounts.all.jsonl
+data/synthetic/case-queue.all.json
+data/synthetic/accounts.all.jsonl
+data/synthetic/accounts.all.jsonl.gz

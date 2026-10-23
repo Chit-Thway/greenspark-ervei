@@ -99,8 +99,10 @@ export function DataSourcesPage({ client, isManager }: { client: ApiClient; isMa
         <h1>Data sources</h1>
         <p className="sub">
           Customer accounts come from a synthetic WA electricity retail dataset: 22 files covering 5,150 customers from 1 Jul 2023 to
-          30 Jun 2025. 200 customers were taken, 20 for each testing scenario, by <code>scripts/import-utility-dataset.mts</code>, into
-          {" "}<code>data/synthetic/utility-accounts.v1.json</code>.
+          30 Jun 2025. The demo has every open account, 4,380 customers: 200 chosen as testing scenarios (20 each, with fictional
+          survey answers), and the other 4,180 with no survey, so all they show comes from their account. Imported by
+          {" "}<code>scripts/import-utility-dataset.mts --all</code> and <code>scripts/generate-all-cases.mts</code>. The 770 closed
+          accounts are left out.
         </p>
       </header>
 

@@ -2,7 +2,11 @@
 // data/synthetic/utility-accounts.v1.json, which scripts/generate-synthetic-cases.mjs attaches to the fictional
 // people. Run it only when the source files change; the app never needs them:
 //
-//   npx tsx scripts/import-utility-dataset.mts <folder with the source CSV/JSONL files>
+//   npx tsx scripts/import-utility-dataset.mts <folder with the source CSV/JSONL files> [--all]
+//
+// With --all it also writes every open account (4,380) to data/synthetic/utility-accounts.all.jsonl, one JSON object
+// per line, for scripts/generate-all-cases.mts. That file is large and stays out of Git (see .gitignore). Reading
+// every customer's daily meter reads needs a big heap: node --max-old-space-size=8192 (or NODE_OPTIONS).
 //
 // What it does:
 //   - picks 20 customers for each of the 10 testing scenarios, each matched to what the scenario is about
@@ -12,7 +16,7 @@
 // Left out on purpose: the monthly panel's label_* columns and intervention outcome measurements (future outcomes
 // for model training, which must not feed signals or priority), trial arms, the postcode "PLACEHOLDER" quintile and
 // the empty census columns, and half-hourly reads (they only cover a few event windows in 2024).
-import { createReadStream, readFileSync, writeFileSync } from "node:fs";
+import { closeSync, createReadStream, openSync, readFileSync, writeFileSync, writeSync } from "node:fs";
 import { createGunzip } from "node:zlib";
 import { createInterface } from "node:readline";
 import { join } from "node:path";
@@ -20,8 +24,10 @@ import { detectAccountSignals } from "../shared/src/accountSignals.ts";
 import type { AccountContact, Bill, CustomerAccount, HardshipRecord, Payment, PaymentArrangement, PaymentKind, PaymentMethod } from "../shared/src/types.ts";
 
 const src = process.argv[2];
-if (!src) throw new Error("Usage: npx tsx scripts/import-utility-dataset.mts <source folder>");
+if (!src) throw new Error("Usage: npx tsx scripts/import-utility-dataset.mts <source folder> [--all]");
+const ALL = process.argv.includes("--all");
 const OUT = new URL("../data/synthetic/utility-accounts.v1.json", import.meta.url);
+const OUT_ALL = new URL("../data/synthetic/utility-accounts.all.jsonl", import.meta.url);
 const SOURCE_END = "2025-06-30";
 const AS_OF = "2026-10-16";
 const DAY = 86_400_000;
@@ -149,7 +155,8 @@ for (const s of order) {
   candidates.set(s, list.slice(0, want));
   for (const id of list.slice(0, want)) taken.add(id);
 }
-const needed = new Set([...candidates.values()].flat());
+const openIds = [...customers.keys()].filter(isOpen).sort();
+const needed = new Set([...candidates.values()].flat().concat(ALL ? openIds : []));
 console.log(`Selected ${needed.size} candidate customers; reading their history…`);
 
 // ---------- per-customer history (only for the candidates) ----------
@@ -338,6 +345,13 @@ const data = {
 };
 writeFileSync(OUT, `${JSON.stringify(data, null, 1)}\n`);
 console.log(`Wrote ${Object.keys(out).length} accounts to ${OUT.pathname}`);
+if (ALL) {
+  // Every open account, one per line, built one at a time so they never all sit in memory as accounts.
+  const fd = openSync(OUT_ALL, "w");
+  for (const id of openIds) writeSync(fd, `${JSON.stringify({ customerId: id, ...build(id) })}\n`);
+  closeSync(fd);
+  console.log(`Wrote ${openIds.length} accounts to ${OUT_ALL.pathname}`);
+}
 for (const s of SCENARIOS) {
   const counts = new Map<string, number>();
   for (const id of scenarios[s]!) for (const sig of detectAccountSignals({ ...out[id]!.account, dateOfBirth: "1970-01-01" }, AS_OF)) counts.set(sig.id, (counts.get(sig.id) ?? 0) + 1);
