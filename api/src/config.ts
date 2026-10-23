@@ -49,3 +49,7 @@ export const AI: AiConfig = provider === "claude"
 // Weather signals: "demo" (the default) uses a built-in sample heatwave, "live" fetches Bureau of Meteorology
 // forecasts hourly, "off" turns them off. This is the mode at start-up; it can be switched on the Data sources page.
 export const WEATHER_MODE = (["live", "demo", "off"].includes(process.env.WEATHER_MODE ?? "") ? process.env.WEATHER_MODE : "demo") as "live" | "demo" | "off";
+
+// The 90-day risk model and its scores, from scripts/train-risk-model.mts. Missing files turn predictions off.
+export const RISK_MODEL_PATH = process.env.GREENSPARK_RISK_MODEL ?? `${root}data/models/risk-model.v1.json`;
+export const PREDICTIONS_PATH = process.env.GREENSPARK_PREDICTIONS ?? `${root}data/synthetic/predictions.v1.json`;

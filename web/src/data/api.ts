@@ -17,7 +17,24 @@ export interface Catalog {
 }
 
 /** `weatherSignals`: the customer's weather signals from the latest forecast (case page only). */
-export interface CaseItem { case: QueueCase; person: Person | null; weatherSignals?: WeatherSignal[] }
+export interface CaseItem { case: QueueCase; person: Person | null; weatherSignals?: WeatherSignal[]; prediction?: Prediction | null }
+
+/** The 90-day risk model's scores for one customer (case page only). */
+export interface Prediction {
+  modelId: string; horizonDays: number; sourceMonthEnd: string;
+  outcomes: Record<string, { probability: number; percentile: number; baseRate: number | null }>;
+  factors: { id: string; label: string; value: string | null; weight: number }[];
+}
+export interface RiskModelCard {
+  scoredCustomers: number;
+  model: {
+    id: string; type: string; horizonDays: number; trainingMonths: number; testMonths: number; heldOut: string; caveat: string;
+    inputs: { id: string; label: string; missing: boolean }[];
+    outcomes: Record<string, { label: string; weights: Record<string, number>; test: {
+      baseRate: number; auc: number; top5: { precision: number; recall: number }; calibration: { predicted: number; actual: number }[];
+    } }>;
+  };
+}
 
 export interface Facets {
   view: Record<"all" | "mine" | "needs_review", number>;
@@ -61,6 +78,8 @@ export interface ApiClient {
   overview(caseId: string): Promise<CaseItem>;
   /** The case for an account number (each account has one case). */
   account(accountNumber: string): Promise<CaseItem>;
+  /** The risk model's card. Optional so test clients can leave it out. */
+  riskModel?(): Promise<RiskModelCard>;
   assign(assigneeUserId: string, items: VersionedId[]): Promise<MutationResult>;
   setStatus(status: CaseStatus, items: VersionedId[]): Promise<MutationResult>;
   addNote(caseId: string, text: string, expectedVersion: number): Promise<QueueCase>;
@@ -142,6 +161,7 @@ export function createApiClient(getUser: () => string, base = ""): ApiClient {
     mapSummary: (q) => req("GET", `/api/cases/map?${queryString(q, false)}`),
     matchingIds: async (q) => (await req<{ ids: string[] }>("GET", `/api/cases/ids?${queryString(q, false)}`)).ids,
     overview: (id) => req("GET", `/api/cases/${encodeURIComponent(id)}/overview`),
+    riskModel: () => req("GET", "/api/model/risk"),
     account: (accountNumber) => req("GET", `/api/accounts/${encodeURIComponent(accountNumber)}`),
     assign: (assigneeUserId, items) => req("POST", "/api/cases/bulk/assignment", { assigneeUserId, items }),
     setStatus: (status, items) =>

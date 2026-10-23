@@ -364,3 +364,23 @@ ol.suggest-list.solutions { list-style: none; padding-left: 0; }
   .map-panel { border-left: 0; border-top: 1px solid var(--border); max-height: none; }
 }
 .panel-head .sim { margin-left: auto; }
+
+/* Risk predictions: the case page card and the customer's predictions page */
+.pred-mini { list-style: none; padding: 0; margin: 4px 0 10px; display: grid; gap: 6px; }
+.pred-mini li { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; }
+.pred-pill { font-size: 12px; font-weight: 600; border-radius: 4px; padding: 1px 8px; white-space: nowrap; }
+.pred-very_high { --pred: var(--urgent); --pred-bg: var(--urgent-bg); }
+.pred-high { --pred: var(--high); --pred-bg: var(--high-bg); }
+.pred-raised { --pred: var(--moderate); --pred-bg: var(--moderate-bg); }
+.pred-low { --pred: var(--routine); --pred-bg: var(--routine-bg); }
+.pred-pill { color: var(--pred); background: var(--pred-bg); }
+.pred-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-bottom: 16px; }
+.pred-grid .pred-card { margin: 0; border-top: 4px solid var(--pred); }
+.pred-card h2 { font-size: 15px; margin: 0 0 6px; }
+.pred-band { margin: 0; font-weight: 700; color: var(--pred); font-size: 18px; }
+.pred-prob { margin: 2px 0 8px; }
+.pred-prob strong { font-size: 22px; }
+.pred-meter { height: 6px; border-radius: 3px; background: var(--border); overflow: hidden; margin-bottom: 6px; }
+.pred-meter span { display: block; height: 100%; background: var(--pred); }
+.pred-factors { margin: 6px 0 0; padding-left: 20px; display: grid; gap: 6px; }
+.pred-factors li .sub { display: block; color: var(--muted); font-size: 13px; }

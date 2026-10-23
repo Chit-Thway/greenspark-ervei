@@ -12,6 +12,7 @@ import { MAX_BULK_ITEMS, WorkflowService, type MutationResult } from "./service"
 import type { Store } from "./store";
 import type { Clock } from "./clock";
 import { FlowFile } from "./flow";
+import type { Predictions } from "./predictions";
 import { draftPlan, PLAN_KINDS, perthToday, planFacts, type AiConfig, type ContactRules, type PlanKind, type SupportPlan } from "./plan";
 import { FlowError, POSTCODE_LOCATION, detectWeatherSignals, evaluateCase, flowCatalog, parseOp, type FlowDoc, type WeatherSignal, type WeatherSnapshot } from "@greenspark/shared";
 import { SyntheticModelAdapter, withAssessments, type ModelAdapter } from "./adapters";
@@ -67,6 +68,8 @@ export interface AppOptions {
   ai?: AiConfig | null;
   /** Bureau of Meteorology forecasts and warnings for weather signals. Without it there are none. */
   weather?: { current(): WeatherSnapshot | null; status(): unknown; setMode(mode: "live" | "demo" | "off"): Promise<void> };
+  /** The 90-day risk model's scores and model card. Without it there are no predictions. */
+  predictions?: Predictions | null;
 }
 
 /** A person as the case list needs them: everything but the utility account and its signal summary. */
@@ -90,6 +93,16 @@ export function createApp(store: Store, options: AppOptions = {}) {
   const catalogs = new WeakMap<FlowDoc, ReturnType<typeof flowCatalog>>();
   const catalogOf = (doc: FlowDoc) => { let c = catalogs.get(doc); if (!c) catalogs.set(doc, (c = flowCatalog(doc))); return c; };
   const currentFlow = currentFlowDoc;
+  /** The 90-day risk scores for a person, by their dataset customer ID; null without an account or a score. */
+  const predictionFor = (person: Person | null) => {
+    const p = options.predictions;
+    const id = person && p ? store.sourceCustomerId(person.id) : null;
+    const score = id ? p!.byCustomer.get(id) ?? null : null;
+    if (!score) return null;
+    // Each outcome's average rate (on held-out customers), so the page can say how this customer compares.
+    const outcomes = Object.fromEntries(Object.entries(score.outcomes).map(([k, o]) => [k, { ...o, baseRate: p!.model.outcomes[k]?.test.baseRate ?? null }]));
+    return { ...score, outcomes, modelId: p!.model.id, horizonDays: p!.model.horizonDays };
+  };
   /** The weather signals for a person's postcode, from the latest forecast, looking ahead from today in Perth. */
   const weatherFor = (person: Person | null): WeatherSignal[] => {
     const w = options.weather?.current() ?? null;
@@ -272,14 +285,21 @@ export function createApp(store: Store, options: AppOptions = {}) {
     const person = found && store.getPersonWithAccount(found.id);
     const c = person && store.getCaseForPerson(person.id);
     if (!person || !c) throw new ApiError("not_found", "No case was found for that account number.");
-    res.json({ case: await enrichOne(c), person, weatherSignals: weatherFor(person) });
+    res.json({ case: await enrichOne(c), person, weatherSignals: weatherFor(person), prediction: predictionFor(person) });
   });
 
   app.get("/api/cases/:caseId/overview", async (req, res) => {
     const c = store.getCase(String(req.params.caseId));
     if (!c) throw new ApiError("not_found", "Case not found.");
     const person = store.getPersonWithAccount(c.personId);
-    res.json({ case: await enrichOne(c), person, weatherSignals: weatherFor(person) });
+    res.json({ case: await enrichOne(c), person, weatherSignals: weatherFor(person), prediction: predictionFor(person) });
+  });
+
+  // The risk model: what it predicts, how it was trained and how well it did on held-out customers.
+  app.get("/api/model/risk", (_req, res) => {
+    const m = options.predictions?.model;
+    if (!m) throw new ApiError("not_found", "No risk model is loaded on this server.");
+    res.json({ model: m, scoredCustomers: options.predictions!.byCustomer.size });
   });
 
   app.get("/api/weather", (_req, res) => { res.json(options.weather?.status() ?? { mode: "off", available: false }); });

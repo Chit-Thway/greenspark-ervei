@@ -135,6 +135,7 @@ export class Store {
     const { account, ...rest } = p;
     if (!account) return;
     this.db.prepare("INSERT INTO accounts (person_id, doc) VALUES (?, ?) ON CONFLICT(person_id) DO UPDATE SET doc = excluded.doc").run(p.id, JSON.stringify(account));
+    this.sourceIds = null;
     const doc = JSON.stringify({ ...rest, signalSummary: accountSignalSummary(p, this.catalog.asOf) });
     this.db.prepare("UPDATE people SET doc = ? WHERE id = ? AND doc <> ?").run(doc, p.id, doc);
     this.peopleCache = null;
@@ -290,6 +291,16 @@ export class Store {
 
   getPerson(id: string): Person | null {
     return this.people().byId.get(id) ?? null;
+  }
+
+  /** Each person's customer ID in the source dataset, from their account (for the risk model's scores). */
+  private sourceIds: Map<string, string> | null = null;
+  sourceCustomerId(personId: string): string | null {
+    if (!this.sourceIds) {
+      const rows = this.db.prepare("SELECT person_id, json_extract(doc, '$.sourceCustomerId') AS sid FROM accounts").all() as Row[];
+      this.sourceIds = new Map(rows.filter((r) => r.sid).map((r) => [r.person_id as string, r.sid as string]));
+    }
+    return this.sourceIds.get(personId) ?? null;
   }
 
   /** The person with their utility account, for one case. */

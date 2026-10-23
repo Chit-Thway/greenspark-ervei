@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { CaseStatus, QueueCase, ReviewStatus, StaffUser } from "../domain/types";
 import type { ApiClient, CaseItem, Catalog, ContactMethod, PlanKind, PlanStep, SupportPlan } from "../data/api";
 import { CaseFlowModal } from "../admin/CaseFlowModal";
+import { RiskCard } from "./PredictionsPage";
 import { describeFollowUp, formatDateTime, PERIOD_TEXT, readableDates, STATUS_LABELS } from "../domain/format";
 import { isResolved } from "../domain/query";
 import { PriorityBadge } from "./Primitives";
@@ -31,7 +32,7 @@ export interface CaseActions {
   onEditNote: (noteId: string, text: string) => Promise<boolean>;
 }
 
-export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffUser; busy: boolean; actions: CaseActions; loadPlan?: (caseId: string, kind?: PlanKind) => Promise<SupportPlan>; client?: ApiClient }) {
+export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffUser; busy: boolean; actions: CaseActions; loadPlan?: (caseId: string, kind?: PlanKind) => Promise<SupportPlan>; client?: ApiClient; navigate?: (to: string) => void }) {
   const { data, item, user } = props;
   const c = item.case;
   const person = item.person ?? undefined;
@@ -78,6 +79,7 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
     { id: "ov-contact", label: "Customer details" },
     ...(acct ? [{ id: "ov-account", label: "Utility account" }] : []),
     { id: "ov-model", label: fromSignals ? "Priority" : "Model assessment" },
+    ...(item.prediction ? [{ id: "ov-risk", label: "Predicted risk" }] : []),
     ...(acct ? [{ id: "ov-signals", label: "Account signals" }] : []),
     { id: "ov-assist", label: "Assistance reported" },
     { id: "ov-support", label: "Support areas" },
@@ -156,6 +158,7 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
         )}
       </section>
 
+      {props.navigate ? <RiskCard item={item} accountNumber={person?.accountNumber ?? null} navigate={props.navigate} /> : null}
       {acct ? <AccountSignals account={acct} asOf={data.asOf} weather={item.weatherSignals} summary={props.loadPlan ? <AiPlan kind="signals" caseId={c.id} version={c.version} load={props.loadPlan} /> : null} /> : null}
 
       <section className="case-card" aria-labelledby="ov-assist">

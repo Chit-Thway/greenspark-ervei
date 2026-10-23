@@ -10,10 +10,12 @@ import type { MapSummary } from "./data/api";
 // Leaflet only loads when the map view is first opened.
 const CaseMap = lazy(() => import("./components/CaseMap").then((m) => ({ default: m.CaseMap })));
 import { CaseDetails } from "./components/CaseDetails";
-import { accountHref, DATA_SOURCES_PATH, FLOWCHART_PATH, PRIORITY_MODEL_PATH, CASE_PAGE_PATH, isModifiedClick, useRoute, type Page } from "./route";
+import { accountHref, DATA_SOURCES_PATH, FLOWCHART_PATH, PRIORITY_MODEL_PATH, CASE_PAGE_PATH, RISK_MODEL_PATH, isModifiedClick, useRoute, type Page } from "./route";
 import { DataSourcesPage } from "./components/DataSourcesPage";
 import { PriorityModelPage } from "./components/PriorityModelPage";
 import { CasePageGuide } from "./components/CasePageGuide";
+import { PredictionsPage } from "./components/PredictionsPage";
+import { RiskModelPage } from "./components/RiskModelPage";
 import { AdminPage } from "./admin/AdminPage";
 
 interface Notice {
@@ -36,7 +38,7 @@ export function App() {
   const userRef = useRef(userId);
   userRef.current = userId;
   const client = useMemo(() => createApiClient(() => userRef.current), []);
-  const { accountNumber, page, navigate } = useRoute();
+  const { accountNumber, predictionsAccount, page, navigate } = useRoute();
 
   const loadCatalog = useCallback(() => {
     setError(null);
@@ -59,12 +61,12 @@ export function App() {
   if (error) return <div className="state-screen" role="alert"><h1>We couldn’t load the case queue</h1><p>{error}</p><button className="btn" onClick={loadCatalog}>Try again</button></div>;
   if (!catalog) return <div className="state-screen" role="status"><p>Loading cases…</p></div>;
   const user = catalog.users.find((u) => u.id === userId) ?? catalog.users[0]!;
-  return <Workspace key={user.id} catalog={catalog} user={user} client={client} openAccount={accountNumber} page={page} navigate={navigate} onSwitchUser={switchUser} />;
+  return <Workspace key={user.id} catalog={catalog} user={user} client={client} openAccount={accountNumber} predictionsAccount={predictionsAccount} page={page} navigate={navigate} onSwitchUser={switchUser} />;
 }
 
 type Client = ReturnType<typeof createApiClient>;
 
-function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; openAccount: string | null; page: Page; navigate: (to: string) => void; onSwitchUser: (id: string) => void }) {
+function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; openAccount: string | null; predictionsAccount: string | null; page: Page; navigate: (to: string) => void; onSwitchUser: (id: string) => void }) {
   const { catalog, user, client, navigate } = props;
   // The open case is named by its account number (the main ID); case IDs stay internal.
   const openAccount = props.openAccount;
@@ -421,6 +423,10 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; o
         <PriorityModelPage />
       ) : props.page === "casepage" ? (
         <CasePageGuide />
+      ) : props.page === "riskmodel" ? (
+        <RiskModelPage client={client} />
+      ) : props.page === "predictions" && props.predictionsAccount ? (
+        <PredictionsPage client={client} accountNumber={props.predictionsAccount} navigate={navigate} />
       ) : openAccount ? (
         <main id="queue" className="detail-main" tabIndex={-1}>
           <a
@@ -436,7 +442,7 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; o
           </a>
           <NoticeBar notice={notice} busy={busy} onUndo={undo} onDismiss={() => say(null)} />
           {openItem ? (
-            <CaseDetails key={openItem.case.id} data={catalog} item={openItem} user={user} busy={busy} actions={actions} loadPlan={client.supportPlan} client={client} />
+            <CaseDetails key={openItem.case.id} data={catalog} item={openItem} user={user} busy={busy} actions={actions} loadPlan={client.supportPlan} client={client} navigate={navigate} />
           ) : caseLoad?.status === "missing" ? (
             <div className="empty" role="alert"><h1>Case not found</h1><p>There is no case for account {openAccount}. It may have been mistyped.</p></div>
           ) : caseLoad?.status === "error" ? (
@@ -626,7 +632,7 @@ function BtsMenu(props: { page: Page; navigate: (to: string) => void }) {
     document.addEventListener("keydown", close);
     return () => { document.removeEventListener("mousedown", close); document.removeEventListener("keydown", close); };
   }, [open]);
-  const items = [[FLOWCHART_PATH, "Flowchart", "admin"], [DATA_SOURCES_PATH, "Data sources", "data"], [PRIORITY_MODEL_PATH, "Priority model", "priority"], [CASE_PAGE_PATH, "Case page", "casepage"]] as const;
+  const items = [[FLOWCHART_PATH, "Flowchart", "admin"], [DATA_SOURCES_PATH, "Data sources", "data"], [PRIORITY_MODEL_PATH, "Priority model", "priority"], [CASE_PAGE_PATH, "Case page", "casepage"], [RISK_MODEL_PATH, "Risk model", "riskmodel"]] as const;
   const inside = items.some(([, , page]) => page === props.page);
   return (
     <div className="bts" ref={ref}>
