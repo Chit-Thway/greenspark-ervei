@@ -50,7 +50,7 @@ const SOURCES: Source[] = [
 ];
 
 const MODES: [WeatherMode, string, string][] = [
-  ["demo", "Sample heatwave", "A built-in heatwave over the Perth, South West and Wheatbelt districts for the next few days, so the signals always show."],
+  ["demo", "Sample heatwave", "A made-up week with a three-day heatwave over Perth and the Lower West, so there’s always weather to act on."],
   ["live", "Live Bureau data", "The Bureau's real forecasts and warnings, refreshed every hour. Usually quiet unless hot weather is coming."],
 ];
 
