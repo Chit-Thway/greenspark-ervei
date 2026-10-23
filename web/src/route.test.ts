@@ -27,6 +27,7 @@ describe("pages", () => {
     const { pageFromPath } = await import("./route");
     expect(pageFromPath("/")).toBe("outlook");
     expect(pageFromPath("/queue")).toBe("queue");
+    expect(pageFromPath("/funnel")).toBe("funnel");
     expect(pageFromPath("/flowchart")).toBe("admin");
     expect(pageFromPath("/flowchart/")).toBe("admin");
     expect(pageFromPath("/admin")).toBe("admin"); // old links still work

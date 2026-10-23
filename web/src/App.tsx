@@ -10,7 +10,7 @@ import type { MapSummary } from "./data/api";
 // Leaflet only loads when the map view is first opened.
 const CaseMap = lazy(() => import("./components/CaseMap").then((m) => ({ default: m.CaseMap })));
 import { CaseDetails } from "./components/CaseDetails";
-import { accountHref, DATA_SOURCES_PATH, FLOWCHART_PATH, PRIORITY_MODEL_PATH, CASE_PAGE_PATH, RISK_MODEL_PATH, QUEUE_PATH, isModifiedClick, useRoute, type Page } from "./route";
+import { accountHref, DATA_SOURCES_PATH, FLOWCHART_PATH, PRIORITY_MODEL_PATH, CASE_PAGE_PATH, RISK_MODEL_PATH, QUEUE_PATH, FUNNEL_PATH, isModifiedClick, useRoute, type Page } from "./route";
 import { DataSourcesPage } from "./components/DataSourcesPage";
 import { PriorityModelPage } from "./components/PriorityModelPage";
 import { CasePageGuide } from "./components/CasePageGuide";
@@ -19,6 +19,7 @@ import { RiskModelPage } from "./components/RiskModelPage";
 import { CaseVisualPage } from "./components/CaseVisualPage";
 import { DemoSettings } from "./components/DemoSettings";
 import { OutlookPage } from "./components/OutlookPage";
+import { FunnelPage } from "./components/FunnelPage";
 import { AdminPage } from "./admin/AdminPage";
 
 interface Notice {
@@ -149,7 +150,7 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; o
   }, [openAccount]);
 
   useEffect(() => {
-    if (props.page === "outlook") return; // the outlook page sets its own
+    if (props.page === "outlook" || props.page === "funnel") return; // these pages set their own
     document.title = openItem && openAccount ? `${accountOf(openItem) ?? ""} · ${catalogNameFor(openItem)} · ERVEI` : "Case queue · ERVEI";
   }, [openItem, openAccount, props.page]);
 
@@ -409,7 +410,7 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; o
           <span><strong>ERVEI</strong><span className="brand-sub">Community support workspace</span></span>
         </a>
         <nav className="mainnav" aria-label="Main">
-          {([["/", "Weather outlook", "outlook"], [QUEUE_PATH, "Case queue", "queue"]] as const).map(([href, label, page]) => (
+          {([["/", "Weather outlook", "outlook"], [FUNNEL_PATH, "Funnel", "funnel"], [QUEUE_PATH, "Case queue", "queue"]] as const).map(([href, label, page]) => (
             <a key={href} href={href} aria-current={props.page === page ? "page" : undefined} onClick={(e) => { if (isModifiedClick(e)) return; e.preventDefault(); navigate(href); }}>{label}</a>
           ))}
           <BtsMenu page={props.page} navigate={navigate} />
@@ -419,6 +420,8 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; o
 
       {props.page === "outlook" ? (
         <OutlookPage client={client} navigate={navigate} />
+      ) : props.page === "funnel" ? (
+        <FunnelPage client={client} navigate={navigate} />
       ) : props.page === "admin" ? (
         <AdminPage client={client} />
       ) : props.page === "data" ? (

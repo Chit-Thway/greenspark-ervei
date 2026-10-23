@@ -15,6 +15,9 @@ describe("weather outlook", () => {
     expect(body.days).toHaveLength(7);
     expect(body.totals.act).toBeGreaterThan(0);
     expect(body.customers.length).toBe(body.totals.act + body.totals.watch);
+    // The funnel narrows at every stage.
+    const t = body.totals;
+    expect([t.covered + t.uncovered, t.covered, t.exposed, t.vulnerable, t.act + t.watch, t.act]).toEqual([...[t.covered + t.uncovered, t.covered, t.exposed, t.vulnerable, t.act + t.watch, t.act]].sort((a, b) => b - a));
     const tiers = body.customers.map((c: any) => c.tier);
     expect(tiers.indexOf("watch") === -1 || tiers.lastIndexOf("act") < tiers.indexOf("watch")).toBe(true);
     const perth = body.towns.find((t: any) => t.name === "Perth");

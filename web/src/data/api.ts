@@ -136,7 +136,7 @@ export type Outlook =
     days: { date: string; peak: { max: number; town: string } | null; exposed: number; act: number; watch: number }[];
     towns: OutlookTown[];
     warnings: { title: string; districts: string[]; expires: string | null }[];
-    totals: { covered: number; uncovered: number; exposed: number; act: number; watch: number };
+    totals: { covered: number; uncovered: number; exposed: number; vulnerable: number; act: number; watch: number };
     customers: OutlookCustomer[];
   };
 

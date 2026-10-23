@@ -269,13 +269,16 @@ export function createApp(store: Store, options: AppOptions = {}) {
     let uncovered = 0;
     const rows = data.people.flatMap((p) => {
       const risk = riskFor(p);
-      const o = customerOutlook(p, w, today, !!risk && risk.baseRate !== null && risk.probability >= 4 * risk.baseRate, risk?.probability ?? 0);
+      const highRisk = !!risk && risk.baseRate !== null && risk.probability >= 4 * risk.baseRate;
+      const o = customerOutlook(p, w, today, highRisk, risk?.probability ?? 0);
       if (!o) { uncovered++; return []; }
       const c = cases.get(p.id);
       // The town's hazards are sent once with the town, so each row only says when it starts and the worst of it.
       const worst = o.hazards.reduce<typeof o.hazards[number] | null>((a, h) => (!a || h.severity > a.severity ? h : a), null);
       return [{
         personId: o.personId, townId: o.townId, tier: o.tier, score: o.score, exposure: o.exposure,
+        // For the funnel: hot or dangerous weather and something that makes it harder to cope with.
+        vulnerable: o.exposure > 0 && (o.sensitivity.length > 0 || highRisk),
         kinds: [...new Set(o.hazards.map((h) => h.kind))], dates: [...new Set(o.hazards.map((h) => h.date))], firstDate: o.hazards[0]?.date ?? null, worst: worst?.text ?? null,
         sensitivity: o.sensitivity.map(({ id, group, label }) => ({ id, group, label })), accountNumber: p.accountNumber ?? null, displayName: p.displayName, suburb: p.suburb, postcode: p.address?.postcode ?? null, risk,
         priority: c?.modelAssessment.priority ? { label: c.modelAssessment.priority.label, score: c.modelAssessment.priority.score } : null, status: c?.workflow.status ?? null,
@@ -303,8 +306,8 @@ export function createApp(store: Store, options: AppOptions = {}) {
     res.json({
       available: true, weather: status, today, demo: w.demo, issuedAt: w.issuedAt, days, towns,
       warnings: w.warnings.filter((x) => x.districts.length).map((x) => ({ title: x.title, districts: x.districts.map((d) => w.districts[d] ?? d), expires: x.expires })),
-      totals: { covered: rows.length, uncovered, exposed: rows.filter((r) => r.exposure > 0).length, act: listed.filter((r) => r.tier === "act").length, watch: listed.filter((r) => r.tier === "watch").length },
-      customers: listed.map(({ dates: _dates, ...r }) => r),
+      totals: { covered: rows.length, uncovered, exposed: rows.filter((r) => r.exposure > 0).length, vulnerable: rows.filter((r) => r.vulnerable).length, act: listed.filter((r) => r.tier === "act").length, watch: listed.filter((r) => r.tier === "watch").length },
+      customers: listed.map(({ dates: _dates, vulnerable: _vulnerable, ...r }) => r),
     });
   });
 

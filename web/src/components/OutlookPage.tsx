@@ -15,7 +15,8 @@ export function OutlookPage({ client, navigate }: { client: Pick<ApiClient, "out
   const [data, setData] = useState<Outlook | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [retry, setRetry] = useState(0);
-  const [tier, setTier] = useState<"" | "act" | "watch">("");
+  // The funnel links here with ?tier=act.
+  const [tier, setTier] = useState<"" | "act" | "watch">(() => { const t = new URLSearchParams(window.location.search).get("tier"); return t === "act" || t === "watch" ? t : ""; });
   const [hazard, setHazard] = useState<"" | HazardKind>("");
   const [group, setGroup] = useState<"" | Group>("");
   const [town, setTown] = useState<string | null>(null);
