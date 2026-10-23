@@ -62,7 +62,7 @@ export interface ApiClient {
   editNote(caseId: string, noteId: string, text: string, expectedVersion: number): Promise<QueueCase>;
   setReview(caseId: string, reviewStatus: ReviewStatus, expectedVersion: number): Promise<MutationResult>;
   undo(actionId: string): Promise<MutationResult>;
-  /** AI-drafted support plan for a case (Gemini). Optional so test clients can leave it out. */
+  /** AI-drafted support plan for a case (Claude or Gemini). Optional so test clients can leave it out. */
   supportPlan?(caseId: string, kind?: PlanKind): Promise<SupportPlan>;
 }
 
