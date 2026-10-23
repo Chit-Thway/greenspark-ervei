@@ -32,7 +32,7 @@ export const FLOW_COLUMNS: { id: FlowColumn; label: string }[] = [
   { id: "sources", label: "Data sources" }, { id: "signals", label: "Signals" }, { id: "circumstances", label: "Circumstances" }, { id: "solutions", label: "Solutions" },
 ];
 const COLUMN_WIDTH: Record<FlowColumn, [min: number, track: string]> = {
-  sources: [170, "minmax(170px, .85fr)"], signals: [200, "minmax(200px, 1fr)"], circumstances: [220, "minmax(220px, 1.15fr)"], solutions: [220, "minmax(220px, 1.15fr)"],
+  sources: [200, "minmax(200px, .85fr)"], signals: [240, "minmax(240px, 1fr)"], circumstances: [260, "minmax(260px, 1.1fr)"], solutions: [260, "minmax(260px, 1.1fr)"],
 };
 
 interface Path { key: string; d: string; supporting: boolean; kind: "source-signal" | "signal-circumstance" | "circumstance-solution" }
