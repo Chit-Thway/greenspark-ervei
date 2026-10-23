@@ -1,3 +1,4 @@
+import type { FlowDoc, FlowOp, WeatherSignal } from "@greenspark/shared";
 import type {
   AssessmentStatus, CaseStatus, CircumstanceDefinition, EvidenceFieldDefinition, Person, QueueCase,
   QueueQuery, RecommendationDefinition, ReviewStatus, StaffUser, SupportArea,
@@ -8,15 +9,18 @@ export interface Catalog {
   circumstances: CircumstanceDefinition[];
   evidenceFields: EvidenceFieldDefinition[];
   recommendations: RecommendationDefinition[];
+  /** "flow" when circumstances and solutions come from the flowchart file. */
+  circumstanceSource?: "flow" | "fixture";
   asOf: string;
   users: StaffUser[];
   assignableUserIds: string[];
 }
 
-export interface CaseItem { case: QueueCase; person: Person | null }
+/** `weatherSignals`: the customer's weather signals from the latest forecast (case page only). */
+export interface CaseItem { case: QueueCase; person: Person | null; weatherSignals?: WeatherSignal[] }
 
 export interface Facets {
-  view: Record<"all" | "mine" | "unassigned" | "needs_review", number>;
+  view: Record<"all" | "mine" | "needs_review", number>;
   circumstances: Record<string, number>;
   areas: Record<string, number>;
   assistance: Record<string, number>;
@@ -26,13 +30,13 @@ export interface Facets {
 export interface CaseListResponse {
   items: CaseItem[];
   total: number; page: number; pageSize: number; pageCount: number; from: number; to: number;
-  counters: { urgent: number; awaitingAssignment: number; myActive: number };
+  counters: { urgent: number; myActive: number };
   facets: Facets;
 }
 
 export interface MutationResult { actionId: string | null; updated: QueueCase[]; unchanged: string[] }
 
-export interface ErrorDetail { caseId?: string; code?: string; message: string }
+export interface ErrorDetail { caseId?: string; accountNumber?: string; code?: string; message: string }
 
 export class ApiClientError extends Error {
   constructor(readonly status: number, readonly code: string, message: string, readonly details: ErrorDetail[] = [], readonly current?: QueueCase) {
@@ -40,19 +44,38 @@ export class ApiClientError extends Error {
   }
 }
 
+export interface FlowSnapshot { doc: FlowDoc | null; hash: string; problems: string[] }
+export interface FlowSaved { hash: string; previousHash: string; changed: boolean }
+
 export interface ApiClient {
+  /** The utility hardship flow behind the Flowchart page (a JSON file on the server). */
+  flow(): Promise<FlowSnapshot>;
+  weather?(): Promise<WeatherStatus>;
+  setWeatherMode?(mode: WeatherMode): Promise<WeatherStatus>;
+  flowOps(ops: FlowOp[]): Promise<FlowSaved>;
   catalog(): Promise<Catalog>;
   list(q: QueueQuery): Promise<CaseListResponse>;
   matchingIds(q: QueueQuery): Promise<string[]>;
   overview(caseId: string): Promise<CaseItem>;
-  createCase(input: { displayName: string; suburb: string }): Promise<CaseItem>;
-  assign(assigneeUserId: string | null, items: VersionedId[]): Promise<MutationResult>;
+  /** The case for an account number (each account has one case). */
+  account(accountNumber: string): Promise<CaseItem>;
+  assign(assigneeUserId: string, items: VersionedId[]): Promise<MutationResult>;
   setStatus(status: CaseStatus, items: VersionedId[]): Promise<MutationResult>;
   addNote(caseId: string, text: string, expectedVersion: number): Promise<QueueCase>;
   editNote(caseId: string, noteId: string, text: string, expectedVersion: number): Promise<QueueCase>;
   setReview(caseId: string, reviewStatus: ReviewStatus, expectedVersion: number): Promise<MutationResult>;
   undo(actionId: string): Promise<MutationResult>;
+  /** AI-drafted support plan for a case (Claude or Gemini). Optional so test clients can leave it out. */
+  supportPlan?(caseId: string, kind?: PlanKind): Promise<SupportPlan>;
 }
+
+export type PlanKind = "support" | "signals";
+export type ContactMethod = "phone" | "sms" | "email" | "letter";
+export interface PlanStep { id: string; reason: string; due?: string; method?: ContactMethod }
+export interface SupportPlan { text: string; model: string; generatedAt: string; order?: PlanStep[]; interpreter?: boolean }
+
+export type WeatherMode = "live" | "demo" | "off";
+export interface WeatherStatus { mode: WeatherMode; fetchedAt: string | null; issuedAt: string | null; towns: number; warnings: string[]; error: string | null; available?: boolean }
 
 export interface VersionedId { caseId: string; expectedVersion: number }
 
@@ -96,6 +119,10 @@ export function createApiClient(getUser: () => string, base = ""): ApiClient {
     return json as T;
   }
   return {
+    flow: () => req("GET", "/api/admin/flow"),
+    weather: () => req("GET", "/api/weather"),
+    setWeatherMode: (mode) => req("POST", "/api/weather/mode", { mode }),
+    flowOps: (ops) => req("POST", "/api/admin/flow/ops", { ops }),
     async catalog() {
       const [c, u] = await Promise.all([
         req<Omit<Catalog, "users" | "assignableUserIds">>("GET", "/api/catalogs"),
@@ -106,7 +133,7 @@ export function createApiClient(getUser: () => string, base = ""): ApiClient {
     list: (q) => req("GET", `/api/cases?${queryString(q)}`),
     matchingIds: async (q) => (await req<{ ids: string[] }>("GET", `/api/cases/ids?${queryString(q, false)}`)).ids,
     overview: (id) => req("GET", `/api/cases/${encodeURIComponent(id)}/overview`),
-    createCase: (input) => req("POST", "/api/cases", input),
+    account: (accountNumber) => req("GET", `/api/accounts/${encodeURIComponent(accountNumber)}`),
     assign: (assigneeUserId, items) => req("POST", "/api/cases/bulk/assignment", { assigneeUserId, items }),
     setStatus: (status, items) =>
       items.length === 1
@@ -115,6 +142,7 @@ export function createApiClient(getUser: () => string, base = ""): ApiClient {
     addNote: async (id, text, expectedVersion) => (await req<{ case: QueueCase }>("POST", `/api/cases/${encodeURIComponent(id)}/notes`, { text, expectedVersion })).case,
     editNote: async (id, noteId, text, expectedVersion) => (await req<{ case: QueueCase }>("PATCH", `/api/cases/${encodeURIComponent(id)}/notes/${encodeURIComponent(noteId)}`, { text, expectedVersion })).case,
     setReview: (id, reviewStatus, expectedVersion) => req("PATCH", `/api/cases/${encodeURIComponent(id)}/review`, { reviewStatus, expectedVersion }),
+    supportPlan: async (id, kind = "support") => (await req<{ plan: SupportPlan }>("GET", `/api/cases/${encodeURIComponent(id)}/plan?kind=${kind}`)).plan,
     undo: (actionId) => req("POST", `/api/workflow-actions/${encodeURIComponent(actionId)}/undo`),
   };
 }

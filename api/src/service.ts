@@ -15,9 +15,15 @@ export class WorkflowService {
 
   private now() { return perthIso(this.clock()); }
 
+  /** How a case is named to people: its account number. Case IDs are an internal key. */
+  private label(caseId: string): string {
+    const a = this.store.accountNumberOfCase(caseId);
+    return a ? `account ${a}` : "this case";
+  }
+
   private requireCase(id: string): QueueCase {
     const c = this.store.getCase(id);
-    if (!c) throw new ApiError("not_found", `Case ${id} was not found.`, [{ caseId: id, code: "not_found", message: "Unknown case" }]);
+    if (!c) throw new ApiError("not_found", "That case was not found.", [{ caseId: id, code: "not_found", message: "Unknown case" }]);
     return c;
   }
 
@@ -28,27 +34,50 @@ export class WorkflowService {
   /** Per-item checks shared by single and bulk status changes. Returns an error or null. */
   private checkEditable(actor: StaffUser, item: Item): ApiError | null {
     const c = this.store.getCase(item.caseId);
-    if (!c) return new ApiError("not_found", `Case ${item.caseId} was not found.`);
-    if (!this.canEdit(actor, c)) return new ApiError("forbidden", `You can only change cases assigned to you (${item.caseId}).`);
-    if (c.version !== item.expectedVersion) return new ApiError("version_conflict", `Case ${item.caseId} changed since you loaded it.`, [], { current: c });
+    if (!c) return new ApiError("not_found", "That case was not found.");
+    if (!this.canEdit(actor, c)) return new ApiError("forbidden", `You can only change cases assigned to you (${this.label(item.caseId)}).`);
+    if (c.version !== item.expectedVersion) return new ApiError("version_conflict", `The case for ${this.label(item.caseId)} changed since you loaded it.`, [], { current: c });
     return null;
   }
 
   private failBulk(failures: { caseId: string; error: ApiError }[]): never {
-    const details: ErrorDetail[] = failures.map((f) => ({ caseId: f.caseId, code: f.error.code, message: f.error.message }));
+    const details: ErrorDetail[] = failures.map((f) => ({ caseId: f.caseId, accountNumber: this.store.accountNumberOfCase(f.caseId) ?? undefined, code: f.error.code, message: f.error.message }));
     throw new ApiError("bulk_validation_failed", `${failures.length} case(s) failed validation. Nothing was changed.`, details);
   }
 
-  createCase(input: { personId?: string; displayName?: string; suburb?: string }): QueueCase {
+  /** A support worker, or a validation error naming the bad value. */
+  private supportWorker(userId: string) {
+    const target = this.store.catalog.users.find((u) => u.id === userId);
+    if (!target || target.role !== "support_worker") {
+      throw new ApiError("validation_failed", "Cases can only be assigned to a support worker.", [{ code: "invalid_assignee", message: `${userId} is not a support worker` }]);
+    }
+    return target;
+  }
+
+  createCase(actor: StaffUser, input: { personId?: string; displayName?: string; suburb?: string; assigneeUserId?: string }): QueueCase {
+    // Every case has a worker: a support worker's new case is theirs; a manager chooses one.
+    let assigneeUserId: string;
+    if (actor.role === "manager") {
+      if (!input.assigneeUserId) throw new ApiError("validation_failed", "Choose a support worker for the new case.", [{ code: "assignee_required", message: "assigneeUserId is required" }]);
+      assigneeUserId = this.supportWorker(input.assigneeUserId).id;
+    } else {
+      if (input.assigneeUserId && input.assigneeUserId !== actor.id) throw new ApiError("forbidden", "Support workers can only create cases for themselves.");
+      assigneeUserId = actor.id;
+    }
     return this.store.transaction(() => {
       const now = this.now();
       let person: Person | null;
       if (input.personId) {
         person = this.store.getPerson(input.personId);
         if (!person) throw new ApiError("validation_failed", `Person ${input.personId} was not found.`, [{ code: "unknown_person", message: "Unknown personId" }]);
+        // One case per account, so the account number identifies it.
+        if (this.store.getCaseForPerson(person.id)) {
+          throw new ApiError("validation_failed", `Account ${person.accountNumber} already has a case.`, [{ code: "account_has_case", message: "This account already has a case" }]);
+        }
       } else {
         person = {
           id: `demo-person-${String(this.store.nextPersonNumber()).padStart(3, "0")}`,
+          accountNumber: this.store.nextAccountNumber(),
           displayName: input.displayName!, suburb: input.suburb!, state: "WA",
           householdSummary: "Not recorded", contactPreference: null, fullProfilePath: null,
           gender: null, preferredName: null, address: null, mobile: null, phone: null, email: null,
@@ -64,21 +93,16 @@ export class WorkflowService {
         assistance: { hardshipEnrolmentAtReport: null, energyBillConcessionAtReport: null, reportedHistory: [] },
         recommendations: [],
         modelAssessment: { provider: "synthetic_demo", isSimulated: true, status: "pending", priority: null, trend: null, explanation: null },
-        workflow: { status: "new", assignedToUserId: null, createdAt: now, updatedAt: now, followUpAt: null, reviewStatus: "needs_review", notes: [] },
+        workflow: { status: "new", assignedToUserId: assigneeUserId, createdAt: now, updatedAt: now, followUpAt: null, reviewStatus: "needs_review", notes: [] },
       };
       this.store.insertCase(c);
       return c;
     });
   }
 
-  assign(actor: StaffUser, assigneeUserId: string | null, items: Item[]): MutationResult {
+  assign(actor: StaffUser, assigneeUserId: string, items: Item[]): MutationResult {
     if (actor.role !== "manager") throw new ApiError("forbidden", "Only managers can assign cases.");
-    if (assigneeUserId !== null) {
-      const target = this.store.catalog.users.find((u) => u.id === assigneeUserId);
-      if (!target || target.role !== "support_worker") {
-        throw new ApiError("validation_failed", "Cases can only be assigned to a support worker.", [{ code: "invalid_assignee", message: `${assigneeUserId} is not a support worker` }]);
-      }
-    }
+    this.supportWorker(assigneeUserId);
     return this.applyBulk("assignment", actor, items, { assignedToUserId: assigneeUserId }, (c) => c.workflow.assignedToUserId === assigneeUserId, false);
   }
 
@@ -127,8 +151,8 @@ export class WorkflowService {
 
   private checkVersion(item: Item): ApiError | null {
     const c = this.store.getCase(item.caseId);
-    if (!c) return new ApiError("not_found", `Case ${item.caseId} was not found.`);
-    if (c.version !== item.expectedVersion) return new ApiError("version_conflict", `Case ${item.caseId} changed since you loaded it.`, [], { current: c });
+    if (!c) return new ApiError("not_found", "That case was not found.");
+    if (c.version !== item.expectedVersion) return new ApiError("version_conflict", `The case for ${this.label(item.caseId)} changed since you loaded it.`, [], { current: c });
     return null;
   }
 
@@ -151,7 +175,7 @@ export class WorkflowService {
       const err = this.checkEditable(actor, { caseId, expectedVersion });
       if (err) throw err;
       const note = this.store.getNote(caseId, noteId);
-      if (!note) throw new ApiError("not_found", `Note ${noteId} was not found on case ${caseId}.`);
+      if (!note) throw new ApiError("not_found", `That note was not found on ${this.label(caseId)}.`);
       if (actor.role !== "manager" && note.authorUserId !== actor.id) throw new ApiError("forbidden", "You can only edit your own notes.");
       if (note.text === text) return this.store.getCase(caseId)!; // nothing changed, so no new version
       const now = this.now();
@@ -188,6 +212,10 @@ export class WorkflowService {
         if (!c || c.version !== i.resultingVersion) stale.push({ caseId: i.caseId, code: "version_conflict", message: "Changed since the action" });
       }
       if (stale.length) refuse("Some cases changed after this action, so it cannot be undone. Nothing was changed.", stale);
+      // Assignments made before every case had a worker could otherwise put a case back to no one.
+      if (action.items.some((i) => "assignedToUserId" in i.before && i.before.assignedToUserId === null)) {
+        refuse("Undoing this would leave a case without a worker. Reassign it instead.");
+      }
 
       const now = this.now();
       const logItems = action.items.map((i) => {

@@ -1,32 +1,39 @@
 import { timingSafeEqual } from "node:crypto";
 import { join } from "node:path";
+import compression from "compression";
 import express, { type NextFunction, type Request, type Response } from "express";
 import { z } from "zod";
 import {
   ASSISTANCE_OPTIONS, DEFAULT_QUERY, PRIORITY_LABELS, applyFilters, facetCounts, overviewCounters, paginate, sortCases,
-  type QueueCase, type QueueQuery, type StaffUser,
+  type Person, type QueueCase, type QueueQuery, type StaffUser,
 } from "@greenspark/shared";
 import { ApiError } from "./errors";
 import { MAX_BULK_ITEMS, WorkflowService, type MutationResult } from "./service";
 import type { Store } from "./store";
 import type { Clock } from "./clock";
+import { FlowFile } from "./flow";
+import { draftPlan, PLAN_KINDS, perthToday, planFacts, type AiConfig, type ContactRules, type PlanKind, type SupportPlan } from "./plan";
+import { FlowError, detectWeatherSignals, evaluateCase, flowCatalog, parseOp, type FlowDoc, type WeatherSignal, type WeatherSnapshot } from "@greenspark/shared";
 import { SyntheticModelAdapter, withAssessments, type ModelAdapter } from "./adapters";
 
 const STATUSES = ["new", "in_progress", "waiting", "resolved"] as const;
 const SORTS = ["priority_desc", "priority_asc", "followup", "name", "updated"] as const;
-const VIEWS = ["all", "mine", "unassigned", "needs_review"] as const;
+const VIEWS = ["all", "mine", "needs_review"] as const;
 
 const item = z.object({ caseId: z.string().min(1), expectedVersion: z.number().int().min(1) }).strict();
 const items = z.array(item).min(1).max(MAX_BULK_ITEMS).refine((a) => new Set(a.map((i) => i.caseId)).size === a.length, "Duplicate case IDs");
-const assignBody = z.object({ assigneeUserId: z.string().min(1).nullable(), items }).strict();
+// Every case has a worker, so an assignment always names one.
+const assignBody = z.object({ assigneeUserId: z.string().min(1), items }).strict();
 const bulkStatusBody = z.object({ status: z.enum(STATUSES), items }).strict();
 const statusBody = z.object({ status: z.enum(STATUSES), expectedVersion: z.number().int().min(1) }).strict();
 // Notes have no character limit; the 100 KB request-size limit below is the only cap.
 const noteBody = z.object({ text: z.string().trim().min(1), expectedVersion: z.number().int().min(1) }).strict();
 const reviewBody = z.object({ reviewStatus: z.enum(["needs_review", "reviewed"]), expectedVersion: z.number().int().min(1) }).strict();
+// The worker for a new case: required from a manager; a support worker's new case is theirs.
+const assignee = { assigneeUserId: z.string().min(1).optional() };
 const newCaseBody = z.union([
-  z.object({ personId: z.string().min(1) }).strict(),
-  z.object({ displayName: z.string().trim().min(1).max(100), suburb: z.string().trim().min(1).max(100) }).strict(),
+  z.object({ personId: z.string().min(1), ...assignee }).strict(),
+  z.object({ displayName: z.string().trim().min(1).max(100), suburb: z.string().trim().min(1).max(100), ...assignee }).strict(),
 ]);
 
 const csv = (v: unknown) => (typeof v === "string" && v ? v.split(",") : []);
@@ -50,21 +57,84 @@ function parse<T>(schema: z.ZodType<T>, data: unknown): T {
 export interface AppOptions {
   clock?: Clock;
   modelAdapter?: ModelAdapter;
+  /** The utility hardship flow JSON file behind the Admin page. */
+  flowFile?: string;
   /** Directory of the built web app. When set, this server also serves the pages (single-process hosting). */
   staticDir?: string | null;
   /** Optional "user:password" for HTTP Basic auth in front of everything except /api/health. For shared demo hosting. */
   basicAuth?: string | null;
+  /** AI service (Claude or Gemini), key and models for the AI summaries. No key turns them off. */
+  ai?: AiConfig | null;
+  /** Bureau of Meteorology forecasts and warnings for weather signals. Without it there are none. */
+  weather?: { current(): WeatherSnapshot | null; status(): unknown; setMode(mode: "live" | "demo" | "off"): Promise<void> };
+}
+
+/** A person as the case list needs them: everything but the utility account. */
+function listPerson(p: Person | undefined): Person | null {
+  if (!p) return null;
+  const { account: _account, ...rest } = p;
+  return rest;
 }
 
 export function createApp(store: Store, options: AppOptions = {}) {
   const clock = options.clock ?? (() => new Date());
+  // A model adapter passed in (a real prediction model) always supplies the priority. Otherwise, with the flowchart
+  // in use the priority is worked out from each case's signals; without it, the fixture's invented assessments show.
   const model = options.modelAdapter ?? new SyntheticModelAdapter(store);
+  const useModel = async () => !!options.modelAdapter || !(await currentFlowDoc());
   const service = new WorkflowService(store, clock);
-  const enrich = (cases: QueueCase[]) => withAssessments(model, cases);
+  const flow = options.flowFile ? new FlowFile(options.flowFile) : null;
+  async function currentFlowDoc() { return flow ? flow.current() : null; }
+  // Circumstances and solutions come from the Admin flow file when it is configured and valid; otherwise the
+  // fixture's fixed survey rules stay in place. Assessments are added after.
+  const catalogs = new WeakMap<FlowDoc, ReturnType<typeof flowCatalog>>();
+  const catalogOf = (doc: FlowDoc) => { let c = catalogs.get(doc); if (!c) catalogs.set(doc, (c = flowCatalog(doc))); return c; };
+  const currentFlow = currentFlowDoc;
+  /** The weather signals for a person's postcode, from the latest forecast, looking ahead from today in Perth. */
+  const weatherFor = (person: Person | null): WeatherSignal[] => {
+    const w = options.weather?.current() ?? null;
+    return person ? detectWeatherSignals(person.address?.postcode, person.account?.region.northOf26th ?? false, w, perthToday(clock())) : [];
+  };
+  const weatherKey = () => { const w = options.weather?.current(); return w ? `${w.fetchedAt}` : ""; };
+  // Each case's result is kept per flowchart version until the case changes (every change bumps its version)
+  // or a new forecast arrives (hourly). People never change once written, and a flowchart edit is a new FlowDoc.
+  const evaluations = new WeakMap<FlowDoc, Map<string, { version: number; wx: string; result: ReturnType<typeof evaluateCase> }>>();
+  const evaluate = (c: QueueCase, doc: FlowDoc) => {
+    let byCase = evaluations.get(doc);
+    if (!byCase) evaluations.set(doc, (byCase = new Map()));
+    const hit = byCase.get(c.id);
+    const wx = weatherKey();
+    if (hit && hit.version === c.version && hit.wx === wx) return hit.result;
+    const person = store.getPerson(c.personId);
+    const result = evaluateCase(c, person, store.catalog, doc, catalogOf(doc), weatherFor(person));
+    byCase.set(c.id, { version: c.version, wx, result });
+    return result;
+  };
+  const withFlow = async (cases: QueueCase[]) => {
+    const doc = await currentFlow();
+    if (!doc) return cases;
+    return cases.map((c) => ({ ...c, ...evaluate(c, doc) }));
+  };
+  /** Every case, with the catalogs that match how its circumstances were worked out. */
+  const dataset = async () => {
+    const data = store.dataset();
+    const doc = await currentFlow();
+    const out = doc
+      ? { ...data, ...catalogOf(doc), circumstanceSource: "flow" as const, cases: data.cases.map((c) => ({ ...c, ...evaluate(c, doc) })) }
+      : { ...data, circumstanceSource: "fixture" as const };
+    if (await useModel()) out.cases = await withAssessments(model, out.cases);
+    return out;
+  };
+  const enrich = async (cases: QueueCase[]) => {
+    const evaluated = await withFlow(cases);
+    return (await useModel()) ? withAssessments(model, evaluated) : evaluated;
+  };
   const enrichOne = async (c: QueueCase) => (await enrich([c]))[0]!;
   const enrichResult = async (r: MutationResult) => ({ ...r, updated: await enrich(r.updated) });
   const app = express();
   app.disable("x-powered-by");
+  // Gzip API responses and the web app's files: case data is large and the demo is served across the world.
+  app.use(compression());
 
   if (options.basicAuth) {
     const expected = Buffer.from(options.basicAuth);
@@ -95,12 +165,14 @@ export function createApp(store: Store, options: AppOptions = {}) {
     res.json({ user: actor(res), demoIdentity: true, isSynthetic: store.catalog.isSynthetic, asOf: store.catalog.asOf });
   });
 
-  app.get("/api/catalogs", (_req, res) => {
+  app.get("/api/catalogs", async (_req, res) => {
     const c = store.catalog;
+    const doc = await currentFlow();
+    const f = doc ? catalogOf(doc) : c;
     res.json({
-      supportAreas: c.supportAreas, circumstances: c.circumstances, evidenceFields: c.evidenceFields,
-      recommendations: c.recommendations, assistanceOptions: ASSISTANCE_OPTIONS, priorityLabels: PRIORITY_LABELS,
-      statuses: STATUSES, asOf: c.asOf,
+      supportAreas: f.supportAreas, circumstances: f.circumstances, evidenceFields: c.evidenceFields,
+      recommendations: f.recommendations, assistanceOptions: ASSISTANCE_OPTIONS, priorityLabels: PRIORITY_LABELS,
+      statuses: STATUSES, asOf: c.asOf, circumstanceSource: doc ? "flow" : "fixture",
     });
   });
 
@@ -123,23 +195,42 @@ export function createApp(store: Store, options: AppOptions = {}) {
   };
 
   // IDs of every case matching the filters (ignores paging); lets the UI drop selections that stopped matching.
+  // Admin: the utility hardship flow. Open to every demo user. The JSON file is the only copy of the data.
+  app.get("/api/admin/flow", async (_req, res) => {
+    if (!flow) throw new ApiError("not_found", "The flow file isn't configured.");
+    res.json(await flow.read());
+  });
+
+  const flowOpsBody = z.object({ ops: z.array(z.unknown()).min(1).max(200) }).strict();
+  app.post("/api/admin/flow/ops", async (req, res) => {
+    if (!flow) throw new ApiError("not_found", "The flow file isn't configured.");
+    const body = parse(flowOpsBody, req.body);
+    let ops;
+    try {
+      ops = body.ops.map((o) => parseOp(o));
+    } catch (e) {
+      if (e instanceof FlowError) throw new ApiError("validation_failed", e.message, [{ message: e.message }]);
+      throw e;
+    }
+    res.json(await flow.apply(ops));
+  });
+
   app.get("/api/cases/ids", async (req, res) => {
-    const data = store.dataset();
-    data.cases = await enrich(data.cases);
+    const data = await dataset();
     res.json({ ids: applyFilters(data, queryOf(req), actor(res).id).map((c) => c.id) });
   });
 
   app.get("/api/cases", async (req, res) => {
     const q = queryOf(req);
     const me = actor(res).id;
-    const data = store.dataset();
-    data.cases = await enrich(data.cases);
+    const data = await dataset();
     const matches = sortCases(applyFilters(data, q, me), data.people, q.sort);
     const page = paginate(matches, q.page, q.pageSize);
     const people = new Map(data.people.map((x) => [x.id, x]));
     const f = facetCounts(data, q, me);
     res.json({
-      items: page.items.map((c) => ({ case: c, person: people.get(c.personId) ?? null })),
+      // The list leaves out each person's utility account (the case page fetches it), which keeps pages small.
+      items: page.items.map((c) => ({ case: c, person: listPerson(people.get(c.personId)) })),
       total: page.total, page: page.page, pageSize: q.pageSize, pageCount: page.pageCount, from: page.from, to: page.to,
       counters: overviewCounters(data.cases, me),
       facets: {
@@ -152,14 +243,65 @@ export function createApp(store: Store, options: AppOptions = {}) {
     });
   });
 
+  // The account number is the customer's main ID; each account has one case.
+  app.get("/api/accounts/:accountNumber", async (req, res) => {
+    const person = store.getPersonByAccount(String(req.params.accountNumber));
+    const c = person && store.getCaseForPerson(person.id);
+    if (!person || !c) throw new ApiError("not_found", "No case was found for that account number.");
+    res.json({ case: await enrichOne(c), person, weatherSignals: weatherFor(person) });
+  });
+
   app.get("/api/cases/:caseId/overview", async (req, res) => {
     const c = store.getCase(String(req.params.caseId));
     if (!c) throw new ApiError("not_found", "Case not found.");
-    res.json({ case: await enrichOne(c), person: store.getPerson(c.personId) });
+    const person = store.getPerson(c.personId);
+    res.json({ case: await enrichOne(c), person, weatherSignals: weatherFor(person) });
+  });
+
+  app.get("/api/weather", (_req, res) => { res.json(options.weather?.status() ?? { mode: "off", available: false }); });
+  // Managers switch the weather source for everyone: the sample heatwave, the Bureau's live data, or off.
+  app.post("/api/weather/mode", async (req, res) => {
+    if (actor(res).role !== "manager") throw new ApiError("forbidden", "Only managers can change the weather source.");
+    if (!options.weather) throw new ApiError("not_found", "Weather signals aren't set up on this server.");
+    const { mode } = parse(z.object({ mode: z.enum(["live", "demo", "off"]) }), req.body);
+    await options.weather.setMode(mode);
+    res.json(options.weather.status());
+  });
+
+  // Plans are kept per case version and flowchart version, so each case calls the AI once until it changes.
+  const plans = new WeakMap<object, Map<string, Promise<SupportPlan>>>();
+  const noFlow = {};
+  app.get("/api/cases/:caseId/plan", async (req, res) => {
+    const raw = store.getCase(String(req.params.caseId));
+    if (!raw) throw new ApiError("not_found", "Case not found.");
+    const doc = await currentFlow();
+    const byDoc = plans.get(doc ?? noFlow) ?? new Map<string, Promise<SupportPlan>>();
+    plans.set(doc ?? noFlow, byDoc);
+    const kind = (PLAN_KINDS.includes(req.query.kind as PlanKind) ? req.query.kind : "support") as PlanKind;
+    // Weather signals change with the forecast, so they are part of the key: a new heat forecast drafts a new plan.
+    const wxSignals = weatherFor(store.getPerson(raw.personId));
+    const key = `${kind}:${raw.id}@${raw.version}:${wxSignals.map((s) => s.evidence).join("|")}`;
+    let plan = byDoc.get(key);
+    if (!plan) {
+      const c = await enrichOne(raw);
+      const cat = doc ? catalogOf(doc) : store.catalog;
+      const person = store.getPerson(c.personId);
+      const facts = planFacts(kind, c, person, cat, store.catalog.asOf, wxSignals);
+      const acct = person?.account;
+      const contact: ContactRules | undefined = acct ? {
+        preferred: acct.contactPreferences.preferredChannel, sms: acct.contactPreferences.smsOptIn, email: acct.contactPreferences.emailOptIn,
+        doNotCall: acct.contactPreferences.doNotCall, interpreter: acct.interpreterRequired,
+      } : undefined;
+      if (!facts) throw new ApiError("not_found", "Nothing to summarise for this case.");
+      plan = draftPlan(kind, facts, options.ai ?? null, c.recommendations.map((r) => r.recommendationId), contact, perthToday(clock()));
+      byDoc.set(key, plan);
+      plan.catch(() => byDoc.delete(key)); // failures are retried on the next load
+    }
+    res.json({ plan: await plan });
   });
 
   app.post("/api/cases", async (req, res) => {
-    const c = service.createCase(parse(newCaseBody, req.body));
+    const c = service.createCase(actor(res), parse(newCaseBody, req.body));
     res.status(201).json({ case: await enrichOne(c), person: store.getPerson(c.personId) });
   });
 

@@ -5,23 +5,23 @@ import { api, expectTotal, MANAGER, openQueue, switchUser, total } from "./helpe
 test.describe.serial("manager to worker workflow", () => {
   let assigned: string[] = [];
 
-  test("manager sees all 100 demo cases with counters and filter counts", async ({ page }) => {
+  test("manager sees all 200 demo cases with counters and filter counts", async ({ page }) => {
     await openQueue(page);
-    await expectTotal(page, 100);
-    await expect(page.locator("thead th")).toContainText(["", "Person / case", "Priority simulated", "Support needs", "Assigned to", "Status / follow-up"]); // Priority comes before Support needs
+    await expectTotal(page, 200);
+    await expect(page.locator("thead th")).toContainText(["", "Person / case", "Priority", "Support needs", "Assigned to", "Status / follow-up"]); // Priority comes before Support needs
     await expect(page.locator("thead th")).toHaveCount(6);
     await expect(page.getByText("View case")).toHaveCount(0); // no separate button; the name opens the case
     await expect(page.locator("tbody tr")).toHaveCount(50);
-    await expect(page.getByText("Showing 1–50 of 100 cases")).toBeVisible();
-    await expect(page.getByRole("button", { name: /^Unassigned/ })).toContainText("20");
-    await expect(page.locator(".sidebar")).toContainText("Financial pressure");
+    await expect(page.getByText("Showing 1–50 of 200 cases")).toBeVisible();
+    await expect(page.getByRole("button", { name: /^Unassigned/ })).toHaveCount(0); // every case has a worker
+    await expect(page.locator(".sidebar")).toContainText("Income and work"); // support areas are the flowchart's categories
     await expect(page.locator(".sidebar")).not.toContainText("Domestic violence");
   });
 
-  test("manager bulk-assigns two unassigned cases, then Undo restores them", async ({ page }) => {
+  test("manager bulk-reassigns two of Sarah's cases to Alex, then Undo restores them", async ({ page }) => {
     await openQueue(page);
-    await page.getByRole("button", { name: /^Unassigned/ }).click();
-    await expectTotal(page, 20);
+    await page.locator(".sidebar").getByLabel("Assigned worker").selectOption({ label: "Sarah Chen" });
+    await expectTotal(page, 40);
     const boxes = page.locator("tbody tr input[type=checkbox]");
     assigned = await page.locator("tbody tr").evaluateAll((rows) => rows.slice(0, 2).map((r) => r.getAttribute("data-case-id")!));
     await boxes.nth(0).check();
@@ -29,11 +29,11 @@ test.describe.serial("manager to worker workflow", () => {
     await page.getByLabel("Assign selected cases to").selectOption({ label: "Alex Morgan" });
     await page.getByRole("button", { name: "Assign", exact: true }).click();
     await expect(page.locator(".notice-success")).toContainText("Assigned 2 cases to Alex Morgan");
-    await expectTotal(page, 18);
+    await expectTotal(page, 38);
 
     await page.getByRole("button", { name: "Undo" }).click();
     await expect(page.locator(".notice-success")).toContainText("Undone");
-    await expectTotal(page, 20);
+    await expectTotal(page, 40);
 
     // Assign again for the worker steps.
     await boxes.nth(0).check();
@@ -41,7 +41,7 @@ test.describe.serial("manager to worker workflow", () => {
     await page.getByLabel("Assign selected cases to").selectOption({ label: "Alex Morgan" });
     await page.getByRole("button", { name: "Assign", exact: true }).click();
     await expect(page.locator(".notice-success")).toContainText("Assigned 2 cases");
-    await expectTotal(page, 18);
+    await expectTotal(page, 38);
   });
 
   test("selection survives paging and drops cases that stop matching a filter", async ({ page }) => {
@@ -49,10 +49,10 @@ test.describe.serial("manager to worker workflow", () => {
     const onPageOne = await page.locator("tbody tr").evaluateAll((rows) => rows.map((r) => r.getAttribute("data-case-id")!));
     await page.getByLabel("Select all cases on this page").check();
     await page.getByRole("button", { name: "Next" }).click();
-    await expect(page.getByText("Page 2 of 2")).toBeVisible();
+    await expect(page.getByText("Page 2 of 4")).toBeVisible();
     await expect(page.locator(".bulkbar strong")).toHaveText("50 selected");
     await page.locator(".sidebar").getByLabel("Case status").selectOption("resolved");
-    await expectTotal(page, 10);
+    await expectTotal(page, 20);
     // Only selected cases that are also resolved may stay selected.
     const resolved = new Set((await api(page, MANAGER, "GET", "/api/cases/ids?status=resolved")).body.ids as string[]);
     const stillSelected = onPageOne.filter((id) => resolved.has(id)).length;
@@ -66,10 +66,11 @@ test.describe.serial("manager to worker workflow", () => {
     expect(await total(page)).toBeGreaterThanOrEqual(2);
     for (const id of assigned) await expect(page.locator(`tr[data-case-id="${id}"]`)).toBeVisible(); // the two cases the manager assigned
     const first = page.locator("tbody tr").first();
-    const caseId = (await first.getAttribute("data-case-id"))!;
+    const caseId = (await first.getAttribute("data-case-id"))!; // internal key, for API calls
+    const account = (await first.locator(".name-link").getAttribute("data-account-link"))!;
     const startStatus = (await first.locator(".status").innerText()).trim(); // read before leaving the queue
     await first.locator(".name-link").click();
-    await expect(page).toHaveURL(new RegExp(`/cases/${caseId}$`));
+    await expect(page).toHaveURL(new RegExp(`/accounts/${account}$`));
     const panel = page.locator(".case-page");
     await expect(panel).toBeVisible();
     await expect(panel.getByLabel("Assigned worker")).toBeDisabled();
@@ -138,32 +139,14 @@ test.describe.serial("manager to worker workflow", () => {
     await expect(err.locator("li").first()).toContainText("assigned to you");
   });
 
-  test("manager creates a case; it persists across a reload", async ({ page }) => {
+  test("there is no New case form", async ({ page }) => {
     await openQueue(page);
-    await page.getByRole("button", { name: "+ New case" }).click();
-    await page.getByRole("button", { name: "Create case" }).click();
-    await expect(page.locator(".error")).toHaveCount(2);
-    await page.getByLabel("Display name (fictional)").fill("Jordan Newcase");
-    await page.getByRole("textbox", { name: "Suburb" }).fill("Perth");
-    await page.getByRole("button", { name: "Create case" }).click();
-    await expect(page.locator(".notice-success")).toContainText("Added Jordan Newcase");
-    await expect(page.locator("#case-title")).toHaveText("Jordan Newcase");
-    await expect(page.locator(".case-page")).toContainText("Assessment pending");
-    await expect(page.locator(".case-page")).toContainText("No circumstances flagged");
-    // A person added in the queue has no contact details yet, which reads as not recorded rather than blank.
-    await expect(page.locator(".details dd", { hasText: "Not recorded" })).toHaveCount(6);
-    await expect(page).toHaveURL(/\/cases\/GS-\d+$/);
-    await page.reload(); // the new case's own page survives a reload
-    await expect(page.locator("#case-title")).toHaveText("Jordan Newcase");
-    await page.getByRole("link", { name: /Back to case queue/ }).click();
-    await expectTotal(page, 101);
-    await page.getByPlaceholder("Search name, case ID or suburb…").fill("Jordan Newcase");
-    await expectTotal(page, 1);
+    await expect(page.getByRole("button", { name: /New case/ })).toHaveCount(0);
   });
 
   test("worker view is the same shared queue; managers cannot be impersonated by request body", async ({ page }) => {
     await openQueue(page, "staff-sarah");
-    await expectTotal(page, 101);
+    await expectTotal(page, 200);
     const cur = (await api(page, "staff-sarah", "GET", `/api/cases/${assigned[0]}/overview`)).body.case;
     const r = await api(page, "staff-sarah", "POST", "/api/cases/bulk/assignment", { assigneeUserId: "staff-sarah", items: [{ caseId: cur.id, expectedVersion: cur.version }], actorUserId: MANAGER });
     expect(r.status).toBe(422);

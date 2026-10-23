@@ -47,10 +47,11 @@ export function personOf(people: Person[], c: QueueCase): Person | undefined {
   return people.find((p) => p.id === c.personId);
 }
 
-function matchesSearch(c: QueueCase, person: Person | undefined, term: string): boolean {
+/** Search covers the account number (the main ID), name and suburb. */
+function matchesSearch(person: Person | undefined, term: string): boolean {
   const t = term.trim().toLowerCase();
   if (!t) return true;
-  return [c.id, c.personId, person?.displayName, person?.suburb].some((v) => v?.toLowerCase().includes(t));
+  return [person?.accountNumber, person?.displayName, person?.suburb].some((v) => v?.toLowerCase().includes(t));
 }
 
 /** One definition of every filter, used for the table, the counters and the facet counts. */
@@ -62,10 +63,9 @@ export function applyFilters(
 ): QueueCase[] {
   const people = new Map(data.people.map((p) => [p.id, p]));
   return data.cases.filter((c) => {
-    if (!matchesSearch(c, people.get(c.personId), q.search)) return false;
+    if (!matchesSearch(people.get(c.personId), q.search)) return false;
     if (omit !== "view") {
       if (q.view === "mine" && c.workflow.assignedToUserId !== currentUserId) return false;
-      if (q.view === "unassigned" && c.workflow.assignedToUserId !== null) return false;
       if (q.view === "needs_review" && c.workflow.reviewStatus !== "needs_review") return false;
     }
     if (omit !== "circumstances" && q.circumstanceIds.length > 0) {
@@ -83,7 +83,7 @@ export function applyFilters(
     if (omit !== "assessment" && q.assessmentStatus && c.modelAssessment.status !== q.assessmentStatus) return false;
     if (omit !== "status" && q.status && c.workflow.status !== q.status) return false;
     if (omit !== "worker" && q.assignedToUserId) {
-      if (q.assignedToUserId === "__none__" ? c.workflow.assignedToUserId !== null : c.workflow.assignedToUserId !== q.assignedToUserId) return false;
+      if (c.workflow.assignedToUserId !== q.assignedToUserId) return false;
     }
     return true;
   });
@@ -147,12 +147,11 @@ export function paginate<T>(items: T[], page: number, pageSize: number): Page<T>
   };
 }
 
-/** The three global active-case shortcuts. They ignore the table filters on purpose. */
+/** The global active-case shortcuts. They ignore the table filters on purpose. */
 export function overviewCounters(cases: QueueCase[], currentUserId: string) {
   const active = cases.filter((c) => !isResolved(c));
   return {
     urgent: active.filter((c) => c.modelAssessment.status === "ready" && c.modelAssessment.priority?.label === "urgent").length,
-    awaitingAssignment: active.filter((c) => c.workflow.assignedToUserId === null).length,
     myActive: active.filter((c) => c.workflow.assignedToUserId === currentUserId).length,
   };
 }
@@ -167,7 +166,6 @@ export function facetCounts(data: Pick<QueueDataset, "cases" | "people">, q: Que
     view: {
       all: views.length,
       mine: views.filter((c) => c.workflow.assignedToUserId === currentUserId).length,
-      unassigned: views.filter((c) => c.workflow.assignedToUserId === null).length,
       needs_review: views.filter((c) => c.workflow.reviewStatus === "needs_review").length,
     },
     circumstance: (id: string) => circ.filter((c) => c.circumstances.some((x) => x.circumstanceId === id)).length,

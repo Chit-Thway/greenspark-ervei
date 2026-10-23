@@ -1,8 +1,8 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import type { Catalog, CaseItem } from "../data/api";
 import { describeFollowUp, shortName, STATUS_LABELS } from "../domain/format";
 import { isResolved } from "../domain/query";
-import { caseHref, isModifiedClick } from "../route";
+import { accountHref, isModifiedClick } from "../route";
 import { PriorityBadge } from "./Primitives";
 
 export function CaseTable(props: {
@@ -13,7 +13,8 @@ export function CaseTable(props: {
   selectionDisabled: boolean;
   onToggleRow: (id: string, on: boolean) => void;
   onTogglePage: (on: boolean) => void;
-  onOpen: (id: string) => void;
+  /** Opens a case by its account number. */
+  onOpen: (accountNumber: string) => void;
 }) {
   const { data, rows, selectedIds } = props;
   const users = new Map(data.users.map((u) => [u.id, u]));
@@ -40,7 +41,7 @@ export function CaseTable(props: {
               />
             </th>
             <th scope="col">Person / case</th>
-            <th scope="col">Priority <span className="sim">simulated</span></th>
+            <th scope="col">Priority{data.circumstanceSource === "flow" ? null : <> <span className="sim">simulated</span></>}</th>
             <th scope="col">Support needs</th>
             <th scope="col">Assigned to</th>
             <th scope="col">Status / follow-up</th>
@@ -58,12 +59,12 @@ export function CaseTable(props: {
                 key={c.id}
                 className={selectedIds.has(c.id) ? "is-selected" : undefined}
                 data-case-id={c.id}
-                onClick={() => props.onOpen(c.id)}
+                onClick={() => person?.accountNumber && props.onOpen(person.accountNumber)}
               >
                 <td className="col-check" onClick={(e) => e.stopPropagation()}>
                   <input
                     type="checkbox"
-                    aria-label={`Select ${person?.displayName ?? c.id}`}
+                    aria-label={`Select ${person?.displayName ?? person?.accountNumber ?? "case"}`}
                     checked={selectedIds.has(c.id)}
                     disabled={props.selectionDisabled}
                     onChange={(e) => props.onToggleRow(c.id, e.target.checked)}
@@ -74,18 +75,18 @@ export function CaseTable(props: {
                     <span>
                       <a
                         className="name-link"
-                        href={caseHref(c.id)}
-                        data-case-link={c.id}
+                        href={person?.accountNumber ? accountHref(person.accountNumber) : undefined}
+                        data-account-link={person?.accountNumber ?? undefined}
                         onClick={(e) => {
                           e.stopPropagation();
                           if (isModifiedClick(e)) return; // let the browser open a new tab or window
                           e.preventDefault();
-                          props.onOpen(c.id);
+                          if (person?.accountNumber) props.onOpen(person.accountNumber);
                         }}
                       >
                         {person?.displayName ?? "Unknown person"}
                       </a>
-                      <span className="sub">{c.id} · {person?.suburb}</span>
+                      <span className="sub">{person?.accountNumber} · {person?.suburb}</span>
                     </span>
                   </div>
                 </td>
@@ -94,10 +95,7 @@ export function CaseTable(props: {
                 </td>
                 <td data-label="Support needs">
                   {labels.length ? (
-                    <>
-                      <span>{labels[0]}</span>
-                      {labels.length > 1 ? <span className="sub">+ {labels.length - 1} more</span> : null}
-                    </>
+                    <SupportNeeds labels={labels} />
                   ) : (
                     <span className="muted">No circumstances flagged</span>
                   )}
@@ -108,9 +106,7 @@ export function CaseTable(props: {
                       <span>{shortName(assignee.displayName)}</span>
                       {assignee.id === props.currentUserId ? <span className="sub">You</span> : null}
                     </>
-                  ) : (
-                    <span className="unassigned">Unassigned</span>
-                  )}
+                  ) : null}
                 </td>
                 <td data-label="Status">
                   <span className={`status status-${c.workflow.status}`}>{STATUS_LABELS[c.workflow.status]}</span>
@@ -122,5 +118,39 @@ export function CaseTable(props: {
         </tbody>
       </table>
     </div>
+  );
+}
+
+/** The first support need and a count; hovering or focusing shows the full list in a tooltip. */
+function SupportNeeds({ labels }: { labels: string[] }) {
+  const [at, setAt] = useState<{ left: number; top: number; above: boolean } | null>(null);
+  const ref = useRef<HTMLSpanElement>(null);
+  const id = useId();
+  const show = () => {
+    const box = ref.current?.getBoundingClientRect();
+    if (!box) return;
+    // Fixed to the window, so the table's scroll area can't clip it; flips above when near the bottom.
+    const above = box.bottom + 260 > window.innerHeight && box.top > 260;
+    setAt({ left: Math.min(box.left, window.innerWidth - 336), top: above ? box.top - 6 : box.bottom + 6, above });
+  };
+  const hide = () => setAt(null);
+  useEffect(() => {
+    if (!at) return;
+    window.addEventListener("scroll", hide, true);
+    return () => window.removeEventListener("scroll", hide, true);
+  }, [at]);
+  if (labels.length === 1) return <span>{labels[0]}</span>;
+  return (
+    <span ref={ref} className="needs" tabIndex={0} aria-describedby={at ? id : undefined}
+      onMouseEnter={show} onMouseLeave={hide} onFocus={show} onBlur={hide} onKeyDown={(e) => { if (e.key === "Escape") hide(); }}>
+      <span>{labels[0]}</span>
+      <span className="sub">+ {labels.length - 1} more</span>
+      {at ? (
+        <span role="tooltip" id={id} className={`needs-tip${at.above ? " above" : ""}`} style={{ left: Math.max(8, at.left), top: at.top }}>
+          <span className="needs-tip-title">{labels.length} support needs</span>
+          <ul>{labels.map((l) => <li key={l}>{l}</li>)}</ul>
+        </span>
+      ) : null}
+    </span>
   );
 }

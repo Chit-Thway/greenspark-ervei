@@ -23,7 +23,7 @@ Needs Node.js 22 or newer. SQLite uses Node's built-in `node:sqlite`, so there i
 
 - On first start the database is seeded from the fixture: people, cases, evidence, recommendations, model results and notes. Workflow changes (assignment, status, review, notes, new cases) are written to SQLite and survive restarts.
 - The fixture file is never written to. A test checks its hash before and after.
-- `npm run reset` removes the database file (and its `-wal`/`-shm` files). The next start reseeds the original 100 cases.
+- `npm run reset` removes the database file (and its `-wal`/`-shm` files). The next start reseeds the original 200 cases.
 - Evidence, circumstances, recommendations and model assessments are read-only seed data. Staff workflow data is stored in separate columns and tables, as the plan requires.
 
 ## Identity (demo only)
@@ -41,14 +41,17 @@ Every `/api` route except `/api/health` needs an `X-Demo-User` header naming a f
 | `GET /api/cases` | `search, view, circumstanceIds, assistanceIds, priorityLabels` (comma separated), `minPriorityScore, assessmentStatus, status, assignedToUserId, sort, page, pageSize`. Returns `items`, totals, global `counters` and filter `facets` |
 | `GET /api/cases/ids` | Same filters, no paging: IDs of every matching case (used to drop selections that no longer match) |
 | `GET /api/cases/:id/overview` | Case and person |
-| `POST /api/cases` | `{personId}` or `{displayName, suburb}`; starts at version 1, unassigned, evidence unknown, model pending |
-| `POST /api/cases/bulk/assignment` | Manager only. `{assigneeUserId \| null, items:[{caseId, expectedVersion}]}` |
+| `GET /api/accounts/:accountNumber` | The account's case and person. The account number is the main ID on screen; each account has one case |
+| `POST /api/cases` | `{personId}` (one without a case) or `{displayName, suburb}` (gets the next account number), plus `assigneeUserId` (required from a manager; a worker's case is theirs); starts at version 1, evidence unknown, model pending |
+| `POST /api/cases/bulk/assignment` | Manager only. `{assigneeUserId, items:[{caseId, expectedVersion}]}`; always a support worker, never null |
 | `POST /api/cases/bulk/status` | `{status, items}`; workers only for their own cases |
 | `PATCH /api/cases/:id/status` | `{status, expectedVersion}` |
 | `POST /api/cases/:id/notes` | `{text (not empty, no character limit), expectedVersion}`; requests over about 100 KB return 422 |
 | `PATCH /api/cases/:id/notes/:noteId` | `{text (not empty, no character limit), expectedVersion}`: author or manager only; keeps the earlier wording as an audit record |
 | `PATCH /api/cases/:id/review` | `{reviewStatus, expectedVersion}` |
 | `POST /api/workflow-actions/:actionId/undo` | Assignment/status actions only |
+| `GET /api/admin/flow` | Any demo user. The hardship-flow JSON file as `{doc, hash, problems}` (`doc` is null if the file is broken). 404 if no file is configured |
+| `POST /api/admin/flow/ops` | Any demo user. `{ops:[…]}` (1–200 edit operations, all-or-nothing) → `{hash, previousHash, changed}`. See [admin-flowchart.md](admin-flowchart.md) |
 
 Mutations return `{ actionId, updated: [case…], unchanged: [caseId…] }`. A change that matches the current value is reported under `unchanged` and does not bump the version.
 

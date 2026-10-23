@@ -42,3 +42,27 @@ describe("single-process hosting", () => {
     } finally { await h.stop(); }
   });
 });
+
+describe("keeping responses small", () => {
+  it("gzips API responses for clients that accept it", async () => {
+    const h = await serve({});
+    try {
+      const r = await fetch(h.base + "/api/cases", { headers: { "x-demo-user": "staff-manager", "accept-encoding": "gzip" } });
+      expect(r.status).toBe(200);
+      expect(r.headers.get("content-encoding")).toBe("gzip");
+      expect(((await r.json()) as { total: number }).total).toBe(200); // fetch unzips it
+    } finally { await h.stop(); }
+  });
+
+  it("leaves utility accounts out of the case list, but not out of a single case", async () => {
+    const h = await serve({});
+    try {
+      const headers = { "x-demo-user": "staff-manager" };
+      const list = (await (await fetch(h.base + "/api/cases", { headers })).json()) as { items: { person: Record<string, unknown> }[] };
+      expect(list.items.length).toBeGreaterThan(0);
+      for (const i of list.items) { expect(i.person.account).toBeUndefined(); expect(i.person.accountNumber).toMatch(/^DEMO-/); }
+      const one = (await (await fetch(h.base + "/api/accounts/DEMO-700001", { headers })).json()) as { person: { account: unknown } };
+      expect(one.person.account).toBeTruthy();
+    } finally { await h.stop(); }
+  });
+});

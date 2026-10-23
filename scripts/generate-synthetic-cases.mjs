@@ -1,15 +1,16 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
+import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 const destination = fileURLToPath(new URL('../data/synthetic/case-queue.v1.json', import.meta.url));
 const args = process.argv.slice(2);
 const checkOnly = args.includes('--check');
 const option = (name, fallback) => Number(args.find(a => a.startsWith(`--${name}=`))?.split('=')[1] ?? fallback);
-const count = option('count', 100);
+const count = option('count', 200);
 const seed = option('seed', 3162026);
 const asOf = '2026-10-16';
-assert(Number.isInteger(count) && count >= 20 && count <= 400, 'count must be an integer between 20 and 400');
+assert(Number.isInteger(count) && count >= 20 && count <= 200, 'count must be an integer between 20 and 200 (20 utility accounts per scenario)');
 assert(Number.isInteger(seed) && seed >= 0 && seed <= 0xffffffff, 'seed must be an unsigned 32-bit integer');
 
 let randomState = seed;
@@ -114,9 +115,45 @@ function withContactDetails(person, i) {
   };
 }
 
-const scenarioNames = ['unassigned_financial', 'assigned_financial', 'home_comfort', 'health_related', 'multiple_support_areas', 'historical_payment_plan', 'resolved_case', 'no_flagged_circumstances', 'incomplete_assessment', 'support_access_review'];
+// Utility accounts come from the synthetic WA utility dataset, imported by scripts/import-utility-dataset.mts into
+// data/synthetic/utility-accounts.v1.json: 20 customers per testing scenario, each chosen to fit it. Person i takes
+// the (i / 10)th customer of its scenario. Names, contact details, dates of birth and survey answers stay fictional.
+const utility = JSON.parse(readFileSync(fileURLToPath(new URL('../data/synthetic/utility-accounts.v1.json', import.meta.url)), 'utf8'));
+const addDays = (date, n) => day(date, n);
+const yearsBefore = (date, n) => { const d = new Date(`${date}T12:00:00Z`); d.setUTCFullYear(d.getUTCFullYear() - n); return d.toISOString().slice(0, 10); };
+const utilityFor = (i) => {
+  const id = utility.scenarios[scenarioNames[i % 10]][Math.floor(i / 10)];
+  assert(id, `No utility account for person ${i + 1}`);
+  return utility.customers[id];
+};
+
+function withAccount(person, i, scenario, src) {
+  const h = salt => hash(i, salt);
+  // Dates of birth are invented (the dataset has none); every holder is an adult.
+  const ageYears = scenario === 3 ? 62 + h(22) % 27 : [1, 5, 6].includes(scenario) ? 25 + h(22) % 56 : 19 + h(22) % 57;
+  const dateOfBirth = addDays(yearsBefore(asOf, ageYears), -(1 + h(23) % 360));
+  return {
+    ...person,
+    suburb: src.locality,
+    address: { ...person.address, postcode: src.postcode },
+    // The account number is the customer's main ID on screen (the case ID stays an internal key).
+    accountNumber: `DEMO-${700001 + i}`,
+    account: { ...src.account, dateOfBirth },
+  };
+}
+
+/** Survey answers that the account data also records are set from the account, so the two agree. */
+function alignWithAccount(answers, account, scenario) {
+  if (scenario === 8) return; // incomplete assessment: the survey wasn't done
+  answers.Z7_8 = account.concession.status === 'active' ? 'Yes' : 'No';
+  answers.Z7_4 = account.lifeSupport ? 'Yes' : 'No';
+  answers.Q37 = account.hardshipProgram.status === 'active' ? 'Yes' : 'No';
+}
+
+const scenarioNames = ['new_financial', 'assigned_financial', 'home_comfort', 'health_related', 'multiple_support_areas', 'historical_payment_plan', 'resolved_case', 'no_flagged_circumstances', 'incomplete_assessment', 'support_access_review'];
 const scenarioStatuses = ['new', 'in_progress', 'new', 'in_progress', 'in_progress', 'waiting', 'resolved', 'in_progress', 'new', 'waiting'];
-const assignees = [null, 'staff-alex', 'staff-sarah', 'staff-james', 'staff-maya', 'staff-alex', 'staff-sarah', 'staff-james', null, 'staff-maya'];
+// Every case has a worker.
+const assignees = ['staff-james', 'staff-alex', 'staff-sarah', 'staff-james', 'staff-maya', 'staff-alex', 'staff-sarah', 'staff-james', 'staff-maya', 'staff-maya'];
 const q36Ids = evidenceFieldDefinitions.filter(f => f.id.startsWith('Q36b_')).map(f => f.id);
 
 function matches(id, a) {
@@ -155,8 +192,13 @@ function build() {
   for (let i = 0; i < count; i++) {
     const n = String(i + 1).padStart(3, '0'), personId = `demo-person-${n}`, caseId = `GS-${2001 + i}`, scenario = i % 10;
     const basePerson = { id: personId, isSynthetic: true, displayName: names[i], suburb: pick(suburbs), state: 'WA', householdSummary: pick(['1 adult', '2 adults', '1 adult, 1 child', '2 adults, 2 children']), contactPreference: { channel: pick(['sms', 'phone', 'email']), preferredWindow: pick(['Mornings', 'Afternoons', 'Weekdays']), provenance: 'fictional_demo_preference' }, fullProfilePath: null };
-    people.push(withContactDetails(basePerson, i));
+    const src = utilityFor(i);
+    // The preferred channel comes from the dataset; the preferred time of day stays fictional.
+    basePerson.contactPreference = { ...basePerson.contactPreference, channel: src.account.contactPreferences.preferredChannel, provenance: 'dataset_channel_fictional_window' };
     const reportedAnswers = answersFor(scenario, i), reportedAt = day(asOf, -(5 + i % 12));
+    alignWithAccount(reportedAnswers, src.account, scenario);
+    if (reportedAnswers.Q35_5 !== 'Yes') for (const id of q36Ids) reportedAnswers[id] = null;
+    people.push(withAccount(withContactDetails(basePerson, i), i, scenario, src));
     const definitions = circumstanceDefinitions.filter(c => matches(c.id, reportedAnswers));
     const circumstances = definitions.map(c => ({ circumstanceId: c.id, evidenceFieldIds: [...c.evidenceFieldIds], provenance: 'illustrative_demo_grouping' }));
     const recommendationIds = [...new Set(definitions.flatMap(c => c.recommendationIds))];
@@ -177,7 +219,7 @@ function build() {
     });
   }
   return {
-    metadata: { schemaVersion: '1.1.0', datasetId: 'greenspark-case-queue-demo-v1', classification: 'synthetic_demo_only', isSynthetic: true, asOf, timezone: 'Australia/Perth', generatorSeed: seed, peopleCount: count, caseCount: count, sourceDefinitions: [{ id: 'eca-household-jun-2026', purpose: 'Question definitions and allowed answer domains only; respondent rows are not copied.', url: 'https://energyconsumersaustralia.com.au/our-work/surveys/energy-consumer-survey-data' }], limits: ['All identities, combinations of answers, workflow events, recommendations and model assessments are fictional.', 'Scenario balance is designed for UI coverage, not population statistics or model training.', 'Historical answers do not establish current circumstances.', 'ERA aggregates and SGSC households have not been joined to these fictional people.', 'Gender, preferred name, addresses, phone numbers and emails are invented. Gender follows the fictional first name, apart from a few deliberate Non-binary and Prefer not to say records. Phone numbers come from ranges reserved for fiction and emails use example.com, so none can reach a real person. Street names are invented and are not real addresses.'], profileContractStatus: 'proposed_shared_person_id', modelContractStatus: 'mock_adapter_only' },
+    metadata: { schemaVersion: '2.0.0', datasetId: 'greenspark-case-queue-demo-v2', classification: 'synthetic_demo_only', isSynthetic: true, asOf, timezone: 'Australia/Perth', generatorSeed: seed, peopleCount: count, caseCount: count, sourceDefinitions: [{ id: 'eca-household-jun-2026', purpose: 'Question definitions and allowed answer domains only; respondent rows are not copied.', url: 'https://energyconsumersaustralia.com.au/our-work/surveys/energy-consumer-survey-data' }], limits: ['All identities, combinations of answers, workflow events, recommendations and model assessments are fictional.', 'Scenario balance is designed for UI coverage, not population statistics or model training.', 'Historical answers do not establish current circumstances.', 'ERA aggregates and SGSC households have not been joined to these fictional people.', 'Gender, preferred name, addresses, phone numbers and emails are invented. Gender follows the fictional first name, apart from a few deliberate Non-binary and Prefer not to say records. Phone numbers come from ranges reserved for fiction and emails use example.com, so none can reach a real person. Street names are invented and are not real addresses.', 'Utility accounts (bills, payments, usage, plans, hardship, contacts and transcripts, outages, prepay) come from a synthetic WA utility dataset (see data/synthetic/utility-accounts.v1.json): 20 customers per testing scenario, chosen to fit it, with every date shifted forward so the data ends on the as-of date. Suburb, postcode and preferred contact channel come from the same records. Dates of birth stay invented. Survey answers about a concession, life support and hardship enrolment are set from the account so they agree.'], profileContractStatus: 'proposed_shared_person_id', modelContractStatus: 'mock_adapter_only' },
     users, supportAreas, circumstanceDefinitions, evidenceFieldDefinitions, recommendationDefinitions, people, cases,
   };
 }
@@ -204,7 +246,7 @@ function validate(data) {
     assert(typeof p.preferredName === 'string' && p.preferredName.length > 0, `${p.id} preferredName`);
     assert(typeof p.address.line1 === 'string' && /^\d+ /.test(p.address.line1), `${p.id} address line 1`);
     assert(p.address.line2 === null || /^Unit \d+$/.test(p.address.line2), `${p.id} address line 2`);
-    assert.equal(p.address.postcode, postcodes[p.suburb], `${p.id} postcode must match the suburb`);
+    assert(/^\d{4}$/.test(p.address.postcode), `${p.id} postcode`);
     assert(p.mobile === null || fictionalMobiles.includes(p.mobile), `${p.id} mobile must be a number reserved for fiction`);
     assert(p.phone === null || /^\(08\) 5550 \d{4}$/.test(p.phone), `${p.id} phone must be in the reserved (08) 5550 block`);
     assert(p.email === null || /^[a-z]+\.[a-z]+@example\.com$/.test(p.email), `${p.id} email must use example.com`);
@@ -215,10 +257,31 @@ function validate(data) {
     assert(ch !== 'phone' || p.phone, `${p.id} prefers phone but has no phone number`);
     assert(ch !== 'email' || p.email, `${p.id} prefers email but has no email`);
   }
+  const caseByPerson = new Map(data.cases.map(c => [c.personId, c]));
+  assert.equal(new Set(data.people.map(p => p.accountNumber)).size, data.people.length, 'Account numbers must be unique');
+  assert.equal(caseByPerson.size, data.cases.length, 'Each account has exactly one case');
+  for (const p of data.people) {
+    const a = p.account, answers = caseByPerson.get(p.id).reportedAnswers;
+    assert(a.sourceCustomerId && utility.customers[a.sourceCustomerId], `${p.id} account must come from the utility dataset`);
+    assert(/^DEMO-\d{6}$/.test(p.accountNumber), `${p.id} account number must be a fictional DEMO- number`);
+    assert(a.dateOfBirth < yearsBefore(data.metadata.asOf, 18), `${p.id} account holder must be an adult`);
+    // Survey answers the account also records must agree with it (unless the survey wasn't done).
+    if (answers.Z7_4 !== null) assert.equal(a.lifeSupport, answers.Z7_4 === 'Yes', `${p.id} life support must match the reported answer`);
+    if (answers.Z7_8 !== null) assert.equal(a.concession.status === 'active', answers.Z7_8 === 'Yes', `${p.id} active concession must match the reported answer`);
+    if (answers.Q37 !== null) assert.equal(a.hardshipProgram.status === 'active', answers.Q37 === 'Yes', `${p.id} hardship enrolment must match the reported answer`);
+    assert.equal(a.plan.type === 'prepaid', a.prepay !== null);
+    assert.equal(a.contactPreferences.preferredChannel, p.contactPreference.channel, `${p.id} preferred channel comes from the dataset`);
+    for (const b of a.bills) {
+      assert((b.openingBalance || b.issuedAt <= b.dueAt) && b.issuedAt <= data.metadata.asOf, `${b.id} dates out of order`); // arrears carried in are already due
+      assert(b.amountPaid >= 0 && b.amountPaid <= b.amount + 0.001, `${b.id} amounts`);
+    }
+    const dates = [...a.payments.map(x => x.date), ...a.contacts.map(x => x.date), ...a.monthly.map(x => x.date)];
+    assert(dates.every(d => d <= data.metadata.asOf), `${p.id} has dates after the as-of date`);
+  }
   for (const c of data.cases) {
     assert(personIds.has(c.personId)); assert.equal(c.isSynthetic, true); assert.equal(c.sourceRecordId, null);
     assert(statuses.has(c.workflow.status)); assert(Number.isInteger(c.version) && c.version > 0);
-    assert(c.workflow.assignedToUserId === null || data.users.some(u => u.id === c.workflow.assignedToUserId && u.role === 'support_worker'));
+    assert(data.users.some(u => u.id === c.workflow.assignedToUserId && u.role === 'support_worker'), `${c.id} must be assigned to a support worker`);
     assert.equal(Object.keys(c.reportedAnswers).length, fields.size);
     for (const [id, value] of Object.entries(c.reportedAnswers)) { assert(fields.has(id), `Unknown evidence field ${id}`); assert(value === null || fields.get(id).allowedValues.includes(value), `Invalid answer ${id}`); }
     assert.deepEqual(c.missingEvidenceFieldIds, Object.keys(c.reportedAnswers).filter(id => c.reportedAnswers[id] === null));
@@ -246,11 +309,11 @@ function validate(data) {
   for (const s of statuses) assert(data.cases.some(c => c.workflow.status === s), `Missing ${s} scenario`);
   for (const x of data.circumstanceDefinitions) assert(data.cases.some(c => c.circumstances.some(s => s.circumstanceId === x.id)), `Missing ${x.id} coverage`);
   assert(data.cases.some(c => c.supportAreaIds.length === 0)); assert(data.cases.some(c => c.supportAreaIds.length > 1));
-  assert(data.cases.some(c => c.workflow.assignedToUserId === null)); assert(data.cases.some(c => c.workflow.assignedToUserId === 'staff-alex'));
+  for (const u of data.users.filter(x => x.role === 'support_worker')) assert(data.cases.some(c => c.workflow.assignedToUserId === u.id), `${u.id} has no cases`);
   assert(data.cases.some(c => c.modelAssessment.status === 'pending')); assert(data.cases.some(c => c.modelAssessment.status === 'unavailable'));
   assert(data.cases.some(c => c.assistance.reportedHistory.some(h => h.evidenceFieldId === 'Q36b_3') && c.reportedAnswers.Q37 === 'No'));
   for (const label of ['urgent', 'high', 'moderate', 'routine']) assert(data.cases.some(c => c.modelAssessment.priority?.label === label));
-  return { people: data.people.length, cases: data.cases.length, supportAreas: data.supportAreas.length, circumstances: data.circumstanceDefinitions.length, recommendationTypes: data.recommendationDefinitions.length, assigned: data.cases.filter(c => c.workflow.assignedToUserId !== null).length, unassigned: data.cases.filter(c => c.workflow.assignedToUserId === null).length, modelReady: data.cases.filter(c => c.modelAssessment.status === 'ready').length, modelPending: data.cases.filter(c => c.modelAssessment.status === 'pending').length, modelUnavailable: data.cases.filter(c => c.modelAssessment.status === 'unavailable').length };
+  return { people: data.people.length, cases: data.cases.length, supportAreas: data.supportAreas.length, circumstances: data.circumstanceDefinitions.length, recommendationTypes: data.recommendationDefinitions.length, assigned: data.cases.filter(c => c.workflow.assignedToUserId !== null).length, modelReady: data.cases.filter(c => c.modelAssessment.status === 'ready').length, modelPending: data.cases.filter(c => c.modelAssessment.status === 'pending').length, modelUnavailable: data.cases.filter(c => c.modelAssessment.status === 'unavailable').length };
 }
 
 const dataset = checkOnly ? JSON.parse(await fs.readFile(destination, 'utf8')) : build();

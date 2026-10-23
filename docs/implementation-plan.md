@@ -14,10 +14,10 @@ Keep the first screen focused on casework:
 
 - A shared manager/support-worker workspace, with role-appropriate actions.
 - A left filter sidebar, compact overview counters, and the main case table.
-- Search by name, case ID and suburb; sorting; pagination; select-page and individual selection.
+- Search by name, account number and suburb; sorting; pagination; select-page and individual selection.
 - The prototype's New case action, limited to a person reference/minimal queue identity and basic case fields. New evidence and model results begin as unknown/pending; full-profile editing remains with its owner.
 - Single and bulk case assignment by managers.
-- Assigned to me, unassigned cases, needs review and all-cases views.
+- Assigned to me, needs review and all-cases views. Every case has an assigned worker.
 - Case status updates and short case notes, consistent with the approved prototype.
 - The compact right-side case overview, opened by clicking a person or row action.
 - Empty results, missing answers, loading and error states.
@@ -29,7 +29,7 @@ Another teammate owns the prediction model. Another teammate owns the full indiv
 
 The overview contains only the context required to act from the queue:
 
-1. Fictional display name, person/case IDs, suburb and a short household summary.
+1. Fictional display name, account number, suburb and a short household summary. Person and case IDs are internal keys and are not shown.
 2. Assignment, case status and follow-up date.
 3. Model priority/trend when available, visibly marked simulated in demo mode.
 4. Support areas and their specific circumstances.
@@ -78,7 +78,7 @@ Preserve the full approved recommendation menu:
 - **Support areas:** expandable parent/child checkboxes from the taxonomy above.
 - **Assistance reported:** current hardship enrolment (`Q37`), reported concession (`Z7_8`), and historical support such as an extension or repayment plan (`Q36b`). A historical repayment plan is not labelled as a current plan.
 - **Model priority:** optional priority label/score, trend and assessment availability; demo values are visibly simulated.
-- **Workflow:** assigned to me, assigned worker, unassigned, case status, follow-up timing and review state.
+- **Workflow:** assigned to me, assigned worker, case status, follow-up timing and review state.
 
 Proposed filter semantics: selecting a parent selects its child circumstances; matches are OR within the circumstance group and AND across independent groups. Parent checkboxes show an indeterminate state for partial selection. Unknown evidence is distinct from No. Filter chips expose active choices and allow individual removal. Counts and pagination follow the same filter definition. Selection applies to the current page when using the table header; selected IDs may be retained across pages, and filter changes remove selected IDs that no longer match.
 
@@ -131,7 +131,7 @@ Completion: the agreed queue workflow is usable with all 100 demo people, focuse
 
 Use [../data/synthetic/case-queue.v1.json](../data/synthetic/case-queue.v1.json). The seed is reproducible and deliberately covers scenarios, rather than matching source-population percentages.
 
-The fixture includes assigned/unassigned cases, all four case statuses, every supported circumstance, multiple-area cases, no-flag cases, unknown answers, current versus historical assistance, overdue/future/no follow-up, notes, reviewed/pending recommendations, and simulated model ready/pending/unavailable states.
+The fixture assigns every case to a support worker and includes all four case statuses, every supported circumstance, multiple-area cases, no-flag cases, unknown answers, current versus historical assistance, overdue/future/no follow-up, notes, reviewed/pending recommendations, and simulated model ready/pending/unavailable states.
 
 All names, combinations of answers, dates, workflow records and model scores are invented. No respondent row or source person identifier is copied. ERA aggregates and SGSC households are not joined to survey respondents. The removed root-level placeholder is not restored.
 

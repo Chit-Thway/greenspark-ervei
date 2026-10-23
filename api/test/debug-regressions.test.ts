@@ -57,7 +57,7 @@ describe("workflow follow-up regressions (#3)", () => {
   });
 
   it("still supports Undo of older action logs without a followUpAt field", async () => {
-    const c = (await allCases(h)).find((c) => c.workflow.assignedToUserId === null && c.workflow.followUpAt)!;
+    const c = (await allCases(h)).find((c) => c.workflow.assignedToUserId !== "staff-alex" && c.workflow.followUpAt)!;
     const assigned = await h.call("staff-manager", "POST", "/api/cases/bulk/assignment", {
       assigneeUserId: "staff-alex", items: [{ caseId: c.id, expectedVersion: c.version }],
     });
@@ -69,6 +69,6 @@ describe("workflow follow-up regressions (#3)", () => {
       .run(JSON.stringify(before), JSON.stringify(after), action.id);
     const undone = await h.call("staff-manager", "POST", `/api/workflow-actions/${action.id}/undo`);
     expect(undone.status).toBe(200);
-    expect(undone.body.updated[0].workflow).toMatchObject({ assignedToUserId: null, followUpAt: c.workflow.followUpAt });
+    expect(undone.body.updated[0].workflow).toMatchObject({ assignedToUserId: c.workflow.assignedToUserId, followUpAt: c.workflow.followUpAt });
   });
 });

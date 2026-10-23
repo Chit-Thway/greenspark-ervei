@@ -61,3 +61,8 @@ export const PERIOD_TEXT = {
   past_12_months: "past 12 months",
   at_report: "at time of report",
 } as const;
+
+/** "2026-05-20" → "20 May 2026", for ISO dates inside generated evidence text. */
+export function readableDates(text: string): string {
+  return text.replace(/\b(\d{4})-(\d{2})-(\d{2})\b/g, (_, y: string, m: string, d: string) => `${Number(d)} ${MONTHS[Number(m) - 1]} ${y}`);
+}

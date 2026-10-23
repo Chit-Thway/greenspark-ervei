@@ -17,25 +17,21 @@ async function seriousViolations(page: Page) {
 }
 
 test.describe("states and content rules", () => {
-  test("empty results, pending and unavailable model states, and unknown evidence", async ({ page }) => {
+  test("empty results, priority from signals, and unknown evidence", async ({ page }) => {
     await openQueue(page);
-    await page.getByPlaceholder("Search name, case ID or suburb…").fill("zzzz-no-match");
+    await page.getByPlaceholder("Search name, account number or suburb…").fill("zzzz-no-match");
     await expect(page.getByRole("heading", { name: "No cases match" })).toBeVisible();
     await page.getByRole("button", { name: "Reset filters" }).click();
-    await expectTotal(page, 100);
+    await expectTotal(page, 200);
 
+    // With the flowchart in use every seeded case has a priority worked out from its signals, so none are pending.
     await page.locator(".sidebar").getByLabel("Assessment availability").selectOption("pending");
-    await expectTotal(page, 5);
-    await expect(page.locator(".badge-none").first()).toHaveText("Assessment pending");
-    await expect(page.locator(".badge-routine")).toHaveCount(0);
-    await page.locator(".sidebar").getByLabel("Assessment availability").selectOption("unavailable");
-    await expectTotal(page, 5);
-    await expect(page.locator(".badge-none").first()).toHaveText("Assessment unavailable");
+    await expect(page.getByRole("heading", { name: "No cases match" })).toBeVisible();
     await page.getByRole("button", { name: "Reset", exact: true }).click();
 
-    // Minimum score excludes unscored cases rather than treating them as zero.
+    // A minimum score of 1 leaves out the cases with nothing flagged (score 0).
     await page.locator(".sidebar input[type=range]").fill("1");
-    await expectTotal(page, 90);
+    await expectTotal(page, 165);
     await page.getByRole("button", { name: "Reset", exact: true }).click();
 
     // The highest-priority case explains why it is flagged, with staff-review suggestions.
@@ -49,12 +45,12 @@ test.describe("states and content rules", () => {
     for (const label of ["Preferred name", "Gender", "Address", "Mobile", "Phone", "Email"]) await expect(panel.locator("dt", { hasText: new RegExp(`^${label}$`) })).toBeVisible();
     await expect(panel.locator("address")).toContainText(/\b\d{4}\b/); // the postcode is shown
     await expect(panel).toContainText(/@example\.com|Not recorded/);
-    await expect(panel).toContainText("Suggested for staff review");
+    await expect(panel).toContainText("Solutions for staff review");
     const suggestions = panel.locator(".suggest").first();
     expect(await suggestions.locator("ul > li").count()).toBeGreaterThan(1); // a bulleted list, one suggestion per bullet
     expect(await suggestions.evaluate((el) => !!el.firstElementChild?.matches(".sim") && el.lastElementChild?.tagName === "UL")).toBe(true); // badge first, then the list
     await expect(panel).toContainText("Assistance already reported");
-    await expect(panel).toContainText("simulated");
+    await expect(panel.locator("#ov-model")).toContainText("Priority from signals"); // worked out from the case's signals
     await expect(panel).not.toContainText(/full profile/i); // there is no separate profile page, so nothing mentions one
     await page.getByRole("link", { name: /Back to case queue/ }).click();
     await expect(page.locator(".case-table")).toBeVisible();
@@ -91,26 +87,27 @@ test.describe("case pages", () => {
     await openQueue(page);
     await page.getByRole("combobox", { name: "Sort cases" }).selectOption("name");
     await page.getByRole("button", { name: "Next" }).click();
-    await expect(page.getByText("Page 2 of 2")).toBeVisible();
+    await expect(page.getByText("Page 2 of 4")).toBeVisible();
     const row = page.locator("tbody tr").nth(1);
-    const id = (await row.getAttribute("data-case-id"))!;
+    const id = (await row.locator(".name-link").getAttribute("data-account-link"))!; // the account number is the main ID
     await row.locator(".name-link").click();
-    await expect(page).toHaveURL(new RegExp(`/cases/${id}$`));
+    await expect(page).toHaveURL(new RegExp(`/accounts/${id}$`));
     await expect(page.locator(".case-page")).toContainText(id);
+    await expect(page.locator(".case-page")).not.toContainText(/GS-\d{4}/); // internal case IDs are never shown
     await expect(page.locator("#queue")).not.toContainText("Support areas Filters"); // no sidebar on a case page
     await expect(page.locator("#sidebar")).toHaveCount(0);
     await page.goBack();
     await expect(page).toHaveURL(/\/$/);
-    await expect(page.getByText("Page 2 of 2")).toBeVisible(); // same page of results
+    await expect(page.getByText("Page 2 of 4")).toBeVisible(); // same page of results
     await expect(page.getByRole("combobox", { name: "Sort cases" })).toHaveValue("name"); // and the same sort
     await page.goForward();
     await expect(page.locator(".case-page")).toBeVisible();
 
     // The address works directly (a bookmark or a shared link) and for unknown cases.
-    await page.goto(`/cases/${id}`);
+    await page.goto(`/accounts/${id}`);
     await expect(page.locator("#case-title")).toBeVisible();
     await expect(page.locator(".case-page")).toContainText(id);
-    await page.goto("/cases/GS-9999");
+    await page.goto("/accounts/DEMO-999999");
     await expect(page.getByRole("heading", { name: "Case not found" })).toBeVisible();
     await page.getByRole("link", { name: /Back to case queue/ }).click();
     await expect(page.locator(".case-table")).toBeVisible();
@@ -119,13 +116,13 @@ test.describe("case pages", () => {
   test("the GreenSpark logo and name lead back to the case queue", async ({ page }) => {
     await openQueue(page);
     const brand = page.getByRole("link", { name: /ERVEI casework/ });
-    await expect(brand.locator("strong")).toHaveText("ERVEI"); // ERVEI is the main name, with GreenSpark beneath it
-    await expect(brand).toContainText("GREENSPARK · CASEWORK");
+    await expect(brand.locator("strong")).toHaveText("ERVEI"); // ERVEI is the main name, with "Community support workspace" beneath it
+    await expect(brand).toContainText("Community support workspace");
     await expect(page).toHaveTitle(/ERVEI/);
     await expect(brand).toHaveAttribute("href", "/");
-    const id = (await page.locator("tbody tr").first().getAttribute("data-case-id"))!;
+    const id = (await page.locator("tbody tr").first().locator(".name-link").getAttribute("data-account-link"))!;
     await page.locator("tbody tr").first().locator(".name-link").click();
-    await expect(page).toHaveURL(new RegExp(`/cases/${id}$`));
+    await expect(page).toHaveURL(new RegExp(`/accounts/${id}$`));
     await brand.click();
     await expect(page).toHaveURL(/\/$/);
     await expect(page.locator(".case-table")).toBeVisible();
@@ -140,7 +137,7 @@ test.describe("case pages", () => {
     const link = page.locator("tbody tr").first().locator(".name-link");
     const href = await link.getAttribute("href");
     const [popup] = await Promise.all([context.waitForEvent("page"), link.click({ modifiers: ["Control"] })]);
-    await popup.waitForURL(/\/cases\/GS-\d+$/);
+    await popup.waitForURL(/\/accounts\/DEMO-\d+$/);
     expect(new URL(popup.url()).pathname).toBe(href);
     await expect(popup.locator(".case-page")).toBeVisible();
     await expect(page.locator(".case-table")).toBeVisible(); // this tab stayed on the queue
@@ -154,7 +151,7 @@ test.describe("keyboard and accessibility", () => {
     await nameLink.focus();
     await page.keyboard.press("Enter");
     await expect(page.locator(".case-page")).toBeVisible();
-    await expect(page).toHaveURL(/\/cases\/GS-\d+$/);
+    await expect(page).toHaveURL(/\/accounts\/DEMO-\d+$/);
     await expect(page.locator("#case-title")).toBeFocused(); // a new page starts at its heading
     const back = page.getByRole("link", { name: /Back to case queue/ });
     await back.focus();
@@ -165,16 +162,16 @@ test.describe("keyboard and accessibility", () => {
 
   test("filters work with the keyboard", async ({ page }) => {
     await openQueue(page);
-    const toggle = page.getByRole("button", { name: /^(Expand|Collapse) Heating, cooling/ }); // its name flips when toggled
-    await expect(page.getByRole("checkbox", { name: /^Difficulty keeping warm/ })).toHaveCount(0); // areas start collapsed
+    const toggle = page.getByRole("button", { name: /^(Expand|Collapse) Payments/ }); // its name flips when toggled
+    await expect(page.getByRole("checkbox", { name: /^Prepayment self-disconnection/ })).toHaveCount(0); // areas start collapsed
     await toggle.focus();
     await page.keyboard.press("Enter");
     await expect(toggle).toHaveAttribute("aria-expanded", "true");
-    const box = page.getByRole("checkbox", { name: /^Difficulty keeping warm/ });
+    const box = page.getByRole("checkbox", { name: /^Prepayment self-disconnection/ });
     await box.focus();
     await page.keyboard.press("Space");
-    await expect(page.locator(".chip")).toContainText("Difficulty keeping warm");
-    await expect(page.getByRole("checkbox", { name: /^Heating, cooling/ })).toHaveJSProperty("indeterminate", true);
+    await expect(page.locator(".chip")).toContainText("Prepayment self-disconnection");
+    await expect(page.getByRole("checkbox", { name: /^Payments/ })).toHaveJSProperty("indeterminate", true);
   });
 
   test("queue and case page have no serious or critical WCAG A/AA violations", async ({ page }) => {
@@ -195,8 +192,8 @@ test.describe("small screen", () => {
     await expect(page.locator("#sidebar")).toBeHidden();
     await page.getByRole("button", { name: /^Filters/ }).click();
     await expect(page.locator("#sidebar")).toBeVisible();
-    await page.getByRole("button", { name: "Expand Heating, cooling & home comfort" }).click();
-    await page.getByRole("checkbox", { name: /^Difficulty keeping warm/ }).check();
+    await page.getByRole("button", { name: "Expand Payments" }).click();
+    await page.getByRole("checkbox", { name: /^Prepayment self-disconnection/ }).check();
     await expectTotal(page, 20);
     await page.getByRole("button", { name: /^Filters/ }).click();
     await page.locator("tbody tr").first().locator(".name-link").click();

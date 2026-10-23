@@ -33,7 +33,8 @@ export class Store {
 
   constructor(dbPath: string, fixturePath: string) {
     const raw = JSON.parse(readFileSync(fixturePath, "utf8")) as RawFixture;
-    this.catalog = toDataset(raw);
+    // People and cases are always read from the database, so the catalog keeps only the fixed catalogs.
+    this.catalog = { ...toDataset(raw), people: [], cases: [] };
     if (dbPath !== ":memory:") mkdirSync(dirname(dbPath), { recursive: true });
     this.db = new DatabaseSync(dbPath);
     this.db.exec("PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;");
@@ -41,7 +42,76 @@ export class Store {
     // Databases created before notes could be edited lack the edit columns.
     const noteColumns = (this.db.prepare("PRAGMA table_info(notes)").all() as Row[]).map((c) => c.name);
     if (!noteColumns.includes("edited_at")) this.db.exec("ALTER TABLE notes ADD COLUMN edited_at TEXT; ALTER TABLE notes ADD COLUMN edited_by TEXT;");
+    // A new fixture dataset (a different datasetId) replaces everything, including workflow changes.
+    const seeded = this.getMeta("seeded_dataset");
+    if (seeded && seeded !== raw.metadata.datasetId) this.clear();
     if (!this.getMeta("seeded_dataset")) this.seed(raw);
+    else this.refreshSeededPeople(raw);
+    this.assignCasesWithoutWorker(raw);
+    this.numberAccountsWithoutOne();
+  }
+
+  /** People added in the queue before every person had an account number get the next free numbers. */
+  private numberAccountsWithoutOne() {
+    const rows = this.db.prepare("SELECT id, doc FROM people WHERE json_extract(doc, '$.accountNumber') IS NULL ORDER BY seq").all() as Row[];
+    if (!rows.length) return;
+    const update = this.db.prepare("UPDATE people SET doc = ? WHERE id = ?");
+    this.transaction(() => {
+      for (const r of rows) update.run(JSON.stringify({ ...JSON.parse(r.doc as string), accountNumber: this.nextAccountNumber() }), r.id);
+    });
+  }
+
+  nextAccountNumber(): string {
+    const r = this.db.prepare("SELECT MAX(CAST(SUBSTR(json_extract(doc, '$.accountNumber'), 6) AS INTEGER)) AS n FROM people").get() as Row;
+    return `DEMO-${((r.n as number | null) ?? 700000) + 1}`;
+  }
+
+  getPersonByAccount(accountNumber: string): Person | null {
+    const r = this.db.prepare("SELECT doc FROM people WHERE json_extract(doc, '$.accountNumber') = ?").get(accountNumber) as Row | undefined;
+    return r ? (JSON.parse(r.doc as string) as Person) : null;
+  }
+
+  /** The account's case (the latest, should an older database hold more than one). */
+  getCaseForPerson(personId: string): QueueCase | null {
+    const r = this.db.prepare("SELECT id FROM cases WHERE person_id = ? ORDER BY seq DESC LIMIT 1").get(personId) as Row | undefined;
+    return r ? this.getCase(r.id as string) : null;
+  }
+
+  /** The account number to show for a case, or null if its person has none. */
+  accountNumberOfCase(caseId: string): string | null {
+    const r = this.db.prepare("SELECT json_extract(p.doc, '$.accountNumber') AS a FROM cases c JOIN people p ON p.id = c.person_id WHERE c.id = ?").get(caseId) as Row | undefined;
+    return (r?.a as string | null | undefined) ?? null;
+  }
+
+  /**
+   * Every case has a worker. Databases from before that rule can hold cases with none: give seeded cases the
+   * fixture's worker and other cases the support workers in turn. Each one gets a new version, so stale edits and
+   * undos are refused.
+   */
+  private assignCasesWithoutWorker(raw: RawFixture) {
+    const rows = this.db.prepare("SELECT id, seq FROM cases WHERE assigned_to IS NULL ORDER BY seq").all() as Row[];
+    if (!rows.length) return;
+    const workers = this.catalog.users.filter((u) => u.role === "support_worker").map((u) => u.id);
+    const fromFixture = new Map(raw.cases.map((c) => [c.id, c.workflow.assignedToUserId]));
+    const now = new Date().toISOString();
+    const update = this.db.prepare("UPDATE cases SET assigned_to = ?, version = version + 1, updated_at = ? WHERE id = ? AND assigned_to IS NULL");
+    this.transaction(() => {
+      rows.forEach((r, k) => {
+        const id = r.id as string;
+        update.run(fromFixture.get(id) ?? workers[k % workers.length]!, now, id);
+      });
+    });
+  }
+
+  /**
+   * Seeded people are read-only in the app, so their records follow the fixture. This brings new fixture
+   * fields (such as accounts) into an existing database without a reset; people added in the queue are untouched.
+   */
+  private refreshSeededPeople(raw: RawFixture) {
+    const update = this.db.prepare("UPDATE people SET doc = ? WHERE id = ? AND is_created = 0 AND doc <> ?");
+    this.transaction(() => {
+      for (const p of raw.people) { const doc = JSON.stringify(p); update.run(doc, p.id, doc); }
+    });
   }
 
   close() { this.db.close(); }
@@ -49,6 +119,13 @@ export class Store {
   getMeta(key: string): string | null {
     const r = this.db.prepare("SELECT value FROM meta WHERE key = ?").get(key) as Row | undefined;
     return r ? (r.value as string) : null;
+  }
+
+  /** Empties every table, ready to seed a new dataset. */
+  private clear() {
+    this.transaction(() => {
+      for (const t of ["workflow_action_items", "workflow_actions", "note_edits", "notes", "cases", "people", "meta"]) this.db.exec(`DELETE FROM ${t}`);
+    });
   }
 
   private seed(raw: RawFixture) {
@@ -124,13 +201,25 @@ export class Store {
     return r ? this.assemble(r, this.notesByCase(id).get(id) ?? []) : null;
   }
 
+  /**
+   * People, parsed once and kept until one is added. Person records never change after they are written (seeded
+   * people are only refreshed when the server starts), so every request can share them. Don't modify them.
+   */
+  private peopleCache: { list: Person[]; byId: Map<string, Person> } | null = null;
+  private people() {
+    if (!this.peopleCache) {
+      const list = (this.db.prepare("SELECT doc FROM people ORDER BY seq").all() as Row[]).map((r) => JSON.parse(r.doc as string) as Person);
+      this.peopleCache = { list, byId: new Map(list.map((p) => [p.id, p])) };
+    }
+    return this.peopleCache;
+  }
+
   allPeople(): Person[] {
-    return (this.db.prepare("SELECT doc FROM people ORDER BY seq").all() as Row[]).map((r) => JSON.parse(r.doc as string) as Person);
+    return this.people().list;
   }
 
   getPerson(id: string): Person | null {
-    const r = this.db.prepare("SELECT doc FROM people WHERE id = ?").get(id) as Row | undefined;
-    return r ? (JSON.parse(r.doc as string) as Person) : null;
+    return this.people().byId.get(id) ?? null;
   }
 
   dataset(): QueueDataset {
@@ -149,6 +238,7 @@ export class Store {
 
   insertPerson(p: Person) {
     this.db.prepare("INSERT INTO people (id, doc, is_created) VALUES (?, ?, 1)").run(p.id, JSON.stringify(p));
+    this.peopleCache = null;
   }
 
   insertCase(c: QueueCase) {

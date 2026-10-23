@@ -1,0 +1,7044 @@
+{
+  "meta": {
+    "title": "Utility hardship mapping - Western Australia",
+    "region": "Western Australia",
+    "utilities": [
+      "electricity",
+      "gas",
+      "water",
+      "telco"
+    ],
+    "last_verified": "2026-10-19",
+    "flow": "signals -> circumstances -> solutions",
+    "how_it_works": "Signals (seen in account data or asked of the customer) point to circumstances; circumstances point to solutions. Each record also lists its links in the other direction (signals.points_to, solutions.used_for).",
+    "scoring": {
+      "flag_when": "at least 1 strong signal, OR at least 2 supporting signals",
+      "sensitive_rule": "Circumstances with sensitivity 'sensitive' or 'safety' need at least 1 strong signal; supporting signals alone never flag them.",
+      "strong": "Enough on its own to suggest the circumstance (usually a direct customer answer or an unambiguous account event).",
+      "supporting": "Only meaningful in combination with other signals.",
+      "safety_rule": "Circumstances with sensitivity 'safety' are never actioned automatically; they create a task for trained staff."
+    },
+    "guardrails": [
+      "Flags trigger an offer of help, never a penalty. Do not use them in credit, collections escalation or disconnection decisions.",
+      "Sensitive circumstances (health, addiction, bereavement, separation, housing status) come from what the customer tells you, with consent. Do not infer them from usage or payment data.",
+      "Safety circumstances (family violence, economic abuse, elder abuse): no automated contact. Route to trained staff, protect address and account details, and avoid asking for proof.",
+      "Keep a person in the loop: show staff which signals raised each flag so they can check it makes sense before acting.",
+      "Health information is 'sensitive information' under the Australian Privacy Principles and needs consent to collect. Collect only what is needed to help.",
+      "Program amounts and rules change, often on 1 July. Re-check every solution marked 'Not re-checked' before launch and all of them each year.",
+      "Measure outcomes, not flags: did the customer actually get connected to the help?"
+    ],
+    "counts": {
+      "signals": 110,
+      "circumstances": 99,
+      "solutions": 49,
+      "links": 517
+    }
+  },
+  "circumstance_types": [
+    {
+      "id": "life",
+      "name": "Life situation",
+      "meaning": "Something happening in the customer's life.",
+      "who_acts": "Offer support, payment help and referrals."
+    },
+    {
+      "id": "access",
+      "name": "Access barrier",
+      "meaning": "Something that makes it hard to get or use help.",
+      "who_acts": "Change how you communicate or who you talk to."
+    },
+    {
+      "id": "account",
+      "name": "Bill or account issue",
+      "meaning": "A problem with the bill, meter, payment or account itself.",
+      "who_acts": "Fix the account, then check whether help is still needed."
+    },
+    {
+      "id": "company",
+      "name": "Company practice",
+      "meaning": "Something the provider is doing, or failing to do.",
+      "who_acts": "Fix the process internally, and put this customer right."
+    },
+    {
+      "id": "knockon",
+      "name": "Knock-on effect",
+      "meaning": "Harm that follows when other problems go unaddressed.",
+      "who_acts": "Treat as urgent and act the same day."
+    }
+  ],
+  "categories": [
+    {
+      "id": "income",
+      "name": "Income and work"
+    },
+    {
+      "id": "cost",
+      "name": "Cost of living and debt"
+    },
+    {
+      "id": "health",
+      "name": "Health and disability"
+    },
+    {
+      "id": "family",
+      "name": "Family and relationships"
+    },
+    {
+      "id": "housing",
+      "name": "Housing"
+    },
+    {
+      "id": "billing",
+      "name": "Billing and meters"
+    },
+    {
+      "id": "weather",
+      "name": "Weather and disasters"
+    },
+    {
+      "id": "service",
+      "name": "Company practices and service"
+    },
+    {
+      "id": "access",
+      "name": "Communication and access"
+    },
+    {
+      "id": "lifestage",
+      "name": "Life stage and circumstances"
+    },
+    {
+      "id": "payments",
+      "name": "Payments"
+    },
+    {
+      "id": "legal",
+      "name": "Legal and administrative"
+    },
+    {
+      "id": "usage",
+      "name": "Usage"
+    },
+    {
+      "id": "knockon",
+      "name": "Knock-on effects"
+    }
+  ],
+  "signals": [
+    {
+      "id": "acct_missed_payment",
+      "name": "Bill overdue",
+      "source": "account",
+      "detect": "Bill unpaid after its due date.",
+      "example_rule": "days_past_due > 0",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "job_loss",
+          "strength": "supporting"
+        },
+        {
+          "id": "benefit_problem",
+          "strength": "supporting"
+        },
+        {
+          "id": "wage_theft",
+          "strength": "supporting"
+        },
+        {
+          "id": "unexpected_expense",
+          "strength": "supporting"
+        },
+        {
+          "id": "serious_illness",
+          "strength": "supporting"
+        },
+        {
+          "id": "due_date_mismatch",
+          "strength": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "acct_repeated_late",
+      "name": "Repeated late payments",
+      "source": "account",
+      "detect": "Several recent bills paid late.",
+      "example_rule": "late in >= 3 of last 6 bills",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "irregular_income",
+          "strength": "supporting"
+        },
+        {
+          "id": "low_fixed_income",
+          "strength": "supporting"
+        },
+        {
+          "id": "housing_costs",
+          "strength": "supporting"
+        },
+        {
+          "id": "cost_of_living",
+          "strength": "supporting"
+        },
+        {
+          "id": "debt_spiral",
+          "strength": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "acct_broken_plan",
+      "name": "Payment plan or extension broken",
+      "source": "account",
+      "detect": "An agreed instalment or extension was missed or cancelled.",
+      "example_rule": "plan_status == 'broken'",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "unaffordable_plan",
+          "strength": "strong"
+        }
+      ]
+    },
+    {
+      "id": "acct_many_extensions",
+      "name": "Multiple extensions requested",
+      "source": "account",
+      "detect": "Customer keeps asking for more time.",
+      "example_rule": ">= 2 extensions in 12 months",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "reduced_hours",
+          "strength": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "acct_rising_arrears",
+      "name": "Arrears growing",
+      "source": "account",
+      "detect": "Overdue balance is bigger each bill.",
+      "example_rule": "arrears up over 2+ consecutive bills",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "business_struggling",
+          "strength": "supporting"
+        },
+        {
+          "id": "competing_debts",
+          "strength": "supporting"
+        },
+        {
+          "id": "cost_of_living",
+          "strength": "supporting"
+        },
+        {
+          "id": "fees_piling_up",
+          "strength": "supporting"
+        },
+        {
+          "id": "hardship_not_offered",
+          "strength": "supporting"
+        },
+        {
+          "id": "debt_spiral",
+          "strength": "strong"
+        }
+      ]
+    },
+    {
+      "id": "acct_dishonour",
+      "name": "Failed payment",
+      "source": "account",
+      "detect": "Direct debit dishonoured or card payment declined.",
+      "example_rule": "dishonour_count_90d >= 1",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "cognitive_decline",
+          "strength": "supporting"
+        },
+        {
+          "id": "fees_piling_up",
+          "strength": "strong"
+        },
+        {
+          "id": "failed_payments",
+          "strength": "strong"
+        },
+        {
+          "id": "debt_spiral",
+          "strength": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "acct_partial_payments",
+      "name": "Small or partial payments",
+      "source": "account",
+      "detect": "Frequent payments that don't cover the bill.",
+      "example_rule": ">= 3 part-payments per billing cycle",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "reduced_hours",
+          "strength": "supporting"
+        },
+        {
+          "id": "irregular_income",
+          "strength": "supporting"
+        },
+        {
+          "id": "student_low_income",
+          "strength": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "acct_payday_aligned",
+      "name": "Payments track a fortnightly cycle",
+      "source": "account",
+      "detect": "Payments land on a regular fortnightly rhythm, often after the due date.",
+      "example_rule": "payment dates cluster every 14 days",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "irregular_income",
+          "strength": "supporting"
+        },
+        {
+          "id": "benefit_problem",
+          "strength": "supporting"
+        },
+        {
+          "id": "due_date_mismatch",
+          "strength": "strong"
+        }
+      ]
+    },
+    {
+      "id": "acct_usage_spike",
+      "name": "Usage spike",
+      "source": "account",
+      "detect": "Usage far above the same period last year.",
+      "example_rule": "usage vs same period last year > +40%",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "new_baby",
+          "strength": "supporting"
+        },
+        {
+          "id": "home_dialysis_water",
+          "strength": "supporting"
+        },
+        {
+          "id": "household_grew",
+          "strength": "supporting"
+        },
+        {
+          "id": "old_appliances",
+          "strength": "supporting"
+        },
+        {
+          "id": "bill_shock",
+          "strength": "strong"
+        },
+        {
+          "id": "faulty_meter",
+          "strength": "supporting"
+        },
+        {
+          "id": "hidden_leak",
+          "strength": "supporting"
+        },
+        {
+          "id": "large_household",
+          "strength": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "acct_continuous_flow",
+      "name": "Water never stops flowing",
+      "source": "account",
+      "detect": "Interval data shows water use never drops to zero overnight.",
+      "example_rule": "min hourly flow 1am-5am > 0 for 3+ nights",
+      "utilities": [
+        "water"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "hidden_leak",
+          "strength": "strong"
+        }
+      ]
+    },
+    {
+      "id": "acct_usage_drop",
+      "name": "Very low or falling usage",
+      "source": "account",
+      "detect": "Usage far below this home's normal or similar homes, while still occupied.",
+      "example_rule": "usage < 50% of own baseline, account active",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "shame_stigma",
+          "strength": "supporting"
+        },
+        {
+          "id": "rationing",
+          "strength": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "acct_prepay_low_credit",
+      "name": "Prepay credit running out",
+      "source": "account",
+      "detect": "Prepayment meter hits zero or low credit often.",
+      "example_rule": ">= 2 zero-credit events in 30 days",
+      "utilities": [
+        "electricity"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "remote_prepay_community",
+          "strength": "strong"
+        },
+        {
+          "id": "prepay_self_disconnection",
+          "strength": "strong"
+        },
+        {
+          "id": "rationing",
+          "strength": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "acct_estimated_reads",
+      "name": "Estimated reads",
+      "source": "account",
+      "detect": "Meter estimated for several bills in a row.",
+      "example_rule": "estimated reads >= 2 consecutive",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "estimated_catchup",
+          "strength": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "acct_catchup_bill",
+      "name": "Catch-up bill",
+      "source": "account",
+      "detect": "Large bill after an actual read follows estimates.",
+      "example_rule": "bill > 2x average after estimates",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "estimated_catchup",
+          "strength": "strong"
+        },
+        {
+          "id": "back_billing",
+          "strength": "strong"
+        }
+      ]
+    },
+    {
+      "id": "acct_bill_adjusted",
+      "name": "Bill corrected",
+      "source": "account",
+      "detect": "Bill re-issued, corrected or credited.",
+      "example_rule": "adjustment on account in 90 days",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "faulty_meter",
+          "strength": "supporting"
+        },
+        {
+          "id": "billing_error",
+          "strength": "supporting"
+        },
+        {
+          "id": "back_billing",
+          "strength": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "acct_concession_lapsed",
+      "name": "Concession lapsed",
+      "source": "account",
+      "detect": "Concession removed or card failed revalidation.",
+      "example_rule": "concession_end_date in last 90 days",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "concession_lost",
+          "strength": "strong"
+        }
+      ]
+    },
+    {
+      "id": "acct_concession_on_file",
+      "name": "Concession card on file",
+      "source": "account",
+      "detect": "A concession card is linked to the account (eligibility indicator).",
+      "example_rule": "concession_status == 'active'",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "low_fixed_income",
+          "strength": "supporting"
+        },
+        {
+          "id": "older_fixed_income",
+          "strength": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "acct_no_concession",
+      "name": "No concession linked",
+      "source": "account",
+      "detect": "No concession on account although other data suggests eligibility.",
+      "example_rule": "no concession AND (eligibility hint from answers or notes)",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "concession_unclaimed",
+          "strength": "strong"
+        },
+        {
+          "id": "unaware_of_help",
+          "strength": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "acct_repeat_contact",
+      "name": "Repeat contact",
+      "source": "account",
+      "detect": "Customer keeps contacting about the same bill or issue.",
+      "example_rule": ">= 3 contacts on one issue in 60 days",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "mental_health",
+          "strength": "supporting"
+        },
+        {
+          "id": "cognitive_decline",
+          "strength": "supporting"
+        },
+        {
+          "id": "billing_error",
+          "strength": "supporting"
+        },
+        {
+          "id": "cant_get_through",
+          "strength": "supporting"
+        },
+        {
+          "id": "low_literacy",
+          "strength": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "acct_complaint",
+      "name": "Complaint or ombudsman referral",
+      "source": "account",
+      "detect": "Formal complaint logged, or ombudsman has referred the case.",
+      "example_rule": "complaint_open == true",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "billing_error",
+          "strength": "supporting"
+        },
+        {
+          "id": "cant_get_through",
+          "strength": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "acct_note_keywords",
+      "name": "Life events mentioned in contact notes",
+      "source": "account",
+      "detect": "Notes mention job loss, illness, separation, death or feeling unsafe. Sensitive: use only to prompt a trained staff member, never automatically.",
+      "example_rule": "keyword match in contact notes (reviewed by a person)",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": true,
+      "points_to": [
+        {
+          "id": "job_loss",
+          "strength": "supporting"
+        },
+        {
+          "id": "serious_illness",
+          "strength": "supporting"
+        },
+        {
+          "id": "separation",
+          "strength": "supporting"
+        },
+        {
+          "id": "family_violence",
+          "strength": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "acct_holder_change",
+      "name": "Account holder change request",
+      "source": "account",
+      "detect": "Request to change, add or remove the account holder.",
+      "example_rule": "name change / holder removal request",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "separation",
+          "strength": "supporting"
+        },
+        {
+          "id": "family_violence",
+          "strength": "supporting"
+        },
+        {
+          "id": "housemate_left",
+          "strength": "supporting"
+        },
+        {
+          "id": "account_other_name",
+          "strength": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "acct_deceased_flag",
+      "name": "Account holder deceased",
+      "source": "account",
+      "detect": "Provider notified that the account holder has died.",
+      "example_rule": "deceased_flag == true",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": true,
+      "points_to": [
+        {
+          "id": "partner_died",
+          "strength": "strong"
+        },
+        {
+          "id": "estate_admin",
+          "strength": "strong"
+        }
+      ]
+    },
+    {
+      "id": "acct_move",
+      "name": "Recent move",
+      "source": "account",
+      "detect": "Move-in, move-out or new connection recently.",
+      "example_rule": "connection or final read in last 60 days",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "moving_costs",
+          "strength": "supporting"
+        },
+        {
+          "id": "previous_occupant_debt",
+          "strength": "supporting"
+        },
+        {
+          "id": "first_time_renter",
+          "strength": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "acct_returned_mail",
+      "name": "Returned mail or bounced email",
+      "source": "account",
+      "detect": "Bills aren't reaching the customer.",
+      "example_rule": "returned mail or hard bounce",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "homelessness",
+          "strength": "supporting"
+        },
+        {
+          "id": "wrong_address",
+          "strength": "strong"
+        }
+      ]
+    },
+    {
+      "id": "acct_digital_disengaged",
+      "name": "Digital disengagement",
+      "source": "account",
+      "detect": "Bills and emails unopened; no app or portal logins.",
+      "example_rule": "no opens or logins in 90 days",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "mental_health",
+          "strength": "supporting"
+        },
+        {
+          "id": "online_only",
+          "strength": "supporting"
+        },
+        {
+          "id": "digital_exclusion",
+          "strength": "supporting"
+        },
+        {
+          "id": "wrong_address",
+          "strength": "supporting"
+        },
+        {
+          "id": "avoidance",
+          "strength": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "acct_interpreter",
+      "name": "Interpreter or language preference",
+      "source": "account",
+      "detect": "Interpreter used, or preferred language isn't English.",
+      "example_rule": "language_pref != 'en' or interpreter_used",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "language",
+          "strength": "strong"
+        }
+      ]
+    },
+    {
+      "id": "acct_access_needs",
+      "name": "Accessibility need recorded",
+      "source": "account",
+      "detect": "Relay service, large print, braille or other access need on file.",
+      "example_rule": "access_need flag present",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "disability_costs",
+          "strength": "supporting"
+        },
+        {
+          "id": "sensory_impairment",
+          "strength": "strong"
+        }
+      ]
+    },
+    {
+      "id": "acct_life_support",
+      "name": "Life support registered",
+      "source": "account",
+      "detect": "Life support or medical equipment registration on account.",
+      "example_rule": "life_support == true",
+      "utilities": [
+        "electricity"
+      ],
+      "sensitive": true,
+      "points_to": [
+        {
+          "id": "life_support_equipment",
+          "strength": "strong"
+        }
+      ]
+    },
+    {
+      "id": "acct_disconnection_warning",
+      "name": "Disconnection warning sent",
+      "source": "account",
+      "detect": "Disconnection, restriction or suspension warning issued.",
+      "example_rule": "warning issued in last 30 days",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "improper_disconnection",
+          "strength": "supporting"
+        },
+        {
+          "id": "avoidance",
+          "strength": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "acct_disconnected",
+      "name": "Disconnected or restricted",
+      "source": "account",
+      "detect": "Supply disconnected, water flow restricted or service barred for non-payment.",
+      "example_rule": "status in (disconnected, restricted, barred)",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "fees_piling_up",
+          "strength": "supporting"
+        },
+        {
+          "id": "improper_disconnection",
+          "strength": "strong"
+        },
+        {
+          "id": "disconnection_harm",
+          "strength": "strong"
+        }
+      ]
+    },
+    {
+      "id": "acct_collections",
+      "name": "Debt collection or default",
+      "source": "account",
+      "detect": "Debt referred to a collector or listed as a default.",
+      "example_rule": "collections_status != null",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "competing_debts",
+          "strength": "supporting"
+        },
+        {
+          "id": "debt_collection",
+          "strength": "strong"
+        },
+        {
+          "id": "bankruptcy",
+          "strength": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "acct_hardship_exit",
+      "name": "Left hardship program early",
+      "source": "account",
+      "detect": "Exited a hardship program without completing it.",
+      "example_rule": "hardship_exit_reason != 'completed'",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "unaffordable_plan",
+          "strength": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "acct_embedded_network",
+      "name": "Embedded network supply",
+      "source": "account",
+      "detect": "Customer is supplied through an embedded network or on-selling arrangement.",
+      "example_rule": "supply_type == 'embedded'",
+      "utilities": [
+        "electricity"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "embedded_network",
+          "strength": "strong"
+        }
+      ]
+    },
+    {
+      "id": "acct_remote_area",
+      "name": "Remote or regional supply area",
+      "source": "account",
+      "detect": "Address is in a remote or regional area (e.g. north of the 26th parallel).",
+      "example_rule": "region in remote list",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "remote_living",
+          "strength": "strong"
+        },
+        {
+          "id": "remote_prepay_community",
+          "strength": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "acct_seasonal_peak",
+      "name": "Seasonal bill peak",
+      "source": "account",
+      "detect": "Summer or winter bills far above this home's baseline.",
+      "example_rule": "seasonal bill > 1.6x annual average",
+      "utilities": [
+        "electricity",
+        "gas"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "temperature_medical",
+          "strength": "supporting"
+        },
+        {
+          "id": "renter_inefficient_home",
+          "strength": "supporting"
+        },
+        {
+          "id": "heat_cold",
+          "strength": "strong"
+        }
+      ]
+    },
+    {
+      "id": "acct_plan_mismatch",
+      "name": "Costly plan for their usage",
+      "source": "account",
+      "detect": "A cheaper plan or tariff exists for this usage profile.",
+      "example_rule": "best_plan_saving > $100/yr",
+      "utilities": [
+        "electricity",
+        "gas",
+        "telco"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "missold",
+          "strength": "supporting"
+        },
+        {
+          "id": "loyalty_tax",
+          "strength": "strong"
+        }
+      ]
+    },
+    {
+      "id": "acct_bill_up_flat_usage",
+      "name": "Bill up, usage flat",
+      "source": "account",
+      "detect": "Bill rose while usage stayed about the same (price or tariff change).",
+      "example_rule": "bill +20% with usage within +/-5%",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "price_rise",
+          "strength": "strong"
+        }
+      ]
+    },
+    {
+      "id": "acct_solar_export_zero",
+      "name": "Solar export dropped",
+      "source": "account",
+      "detect": "Solar export fell to zero or far below normal.",
+      "example_rule": "export < 20% of same month last year",
+      "utilities": [
+        "electricity"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "solar_fault",
+          "strength": "strong"
+        }
+      ]
+    },
+    {
+      "id": "acct_outage_history",
+      "name": "Outage history",
+      "source": "account",
+      "detect": "Repeated or long supply interruptions at the address.",
+      "example_rule": ">= 3 outages or one > 12h in 12 months",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "disaster",
+          "strength": "supporting"
+        },
+        {
+          "id": "long_outage",
+          "strength": "strong"
+        }
+      ]
+    },
+    {
+      "id": "acct_third_party_authority",
+      "name": "Third-party authority on account",
+      "source": "account",
+      "detect": "Power of attorney, guardian or authorised representative recorded.",
+      "example_rule": "authority_type != null",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "cognitive_decline",
+          "strength": "supporting"
+        },
+        {
+          "id": "elder_abuse",
+          "strength": "supporting"
+        },
+        {
+          "id": "attorney_complications",
+          "strength": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "acct_debt_transferred",
+      "name": "Debt carried over",
+      "source": "account",
+      "detect": "Debt moved from a previous address or someone else's account.",
+      "example_rule": "transferred_debt > 0",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "previous_occupant_debt",
+          "strength": "strong"
+        }
+      ]
+    },
+    {
+      "id": "acct_identity_mismatch",
+      "name": "Identity mismatch",
+      "source": "account",
+      "detect": "Customer says they didn't open the account, or details don't match.",
+      "example_rule": "identity dispute logged",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": true,
+      "points_to": [
+        {
+          "id": "economic_abuse",
+          "strength": "supporting"
+        },
+        {
+          "id": "identity_theft",
+          "strength": "strong"
+        }
+      ]
+    },
+    {
+      "id": "acct_cash_only",
+      "name": "Cash or in-person payments only",
+      "source": "account",
+      "detect": "Customer only pays in person or by cash.",
+      "example_rule": "100% of payments via counter/cash",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "unbanked",
+          "strength": "strong"
+        }
+      ]
+    },
+    {
+      "id": "acct_daytime_usage_rise",
+      "name": "Weekday daytime usage up",
+      "source": "account",
+      "detect": "More use on weekdays during work hours (someone home all day).",
+      "example_rule": "weekday 9-5 usage +30% vs last year",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "job_loss",
+          "strength": "supporting"
+        },
+        {
+          "id": "serious_illness",
+          "strength": "supporting"
+        },
+        {
+          "id": "new_baby",
+          "strength": "supporting"
+        },
+        {
+          "id": "carer",
+          "strength": "supporting"
+        },
+        {
+          "id": "work_from_home",
+          "strength": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "acct_unanswered_outreach",
+      "name": "Outreach unanswered",
+      "source": "account",
+      "detect": "Calls, texts or letters about the overdue balance get no reply.",
+      "example_rule": ">= 3 unanswered contact attempts",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "mental_health",
+          "strength": "supporting"
+        },
+        {
+          "id": "shame_stigma",
+          "strength": "supporting"
+        },
+        {
+          "id": "distrust",
+          "strength": "supporting"
+        },
+        {
+          "id": "avoidance",
+          "strength": "strong"
+        }
+      ]
+    },
+    {
+      "id": "acct_no_hardship_offer",
+      "name": "No hardship assessment offered",
+      "source": "account",
+      "detect": "In arrears for a while with no hardship assessment recorded. A process gap, not a customer trait.",
+      "example_rule": "arrears > 60 days AND no hardship assessment",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "hardship_not_offered",
+          "strength": "strong"
+        },
+        {
+          "id": "improper_disconnection",
+          "strength": "supporting"
+        },
+        {
+          "id": "unaware_of_help",
+          "strength": "strong"
+        }
+      ]
+    },
+    {
+      "id": "acct_telco_barred",
+      "name": "Phone or internet barred",
+      "source": "account",
+      "detect": "Service barred, suspended or speed-limited for non-payment.",
+      "example_rule": "service_status in (barred, suspended)",
+      "utilities": [
+        "telco"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "telco_cut_off",
+          "strength": "strong"
+        }
+      ]
+    },
+    {
+      "id": "acct_small_recharges",
+      "name": "Frequent small recharges or lapses",
+      "source": "account",
+      "detect": "Prepaid service often lapses, or is topped up in small amounts.",
+      "example_rule": ">= 2 lapses in 60 days",
+      "utilities": [
+        "telco"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "digital_exclusion",
+          "strength": "supporting"
+        },
+        {
+          "id": "telco_cut_off",
+          "strength": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "acct_scam_report",
+      "name": "Scam reported",
+      "source": "account",
+      "detect": "Customer reported a fake bill, or paid the wrong account.",
+      "example_rule": "scam report logged",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "scam",
+          "strength": "strong"
+        }
+      ]
+    },
+    {
+      "id": "ask_lost_job",
+      "name": "Lost job",
+      "source": "self_report",
+      "detect": "I've lost my job or been stood down.",
+      "example_rule": "answer == yes",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "job_loss",
+          "strength": "strong"
+        }
+      ]
+    },
+    {
+      "id": "ask_less_hours",
+      "name": "Less hours or income",
+      "source": "self_report",
+      "detect": "My hours or income have dropped.",
+      "example_rule": "answer == yes",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "reduced_hours",
+          "strength": "strong"
+        }
+      ]
+    },
+    {
+      "id": "ask_irregular_income",
+      "name": "Irregular income",
+      "source": "self_report",
+      "detect": "My income changes week to week (casual, gig, seasonal or FIFO work).",
+      "example_rule": "answer == yes",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "irregular_income",
+          "strength": "strong"
+        }
+      ]
+    },
+    {
+      "id": "ask_payment_problem",
+      "name": "Government payment problem",
+      "source": "self_report",
+      "detect": "My government payment is delayed, reduced or stopped.",
+      "example_rule": "answer == yes",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "benefit_problem",
+          "strength": "strong"
+        }
+      ]
+    },
+    {
+      "id": "ask_concession_card",
+      "name": "Holds a concession card",
+      "source": "self_report",
+      "detect": "I have a pension, health care or other concession card.",
+      "example_rule": "answer == yes",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "low_fixed_income",
+          "strength": "strong"
+        },
+        {
+          "id": "concession_unclaimed",
+          "strength": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "ask_fixed_income",
+      "name": "Fixed income",
+      "source": "self_report",
+      "detect": "I live on a pension or other fixed income.",
+      "example_rule": "answer == yes",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "low_fixed_income",
+          "strength": "strong"
+        },
+        {
+          "id": "older_fixed_income",
+          "strength": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "ask_business",
+      "name": "Small business struggling",
+      "source": "self_report",
+      "detect": "I run a small business that's struggling.",
+      "example_rule": "answer == yes",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "business_struggling",
+          "strength": "strong"
+        },
+        {
+          "id": "home_business",
+          "strength": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "ask_student",
+      "name": "Studying or apprenticeship",
+      "source": "self_report",
+      "detect": "I'm studying or doing an apprenticeship.",
+      "example_rule": "answer == yes",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "student_low_income",
+          "strength": "strong"
+        },
+        {
+          "id": "international_student",
+          "strength": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "ask_wage_issue",
+      "name": "Not paid properly",
+      "source": "self_report",
+      "detect": "My employer hasn't paid me what I'm owed.",
+      "example_rule": "answer == yes",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "wage_theft",
+          "strength": "strong"
+        }
+      ]
+    },
+    {
+      "id": "ask_housing_costs",
+      "name": "Housing costs up",
+      "source": "self_report",
+      "detect": "My rent or mortgage has gone up.",
+      "example_rule": "answer == yes",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "housing_costs",
+          "strength": "strong"
+        }
+      ]
+    },
+    {
+      "id": "ask_other_debts",
+      "name": "Other debts",
+      "source": "self_report",
+      "detect": "I have other debts (credit cards, buy now pay later, loans).",
+      "example_rule": "answer == yes",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "competing_debts",
+          "strength": "strong"
+        }
+      ]
+    },
+    {
+      "id": "ask_unexpected_cost",
+      "name": "Big unexpected cost",
+      "source": "self_report",
+      "detect": "I've had a big unexpected cost (car, vet, funeral, repairs).",
+      "example_rule": "answer == yes",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "unexpected_expense",
+          "strength": "strong"
+        }
+      ]
+    },
+    {
+      "id": "ask_support_family",
+      "name": "Supporting family",
+      "source": "self_report",
+      "detect": "I'm supporting family members financially.",
+      "example_rule": "answer == yes",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "supporting_family",
+          "strength": "strong"
+        }
+      ]
+    },
+    {
+      "id": "ask_illness",
+      "name": "Serious illness or injury",
+      "source": "self_report",
+      "detect": "Someone in my home has a serious illness, injury or hospital stay.",
+      "example_rule": "answer == yes",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": true,
+      "points_to": [
+        {
+          "id": "serious_illness",
+          "strength": "strong"
+        },
+        {
+          "id": "medical_costs",
+          "strength": "strong"
+        }
+      ]
+    },
+    {
+      "id": "ask_medical_equipment",
+      "name": "Medical equipment at home",
+      "source": "self_report",
+      "detect": "We use medical or life support equipment at home.",
+      "example_rule": "answer == yes",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water"
+      ],
+      "sensitive": true,
+      "points_to": [
+        {
+          "id": "life_support_equipment",
+          "strength": "strong"
+        },
+        {
+          "id": "home_dialysis_water",
+          "strength": "strong"
+        }
+      ]
+    },
+    {
+      "id": "ask_temperature_need",
+      "name": "Medical need for heating/cooling",
+      "source": "self_report",
+      "detect": "Someone needs heating or cooling because of a medical condition.",
+      "example_rule": "answer == yes",
+      "utilities": [
+        "electricity",
+        "gas"
+      ],
+      "sensitive": true,
+      "points_to": [
+        {
+          "id": "temperature_medical",
+          "strength": "strong"
+        }
+      ]
+    },
+    {
+      "id": "ask_hard_to_manage",
+      "name": "Hard to manage bills right now",
+      "source": "self_report",
+      "detect": "Stress or my mental health makes it hard to deal with bills.",
+      "example_rule": "answer == yes",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": true,
+      "points_to": [
+        {
+          "id": "mental_health",
+          "strength": "strong"
+        }
+      ]
+    },
+    {
+      "id": "ask_gambling_substance",
+      "name": "Gambling, alcohol or drugs affecting money",
+      "source": "self_report",
+      "detect": "Gambling, alcohol or drugs are affecting our money.",
+      "example_rule": "answer == yes",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": true,
+      "points_to": [
+        {
+          "id": "addiction",
+          "strength": "strong"
+        }
+      ]
+    },
+    {
+      "id": "ask_disability",
+      "name": "Disability",
+      "source": "self_report",
+      "detect": "Someone in my home has a disability.",
+      "example_rule": "answer == yes",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": true,
+      "points_to": [
+        {
+          "id": "disability_costs",
+          "strength": "strong"
+        }
+      ]
+    },
+    {
+      "id": "ask_new_baby",
+      "name": "New baby",
+      "source": "self_report",
+      "detect": "We're expecting or have a new baby.",
+      "example_rule": "answer == yes",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "new_baby",
+          "strength": "strong"
+        }
+      ]
+    },
+    {
+      "id": "ask_household_grew",
+      "name": "Household grew",
+      "source": "self_report",
+      "detect": "More people are living with us now.",
+      "example_rule": "answer == yes",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "household_grew",
+          "strength": "strong"
+        },
+        {
+          "id": "large_household",
+          "strength": "strong"
+        }
+      ]
+    },
+    {
+      "id": "ask_separated",
+      "name": "Separated",
+      "source": "self_report",
+      "detect": "I've recently separated.",
+      "example_rule": "answer == yes",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": true,
+      "points_to": [
+        {
+          "id": "separation",
+          "strength": "strong"
+        }
+      ]
+    },
+    {
+      "id": "ask_bereaved",
+      "name": "Bereaved",
+      "source": "self_report",
+      "detect": "My partner or the account holder has died.",
+      "example_rule": "answer == yes",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": true,
+      "points_to": [
+        {
+          "id": "partner_died",
+          "strength": "strong"
+        },
+        {
+          "id": "estate_admin",
+          "strength": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "ask_unsafe",
+      "name": "Unsafe at home or money controlled",
+      "source": "self_report",
+      "detect": "I don't feel safe at home, or someone controls my money.",
+      "example_rule": "answer == yes",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": true,
+      "points_to": [
+        {
+          "id": "family_violence",
+          "strength": "strong"
+        },
+        {
+          "id": "economic_abuse",
+          "strength": "strong"
+        },
+        {
+          "id": "elder_abuse",
+          "strength": "strong"
+        }
+      ]
+    },
+    {
+      "id": "ask_debts_not_mine",
+      "name": "Debts I didn't agree to",
+      "source": "self_report",
+      "detect": "There are accounts or debts in my name I didn't agree to.",
+      "example_rule": "answer == yes",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": true,
+      "points_to": [
+        {
+          "id": "economic_abuse",
+          "strength": "strong"
+        },
+        {
+          "id": "identity_theft",
+          "strength": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "ask_carer",
+      "name": "Carer",
+      "source": "self_report",
+      "detect": "I care for someone.",
+      "example_rule": "answer == yes",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "carer",
+          "strength": "strong"
+        }
+      ]
+    },
+    {
+      "id": "ask_single_parent",
+      "name": "Single parent",
+      "source": "self_report",
+      "detect": "I'm a single parent.",
+      "example_rule": "answer == yes",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "single_parent",
+          "strength": "strong"
+        }
+      ]
+    },
+    {
+      "id": "ask_renting",
+      "name": "Renting",
+      "source": "self_report",
+      "detect": "I rent my home.",
+      "example_rule": "answer == yes",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "renter_inefficient_home",
+          "strength": "strong"
+        },
+        {
+          "id": "landlord_water_dispute",
+          "strength": "supporting"
+        },
+        {
+          "id": "shared_or_boarding",
+          "strength": "supporting"
+        },
+        {
+          "id": "mould_damp",
+          "strength": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "ask_inefficient_home",
+      "name": "Inefficient home",
+      "source": "self_report",
+      "detect": "My home is hard to heat or cool, has mould or damp, or old appliances.",
+      "example_rule": "answer == yes",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "renter_inefficient_home",
+          "strength": "supporting"
+        },
+        {
+          "id": "old_appliances",
+          "strength": "strong"
+        },
+        {
+          "id": "mould_damp",
+          "strength": "strong"
+        }
+      ]
+    },
+    {
+      "id": "ask_moving",
+      "name": "Moving",
+      "source": "self_report",
+      "detect": "I've just moved or am about to move.",
+      "example_rule": "answer == yes",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "moving_costs",
+          "strength": "strong"
+        }
+      ]
+    },
+    {
+      "id": "ask_embedded",
+      "name": "Pays building or park for power",
+      "source": "self_report",
+      "detect": "I live in an apartment, caravan park or retirement village and pay the building or park for power.",
+      "example_rule": "answer == yes",
+      "utilities": [
+        "electricity"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "embedded_network",
+          "strength": "strong"
+        }
+      ]
+    },
+    {
+      "id": "ask_homeless",
+      "name": "No stable housing",
+      "source": "self_report",
+      "detect": "I don't have stable housing right now.",
+      "example_rule": "answer == yes",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": true,
+      "points_to": [
+        {
+          "id": "homelessness",
+          "strength": "strong"
+        },
+        {
+          "id": "no_id",
+          "strength": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "ask_bill_higher",
+      "name": "Bill much higher",
+      "source": "self_report",
+      "detect": "My bill is much higher than usual.",
+      "example_rule": "answer == yes",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "landlord_water_dispute",
+          "strength": "supporting"
+        },
+        {
+          "id": "bill_shock",
+          "strength": "strong"
+        },
+        {
+          "id": "price_rise",
+          "strength": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "ask_bill_wrong",
+      "name": "Bill or meter seems wrong",
+      "source": "self_report",
+      "detect": "I think my bill or meter is wrong.",
+      "example_rule": "answer == yes",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "previous_occupant_debt",
+          "strength": "supporting"
+        },
+        {
+          "id": "faulty_meter",
+          "strength": "strong"
+        },
+        {
+          "id": "billing_error",
+          "strength": "strong"
+        }
+      ]
+    },
+    {
+      "id": "ask_leak",
+      "name": "Possible water leak",
+      "source": "self_report",
+      "detect": "I think I have a water leak.",
+      "example_rule": "answer == yes",
+      "utilities": [
+        "water"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "landlord_water_dispute",
+          "strength": "supporting"
+        },
+        {
+          "id": "hidden_leak",
+          "strength": "strong"
+        }
+      ]
+    },
+    {
+      "id": "ask_rationing",
+      "name": "Going without",
+      "source": "self_report",
+      "detect": "I go without heating, cooling, showers or internet to save money.",
+      "example_rule": "answer == yes",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "rationing",
+          "strength": "strong"
+        }
+      ]
+    },
+    {
+      "id": "ask_trade_offs",
+      "name": "Bills vs food or medicine",
+      "source": "self_report",
+      "detect": "I've had to choose between bills, food or medicine.",
+      "example_rule": "answer == yes",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "cost_of_living",
+          "strength": "strong"
+        },
+        {
+          "id": "medical_costs",
+          "strength": "supporting"
+        },
+        {
+          "id": "food_vs_bills",
+          "strength": "strong"
+        }
+      ]
+    },
+    {
+      "id": "ask_language",
+      "name": "Prefers another language",
+      "source": "self_report",
+      "detect": "I'd prefer to talk in a language other than English.",
+      "example_rule": "answer == yes",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "language",
+          "strength": "strong"
+        },
+        {
+          "id": "new_migrant",
+          "strength": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "ask_sensory",
+      "name": "Hearing, vision or speech needs",
+      "source": "self_report",
+      "detect": "I have hearing, vision or speech difficulties.",
+      "example_rule": "answer == yes",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "sensory_impairment",
+          "strength": "strong"
+        }
+      ]
+    },
+    {
+      "id": "ask_reading",
+      "name": "Bills hard to understand",
+      "source": "self_report",
+      "detect": "Bills are hard to read or understand.",
+      "example_rule": "answer == yes",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "low_literacy",
+          "strength": "strong"
+        }
+      ]
+    },
+    {
+      "id": "ask_no_internet",
+      "name": "No internet or phone credit",
+      "source": "self_report",
+      "detect": "I don't have reliable internet, a smartphone or phone credit.",
+      "example_rule": "answer == yes",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "online_only",
+          "strength": "strong"
+        },
+        {
+          "id": "digital_exclusion",
+          "strength": "strong"
+        }
+      ]
+    },
+    {
+      "id": "ask_afraid_to_call",
+      "name": "Worried about contacting the company",
+      "source": "self_report",
+      "detect": "I feel embarrassed or worried about contacting the company.",
+      "example_rule": "answer == yes",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "shame_stigma",
+          "strength": "strong"
+        }
+      ]
+    },
+    {
+      "id": "ask_bad_experience",
+      "name": "Bad experience or unresolved complaint",
+      "source": "self_report",
+      "detect": "I've had a bad experience with the company, or a complaint that wasn't fixed.",
+      "example_rule": "answer == yes",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "cant_get_through",
+          "strength": "strong"
+        },
+        {
+          "id": "missold",
+          "strength": "strong"
+        },
+        {
+          "id": "distrust",
+          "strength": "strong"
+        }
+      ]
+    },
+    {
+      "id": "ask_disaster",
+      "name": "Disaster or long outage",
+      "source": "self_report",
+      "detect": "I've been affected by fire, flood, storm or a long outage.",
+      "example_rule": "answer == yes",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "disaster",
+          "strength": "strong"
+        },
+        {
+          "id": "long_outage",
+          "strength": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "ask_older",
+      "name": "Older person",
+      "source": "self_report",
+      "detect": "I'm an older person.",
+      "example_rule": "answer == yes",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "cognitive_decline",
+          "strength": "supporting"
+        },
+        {
+          "id": "elder_abuse",
+          "strength": "supporting"
+        },
+        {
+          "id": "older_fixed_income",
+          "strength": "strong"
+        }
+      ]
+    },
+    {
+      "id": "ask_new_to_australia",
+      "name": "New to Australia",
+      "source": "self_report",
+      "detect": "I'm new to Australia or an international student.",
+      "example_rule": "answer == yes",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "international_student",
+          "strength": "strong"
+        },
+        {
+          "id": "new_migrant",
+          "strength": "strong"
+        }
+      ]
+    },
+    {
+      "id": "ask_leaving_institution",
+      "name": "Recently left prison or care",
+      "source": "self_report",
+      "detect": "I've recently left prison or out-of-home care.",
+      "example_rule": "answer == yes",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": true,
+      "points_to": [
+        {
+          "id": "leaving_institution",
+          "strength": "strong"
+        },
+        {
+          "id": "no_id",
+          "strength": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "ask_bill_other_name",
+      "name": "Bill in someone else's name",
+      "source": "self_report",
+      "detect": "The bill is in someone else's name (ex-partner, housemate, landlord or someone who has died).",
+      "example_rule": "answer == yes",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "separation",
+          "strength": "supporting"
+        },
+        {
+          "id": "housemate_left",
+          "strength": "supporting"
+        },
+        {
+          "id": "shared_or_boarding",
+          "strength": "supporting"
+        },
+        {
+          "id": "account_other_name",
+          "strength": "strong"
+        }
+      ]
+    },
+    {
+      "id": "ask_scam",
+      "name": "Suspicious bill or wrong payment",
+      "source": "self_report",
+      "detect": "I got a suspicious bill, text or email, or paid the wrong account.",
+      "example_rule": "answer == yes",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "scam",
+          "strength": "strong"
+        }
+      ]
+    },
+    {
+      "id": "ask_prepay",
+      "name": "Prepaid meter credit runs out",
+      "source": "self_report",
+      "detect": "My prepaid meter credit runs out.",
+      "example_rule": "answer == yes",
+      "utilities": [
+        "electricity"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "prepay_self_disconnection",
+          "strength": "strong"
+        }
+      ]
+    },
+    {
+      "id": "ask_work_from_home",
+      "name": "Work or study from home",
+      "source": "self_report",
+      "detect": "I work, study or run a business from home.",
+      "example_rule": "answer == yes",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "work_from_home",
+          "strength": "strong"
+        },
+        {
+          "id": "home_business",
+          "strength": "strong"
+        }
+      ]
+    },
+    {
+      "id": "ask_no_id",
+      "name": "No ID",
+      "source": "self_report",
+      "detect": "I don't have the ID needed to open an account.",
+      "example_rule": "answer == yes",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "no_id",
+          "strength": "strong"
+        }
+      ]
+    },
+    {
+      "id": "ask_pool_ev",
+      "name": "Pool, spa or electric car",
+      "source": "self_report",
+      "detect": "We have a pool or spa, or charge an electric car.",
+      "example_rule": "answer == yes",
+      "utilities": [
+        "electricity",
+        "water"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "pool_ev",
+          "strength": "strong"
+        }
+      ]
+    },
+    {
+      "id": "ask_first_setup",
+      "name": "First time setting up utilities",
+      "source": "self_report",
+      "detect": "This is my first time setting up utilities.",
+      "example_rule": "answer == yes",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "first_time_renter",
+          "strength": "strong"
+        }
+      ]
+    },
+    {
+      "id": "ask_remote_community",
+      "name": "Remote community",
+      "source": "self_report",
+      "detect": "I live in a remote community.",
+      "example_rule": "answer == yes",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "remote_living",
+          "strength": "supporting"
+        },
+        {
+          "id": "remote_prepay_community",
+          "strength": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "ask_bankruptcy",
+      "name": "Bankrupt or in a debt agreement",
+      "source": "self_report",
+      "detect": "I'm bankrupt or in a debt agreement.",
+      "example_rule": "answer == yes",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "bankruptcy",
+          "strength": "strong"
+        }
+      ]
+    },
+    {
+      "id": "ask_attorney",
+      "name": "Managing bills for someone else",
+      "source": "self_report",
+      "detect": "I manage bills for someone else (power of attorney or guardian).",
+      "example_rule": "answer == yes",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "cognitive_decline",
+          "strength": "strong"
+        },
+        {
+          "id": "attorney_complications",
+          "strength": "strong"
+        }
+      ]
+    },
+    {
+      "id": "wx_extreme_heat",
+      "name": "Extreme heat forecast",
+      "source": "weather",
+      "detect": "Bureau of Meteorology forecast maximum of 38°C or more (42°C north of the 26th parallel) at the customer's nearest forecast town in the next 7 days.",
+      "example_rule": "max(forecast_max_7d) >= 38",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "life_support_equipment",
+          "strength": "supporting"
+        },
+        {
+          "id": "temperature_medical",
+          "strength": "supporting"
+        },
+        {
+          "id": "heat_cold",
+          "strength": "strong"
+        },
+        {
+          "id": "prepay_self_disconnection",
+          "strength": "supporting"
+        },
+        {
+          "id": "rationing",
+          "strength": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "wx_fire_danger",
+      "name": "Extreme fire danger forecast",
+      "source": "weather",
+      "detect": "Bureau of Meteorology fire danger rating of Extreme or Catastrophic in the customer's forecast district (the free forecast usually rates tomorrow only).",
+      "example_rule": "fire_danger_next in (Extreme, Catastrophic)",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "disaster",
+          "strength": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "wx_warning",
+      "name": "Weather warning for the area",
+      "source": "weather",
+      "detect": "An active Bureau of Meteorology warning (heatwave, severe weather, fire weather, cyclone or flood) for the customer's forecast district.",
+      "example_rule": "active_warning(district)",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "heat_cold",
+          "strength": "supporting"
+        }
+      ]
+    }
+  ],
+  "circumstances": [
+    {
+      "id": "job_loss",
+      "name": "Job loss, redundancy or stood down",
+      "type": "life",
+      "category": "income",
+      "description": "Main income stops suddenly.",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitivity": "standard",
+      "handling": null,
+      "signals": [
+        {
+          "id": "ask_lost_job",
+          "strength": "strong"
+        },
+        {
+          "id": "acct_missed_payment",
+          "strength": "supporting"
+        },
+        {
+          "id": "acct_daytime_usage_rise",
+          "strength": "supporting"
+        },
+        {
+          "id": "acct_note_keywords",
+          "strength": "supporting"
+        }
+      ],
+      "solutions": [
+        "payment_extension",
+        "payment_arrangement",
+        "retailer_hardship_program",
+        "watercorp_hardship",
+        "telco_hardship_standard",
+        "services_australia",
+        "financial_counselling",
+        "hugs"
+      ]
+    },
+    {
+      "id": "reduced_hours",
+      "name": "Reduced hours or underemployment",
+      "type": "life",
+      "category": "income",
+      "description": "Income drops but doesn't stop.",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitivity": "standard",
+      "handling": null,
+      "signals": [
+        {
+          "id": "ask_less_hours",
+          "strength": "strong"
+        },
+        {
+          "id": "acct_partial_payments",
+          "strength": "supporting"
+        },
+        {
+          "id": "acct_many_extensions",
+          "strength": "supporting"
+        }
+      ],
+      "solutions": [
+        "payment_arrangement",
+        "bill_smoothing",
+        "retailer_hardship_program",
+        "financial_counselling"
+      ]
+    },
+    {
+      "id": "irregular_income",
+      "name": "Irregular income",
+      "type": "life",
+      "category": "income",
+      "description": "Casual, gig, seasonal or FIFO work makes income unpredictable.",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitivity": "standard",
+      "handling": null,
+      "signals": [
+        {
+          "id": "ask_irregular_income",
+          "strength": "strong"
+        },
+        {
+          "id": "acct_partial_payments",
+          "strength": "supporting"
+        },
+        {
+          "id": "acct_payday_aligned",
+          "strength": "supporting"
+        },
+        {
+          "id": "acct_repeated_late",
+          "strength": "supporting"
+        }
+      ],
+      "solutions": [
+        "bill_smoothing",
+        "payment_arrangement",
+        "payment_extension",
+        "financial_counselling"
+      ]
+    },
+    {
+      "id": "business_struggling",
+      "name": "Small business struggling or closing",
+      "type": "life",
+      "category": "income",
+      "description": "Sole trader or small business income falls.",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitivity": "standard",
+      "handling": "Small business customers may have different protections from residential customers.",
+      "signals": [
+        {
+          "id": "ask_business",
+          "strength": "strong"
+        },
+        {
+          "id": "acct_rising_arrears",
+          "strength": "supporting"
+        }
+      ],
+      "solutions": [
+        "payment_arrangement",
+        "retailer_hardship_program",
+        "financial_counselling"
+      ]
+    },
+    {
+      "id": "benefit_problem",
+      "name": "Government payment delayed, cut or stopped",
+      "type": "life",
+      "category": "income",
+      "description": "Centrelink or other payments interrupted.",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitivity": "standard",
+      "handling": null,
+      "signals": [
+        {
+          "id": "ask_payment_problem",
+          "strength": "strong"
+        },
+        {
+          "id": "acct_payday_aligned",
+          "strength": "supporting"
+        },
+        {
+          "id": "acct_missed_payment",
+          "strength": "supporting"
+        }
+      ],
+      "solutions": [
+        "services_australia",
+        "payment_extension",
+        "financial_counselling"
+      ]
+    },
+    {
+      "id": "low_fixed_income",
+      "name": "Low fixed income",
+      "type": "life",
+      "category": "income",
+      "description": "Pension or allowance that doesn't stretch to rising bills.",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitivity": "standard",
+      "handling": null,
+      "signals": [
+        {
+          "id": "ask_fixed_income",
+          "strength": "strong"
+        },
+        {
+          "id": "ask_concession_card",
+          "strength": "strong"
+        },
+        {
+          "id": "acct_concession_on_file",
+          "strength": "supporting"
+        },
+        {
+          "id": "acct_repeated_late",
+          "strength": "supporting"
+        }
+      ],
+      "solutions": [
+        "concession_check",
+        "eap",
+        "eces",
+        "water_seniors_rebate",
+        "centrepay",
+        "retailer_hardship_program"
+      ]
+    },
+    {
+      "id": "wage_theft",
+      "name": "Unpaid or underpaid wages",
+      "type": "life",
+      "category": "income",
+      "description": "Employer pays late or less than owed.",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitivity": "standard",
+      "handling": null,
+      "signals": [
+        {
+          "id": "ask_wage_issue",
+          "strength": "strong"
+        },
+        {
+          "id": "acct_missed_payment",
+          "strength": "supporting"
+        }
+      ],
+      "solutions": [
+        "fair_work",
+        "payment_extension",
+        "financial_counselling"
+      ]
+    },
+    {
+      "id": "student_low_income",
+      "name": "Studying or training on low income",
+      "type": "life",
+      "category": "income",
+      "description": "Students and apprentices with tight budgets.",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitivity": "standard",
+      "handling": null,
+      "signals": [
+        {
+          "id": "ask_student",
+          "strength": "strong"
+        },
+        {
+          "id": "acct_partial_payments",
+          "strength": "supporting"
+        }
+      ],
+      "solutions": [
+        "payment_arrangement",
+        "plan_review",
+        "financial_counselling"
+      ]
+    },
+    {
+      "id": "housing_costs",
+      "name": "Rent or mortgage rising",
+      "type": "life",
+      "category": "cost",
+      "description": "Housing costs crowd out utility bills.",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitivity": "standard",
+      "handling": null,
+      "signals": [
+        {
+          "id": "ask_housing_costs",
+          "strength": "strong"
+        },
+        {
+          "id": "acct_repeated_late",
+          "strength": "supporting"
+        }
+      ],
+      "solutions": [
+        "payment_arrangement",
+        "financial_counselling"
+      ]
+    },
+    {
+      "id": "competing_debts",
+      "name": "Other debts competing for money",
+      "type": "life",
+      "category": "cost",
+      "description": "Credit cards, buy now pay later or payday loans.",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitivity": "standard",
+      "handling": null,
+      "signals": [
+        {
+          "id": "ask_other_debts",
+          "strength": "strong"
+        },
+        {
+          "id": "acct_collections",
+          "strength": "supporting"
+        },
+        {
+          "id": "acct_rising_arrears",
+          "strength": "supporting"
+        }
+      ],
+      "solutions": [
+        "financial_counselling",
+        "legal_help",
+        "payment_arrangement"
+      ]
+    },
+    {
+      "id": "unexpected_expense",
+      "name": "Big one-off expense",
+      "type": "life",
+      "category": "cost",
+      "description": "Car repair, vet bill, funeral or urgent repairs.",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitivity": "standard",
+      "handling": null,
+      "signals": [
+        {
+          "id": "ask_unexpected_cost",
+          "strength": "strong"
+        },
+        {
+          "id": "acct_missed_payment",
+          "strength": "supporting"
+        }
+      ],
+      "solutions": [
+        "payment_extension",
+        "no_interest_loan",
+        "payment_arrangement"
+      ]
+    },
+    {
+      "id": "supporting_family",
+      "name": "Supporting extended family",
+      "type": "life",
+      "category": "cost",
+      "description": "Money going to relatives here or overseas.",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitivity": "standard",
+      "handling": null,
+      "signals": [
+        {
+          "id": "ask_support_family",
+          "strength": "strong"
+        }
+      ],
+      "solutions": [
+        "financial_counselling",
+        "payment_arrangement"
+      ]
+    },
+    {
+      "id": "cost_of_living",
+      "name": "General cost-of-living squeeze",
+      "type": "life",
+      "category": "cost",
+      "description": "Food, fuel and insurance all rising at once.",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitivity": "standard",
+      "handling": null,
+      "signals": [
+        {
+          "id": "ask_trade_offs",
+          "strength": "strong"
+        },
+        {
+          "id": "acct_repeated_late",
+          "strength": "supporting"
+        },
+        {
+          "id": "acct_rising_arrears",
+          "strength": "supporting"
+        }
+      ],
+      "solutions": [
+        "concession_check",
+        "retailer_hardship_program",
+        "payment_arrangement",
+        "financial_counselling"
+      ]
+    },
+    {
+      "id": "serious_illness",
+      "name": "Serious illness, injury or hospital stay",
+      "type": "life",
+      "category": "health",
+      "description": "Income loss plus extra costs.",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitivity": "sensitive",
+      "handling": "Only act on what the customer tells you. Never infer illness from usage data.",
+      "signals": [
+        {
+          "id": "ask_illness",
+          "strength": "strong"
+        },
+        {
+          "id": "acct_note_keywords",
+          "strength": "supporting"
+        },
+        {
+          "id": "acct_daytime_usage_rise",
+          "strength": "supporting"
+        },
+        {
+          "id": "acct_missed_payment",
+          "strength": "supporting"
+        }
+      ],
+      "solutions": [
+        "payment_extension",
+        "retailer_hardship_program",
+        "services_australia",
+        "financial_counselling"
+      ]
+    },
+    {
+      "id": "life_support_equipment",
+      "name": "Life support or medical equipment at home",
+      "type": "life",
+      "category": "health",
+      "description": "Equipment needs constant power and raises bills.",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water"
+      ],
+      "sensitivity": "sensitive",
+      "handling": "Make sure the household is registered for life support protections before anything else.",
+      "signals": [
+        {
+          "id": "ask_medical_equipment",
+          "strength": "strong"
+        },
+        {
+          "id": "acct_life_support",
+          "strength": "strong"
+        },
+        {
+          "id": "wx_extreme_heat",
+          "strength": "supporting"
+        }
+      ],
+      "solutions": [
+        "life_support_registration",
+        "lsees",
+        "watercorp_medical"
+      ]
+    },
+    {
+      "id": "temperature_medical",
+      "name": "Medical need for heating or cooling",
+      "type": "life",
+      "category": "health",
+      "description": "Condition that makes temperature control essential.",
+      "utilities": [
+        "electricity",
+        "gas"
+      ],
+      "sensitivity": "sensitive",
+      "handling": "Only act on what the customer tells you.",
+      "signals": [
+        {
+          "id": "ask_temperature_need",
+          "strength": "strong"
+        },
+        {
+          "id": "acct_seasonal_peak",
+          "strength": "supporting"
+        },
+        {
+          "id": "wx_extreme_heat",
+          "strength": "supporting"
+        }
+      ],
+      "solutions": [
+        "tdes",
+        "aircon_rebate",
+        "bill_smoothing",
+        "efficiency_help"
+      ]
+    },
+    {
+      "id": "mental_health",
+      "name": "Mental health making bills hard to manage",
+      "type": "life",
+      "category": "health",
+      "description": "Hard to open mail, make calls or keep track.",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitivity": "sensitive",
+      "handling": "Never infer from behaviour alone. Offer support gently; have crisis numbers ready.",
+      "signals": [
+        {
+          "id": "ask_hard_to_manage",
+          "strength": "strong"
+        },
+        {
+          "id": "acct_unanswered_outreach",
+          "strength": "supporting"
+        },
+        {
+          "id": "acct_digital_disengaged",
+          "strength": "supporting"
+        },
+        {
+          "id": "acct_repeat_contact",
+          "strength": "supporting"
+        }
+      ],
+      "solutions": [
+        "authorised_rep",
+        "proactive_outreach",
+        "retailer_hardship_program",
+        "financial_counselling",
+        "mental_health_support"
+      ]
+    },
+    {
+      "id": "cognitive_decline",
+      "name": "Cognitive decline or dementia",
+      "type": "life",
+      "category": "health",
+      "description": "Missed or doubled payments, confusion about bills.",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitivity": "sensitive",
+      "handling": "Usually raised by a family member or carer. Account patterns alone should only prompt a gentle check-in by trained staff, never a label. Watch for possible elder financial abuse.",
+      "signals": [
+        {
+          "id": "ask_attorney",
+          "strength": "strong"
+        },
+        {
+          "id": "acct_third_party_authority",
+          "strength": "supporting"
+        },
+        {
+          "id": "acct_repeat_contact",
+          "strength": "supporting"
+        },
+        {
+          "id": "acct_dishonour",
+          "strength": "supporting"
+        },
+        {
+          "id": "ask_older",
+          "strength": "supporting"
+        }
+      ],
+      "solutions": [
+        "authorised_rep",
+        "retailer_hardship_program",
+        "proactive_outreach"
+      ]
+    },
+    {
+      "id": "disability_costs",
+      "name": "Disability-related costs",
+      "type": "life",
+      "category": "health",
+      "description": "Extra power, water or access needs.",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitivity": "sensitive",
+      "handling": "Only act on what the customer tells you.",
+      "signals": [
+        {
+          "id": "ask_disability",
+          "strength": "strong"
+        },
+        {
+          "id": "acct_access_needs",
+          "strength": "supporting"
+        }
+      ],
+      "solutions": [
+        "concession_check",
+        "relay_service",
+        "authorised_rep",
+        "retailer_hardship_program"
+      ]
+    },
+    {
+      "id": "addiction",
+      "name": "Gambling or substance addiction",
+      "type": "life",
+      "category": "health",
+      "description": "Money diverted; bills fall behind.",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitivity": "sensitive",
+      "handling": "Self-report only. Never infer or record beyond what is needed to help.",
+      "signals": [
+        {
+          "id": "ask_gambling_substance",
+          "strength": "strong"
+        }
+      ],
+      "solutions": [
+        "gambling_help",
+        "financial_counselling",
+        "retailer_hardship_program"
+      ]
+    },
+    {
+      "id": "new_baby",
+      "name": "Pregnancy or new baby",
+      "type": "life",
+      "category": "health",
+      "description": "Reduced income and higher usage.",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitivity": "standard",
+      "handling": null,
+      "signals": [
+        {
+          "id": "ask_new_baby",
+          "strength": "strong"
+        },
+        {
+          "id": "acct_usage_spike",
+          "strength": "supporting"
+        },
+        {
+          "id": "acct_daytime_usage_rise",
+          "strength": "supporting"
+        }
+      ],
+      "solutions": [
+        "dependent_child_rebate",
+        "payment_arrangement",
+        "services_australia"
+      ]
+    },
+    {
+      "id": "medical_costs",
+      "name": "High medication or medical costs",
+      "type": "life",
+      "category": "health",
+      "description": "Ongoing health costs squeeze the budget.",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitivity": "sensitive",
+      "handling": "Only act on what the customer tells you.",
+      "signals": [
+        {
+          "id": "ask_illness",
+          "strength": "strong"
+        },
+        {
+          "id": "ask_trade_offs",
+          "strength": "supporting"
+        }
+      ],
+      "solutions": [
+        "financial_counselling",
+        "payment_arrangement"
+      ]
+    },
+    {
+      "id": "home_dialysis_water",
+      "name": "Home dialysis water use",
+      "type": "life",
+      "category": "health",
+      "description": "Dialysis uses a lot of water.",
+      "utilities": [
+        "water"
+      ],
+      "sensitivity": "sensitive",
+      "handling": "Allowance is automatic via WA Home Therapies; check it has been applied.",
+      "signals": [
+        {
+          "id": "ask_medical_equipment",
+          "strength": "strong"
+        },
+        {
+          "id": "acct_usage_spike",
+          "strength": "supporting"
+        }
+      ],
+      "solutions": [
+        "watercorp_medical"
+      ]
+    },
+    {
+      "id": "separation",
+      "name": "Separation or divorce",
+      "type": "life",
+      "category": "family",
+      "description": "Bills left in one person's name; income halves.",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitivity": "sensitive",
+      "handling": "Check for family violence before contacting the other party.",
+      "signals": [
+        {
+          "id": "ask_separated",
+          "strength": "strong"
+        },
+        {
+          "id": "acct_holder_change",
+          "strength": "supporting"
+        },
+        {
+          "id": "ask_bill_other_name",
+          "strength": "supporting"
+        },
+        {
+          "id": "acct_note_keywords",
+          "strength": "supporting"
+        }
+      ],
+      "solutions": [
+        "account_transfer",
+        "payment_arrangement",
+        "financial_counselling",
+        "fv_protections"
+      ]
+    },
+    {
+      "id": "partner_died",
+      "name": "Death of partner or account holder",
+      "type": "life",
+      "category": "family",
+      "description": "Account in a deceased person's name; income lost.",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitivity": "sensitive",
+      "handling": "Pause collection; use plain, kind language.",
+      "signals": [
+        {
+          "id": "ask_bereaved",
+          "strength": "strong"
+        },
+        {
+          "id": "acct_deceased_flag",
+          "strength": "strong"
+        }
+      ],
+      "solutions": [
+        "bereavement",
+        "account_transfer",
+        "payment_extension"
+      ]
+    },
+    {
+      "id": "family_violence",
+      "name": "Family and domestic violence",
+      "type": "life",
+      "category": "family",
+      "description": "Safety risk; may need to flee; contact details may be dangerous to use.",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitivity": "safety",
+      "handling": "Never contact automatically. Route to trained staff only. Protect address and account details. Avoid asking for proof.",
+      "signals": [
+        {
+          "id": "ask_unsafe",
+          "strength": "strong"
+        },
+        {
+          "id": "acct_note_keywords",
+          "strength": "supporting"
+        },
+        {
+          "id": "acct_holder_change",
+          "strength": "supporting"
+        }
+      ],
+      "solutions": [
+        "fv_protections",
+        "fdv_helplines",
+        "escaping_violence_payment",
+        "fee_waiver",
+        "disconnection_protection"
+      ]
+    },
+    {
+      "id": "economic_abuse",
+      "name": "Economic abuse",
+      "type": "life",
+      "category": "family",
+      "description": "Debts put in the victim's name, or finances controlled by someone else.",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitivity": "safety",
+      "handling": "Never contact automatically. Don't discuss the account with the other party.",
+      "signals": [
+        {
+          "id": "ask_debts_not_mine",
+          "strength": "strong"
+        },
+        {
+          "id": "ask_unsafe",
+          "strength": "strong"
+        },
+        {
+          "id": "acct_identity_mismatch",
+          "strength": "supporting"
+        }
+      ],
+      "solutions": [
+        "fv_protections",
+        "account_transfer",
+        "fdv_helplines",
+        "financial_counselling",
+        "legal_help"
+      ]
+    },
+    {
+      "id": "elder_abuse",
+      "name": "Elder financial abuse",
+      "type": "life",
+      "category": "family",
+      "description": "Someone close is taking or controlling an older person's money.",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitivity": "safety",
+      "handling": "The authorised representative may be the person causing harm. Escalate to trained staff.",
+      "signals": [
+        {
+          "id": "ask_unsafe",
+          "strength": "strong"
+        },
+        {
+          "id": "ask_older",
+          "strength": "supporting"
+        },
+        {
+          "id": "acct_third_party_authority",
+          "strength": "supporting"
+        }
+      ],
+      "solutions": [
+        "legal_help",
+        "financial_counselling",
+        "fdv_helplines"
+      ]
+    },
+    {
+      "id": "carer",
+      "name": "Becoming a carer",
+      "type": "life",
+      "category": "family",
+      "description": "Cutting back on work to care for someone.",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitivity": "standard",
+      "handling": null,
+      "signals": [
+        {
+          "id": "ask_carer",
+          "strength": "strong"
+        },
+        {
+          "id": "acct_daytime_usage_rise",
+          "strength": "supporting"
+        }
+      ],
+      "solutions": [
+        "carer_gateway",
+        "services_australia",
+        "payment_arrangement"
+      ]
+    },
+    {
+      "id": "single_parent",
+      "name": "Single-parent household",
+      "type": "life",
+      "category": "family",
+      "description": "One income covering a family.",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitivity": "standard",
+      "handling": null,
+      "signals": [
+        {
+          "id": "ask_single_parent",
+          "strength": "strong"
+        }
+      ],
+      "solutions": [
+        "dependent_child_rebate",
+        "eap",
+        "financial_counselling"
+      ]
+    },
+    {
+      "id": "household_grew",
+      "name": "Household grew",
+      "type": "life",
+      "category": "family",
+      "description": "Kin, foster children or adult children moving in.",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitivity": "standard",
+      "handling": null,
+      "signals": [
+        {
+          "id": "ask_household_grew",
+          "strength": "strong"
+        },
+        {
+          "id": "acct_usage_spike",
+          "strength": "supporting"
+        }
+      ],
+      "solutions": [
+        "plan_review",
+        "efficiency_help",
+        "bill_smoothing"
+      ]
+    },
+    {
+      "id": "housemate_left",
+      "name": "Housemate left without paying",
+      "type": "life",
+      "category": "family",
+      "description": "Shared bill now falls on one person.",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitivity": "standard",
+      "handling": null,
+      "signals": [
+        {
+          "id": "ask_bill_other_name",
+          "strength": "supporting"
+        },
+        {
+          "id": "acct_holder_change",
+          "strength": "supporting"
+        }
+      ],
+      "solutions": [
+        "payment_arrangement",
+        "account_transfer"
+      ]
+    },
+    {
+      "id": "renter_inefficient_home",
+      "name": "Renting an inefficient home",
+      "type": "life",
+      "category": "housing",
+      "description": "No power to add insulation or replace appliances.",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water"
+      ],
+      "sensitivity": "standard",
+      "handling": null,
+      "signals": [
+        {
+          "id": "ask_renting",
+          "strength": "strong"
+        },
+        {
+          "id": "ask_inefficient_home",
+          "strength": "supporting"
+        },
+        {
+          "id": "acct_seasonal_peak",
+          "strength": "supporting"
+        }
+      ],
+      "solutions": [
+        "efficiency_help",
+        "consumer_protection",
+        "plan_review"
+      ]
+    },
+    {
+      "id": "old_appliances",
+      "name": "Old, power-hungry appliances",
+      "type": "life",
+      "category": "housing",
+      "description": "Old hot water system, fridge or heater driving up bills.",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water"
+      ],
+      "sensitivity": "standard",
+      "handling": null,
+      "signals": [
+        {
+          "id": "ask_inefficient_home",
+          "strength": "strong"
+        },
+        {
+          "id": "acct_usage_spike",
+          "strength": "supporting"
+        }
+      ],
+      "solutions": [
+        "efficiency_help",
+        "no_interest_loan"
+      ]
+    },
+    {
+      "id": "embedded_network",
+      "name": "Embedded network",
+      "type": "life",
+      "category": "housing",
+      "description": "Apartment, caravan park or retirement village supply with less choice and different protections.",
+      "utilities": [
+        "electricity"
+      ],
+      "sensitivity": "standard",
+      "handling": "Concessions usually come through ECES rather than the bill.",
+      "signals": [
+        {
+          "id": "ask_embedded",
+          "strength": "strong"
+        },
+        {
+          "id": "acct_embedded_network",
+          "strength": "strong"
+        }
+      ],
+      "solutions": [
+        "eces",
+        "retailer_hardship_program",
+        "concession_check"
+      ]
+    },
+    {
+      "id": "moving_costs",
+      "name": "Moving costs",
+      "type": "life",
+      "category": "housing",
+      "description": "Connection fees, overlapping and final bills.",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitivity": "standard",
+      "handling": null,
+      "signals": [
+        {
+          "id": "ask_moving",
+          "strength": "strong"
+        },
+        {
+          "id": "acct_move",
+          "strength": "supporting"
+        }
+      ],
+      "solutions": [
+        "connection_help",
+        "payment_extension"
+      ]
+    },
+    {
+      "id": "previous_occupant_debt",
+      "name": "Previous occupant's debt or mix-up",
+      "type": "account",
+      "category": "housing",
+      "description": "Billed for someone else's usage or debt.",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitivity": "standard",
+      "handling": null,
+      "signals": [
+        {
+          "id": "acct_debt_transferred",
+          "strength": "strong"
+        },
+        {
+          "id": "acct_move",
+          "strength": "supporting"
+        },
+        {
+          "id": "ask_bill_wrong",
+          "strength": "supporting"
+        }
+      ],
+      "solutions": [
+        "bill_review",
+        "ewowa",
+        "tio"
+      ]
+    },
+    {
+      "id": "landlord_water_dispute",
+      "name": "Landlord and tenant water charge dispute",
+      "type": "account",
+      "category": "housing",
+      "description": "Disagreement over who pays water use or a leak.",
+      "utilities": [
+        "water"
+      ],
+      "sensitivity": "standard",
+      "handling": null,
+      "signals": [
+        {
+          "id": "ask_renting",
+          "strength": "supporting"
+        },
+        {
+          "id": "ask_bill_higher",
+          "strength": "supporting"
+        },
+        {
+          "id": "ask_leak",
+          "strength": "supporting"
+        }
+      ],
+      "solutions": [
+        "consumer_protection",
+        "leak_allowance",
+        "ewowa"
+      ]
+    },
+    {
+      "id": "homelessness",
+      "name": "Homelessness or temporary accommodation",
+      "type": "life",
+      "category": "housing",
+      "description": "No fixed address; mail doesn't arrive.",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitivity": "sensitive",
+      "handling": "Use contact methods the customer chooses.",
+      "signals": [
+        {
+          "id": "ask_homeless",
+          "strength": "strong"
+        },
+        {
+          "id": "acct_returned_mail",
+          "strength": "supporting"
+        }
+      ],
+      "solutions": [
+        "emergency_relief",
+        "financial_counselling",
+        "services_australia"
+      ]
+    },
+    {
+      "id": "shared_or_boarding",
+      "name": "Shared house or boarding house",
+      "type": "life",
+      "category": "housing",
+      "description": "Only one name on the bill for many people.",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitivity": "standard",
+      "handling": null,
+      "signals": [
+        {
+          "id": "ask_bill_other_name",
+          "strength": "supporting"
+        },
+        {
+          "id": "ask_renting",
+          "strength": "supporting"
+        }
+      ],
+      "solutions": [
+        "account_transfer",
+        "payment_arrangement"
+      ]
+    },
+    {
+      "id": "remote_living",
+      "name": "Rural or remote living",
+      "type": "life",
+      "category": "housing",
+      "description": "Higher costs, fewer options, harsher climate.",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitivity": "standard",
+      "handling": "HUGS caps are higher north of the 26th parallel.",
+      "signals": [
+        {
+          "id": "acct_remote_area",
+          "strength": "strong"
+        },
+        {
+          "id": "ask_remote_community",
+          "strength": "supporting"
+        }
+      ],
+      "solutions": [
+        "hugs",
+        "prepay_hardship",
+        "aircon_rebate"
+      ]
+    },
+    {
+      "id": "mould_damp",
+      "name": "Mould and damp",
+      "type": "life",
+      "category": "housing",
+      "description": "Extra heating or dehumidifying needed.",
+      "utilities": [
+        "electricity",
+        "gas"
+      ],
+      "sensitivity": "standard",
+      "handling": null,
+      "signals": [
+        {
+          "id": "ask_inefficient_home",
+          "strength": "strong"
+        },
+        {
+          "id": "ask_renting",
+          "strength": "supporting"
+        }
+      ],
+      "solutions": [
+        "consumer_protection",
+        "efficiency_help"
+      ]
+    },
+    {
+      "id": "bill_shock",
+      "name": "Bill shock",
+      "type": "account",
+      "category": "billing",
+      "description": "An unexpectedly high bill.",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitivity": "standard",
+      "handling": null,
+      "signals": [
+        {
+          "id": "acct_usage_spike",
+          "strength": "strong"
+        },
+        {
+          "id": "ask_bill_higher",
+          "strength": "strong"
+        }
+      ],
+      "solutions": [
+        "bill_review",
+        "payment_arrangement",
+        "efficiency_help"
+      ]
+    },
+    {
+      "id": "estimated_catchup",
+      "name": "Estimated reads then catch-up bill",
+      "type": "account",
+      "category": "billing",
+      "description": "Several estimates followed by a large correction.",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water"
+      ],
+      "sensitivity": "standard",
+      "handling": null,
+      "signals": [
+        {
+          "id": "acct_catchup_bill",
+          "strength": "strong"
+        },
+        {
+          "id": "acct_estimated_reads",
+          "strength": "supporting"
+        }
+      ],
+      "solutions": [
+        "bill_review",
+        "payment_arrangement",
+        "ewowa"
+      ]
+    },
+    {
+      "id": "faulty_meter",
+      "name": "Faulty or crossed meter",
+      "type": "account",
+      "category": "billing",
+      "description": "Billed for the wrong meter or a faulty one.",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water"
+      ],
+      "sensitivity": "standard",
+      "handling": null,
+      "signals": [
+        {
+          "id": "ask_bill_wrong",
+          "strength": "strong"
+        },
+        {
+          "id": "acct_usage_spike",
+          "strength": "supporting"
+        },
+        {
+          "id": "acct_bill_adjusted",
+          "strength": "supporting"
+        }
+      ],
+      "solutions": [
+        "bill_review",
+        "ewowa"
+      ]
+    },
+    {
+      "id": "hidden_leak",
+      "name": "Hidden water leak",
+      "type": "account",
+      "category": "billing",
+      "description": "Concealed leak drives up the water bill.",
+      "utilities": [
+        "water"
+      ],
+      "sensitivity": "standard",
+      "handling": null,
+      "signals": [
+        {
+          "id": "acct_continuous_flow",
+          "strength": "strong"
+        },
+        {
+          "id": "ask_leak",
+          "strength": "strong"
+        },
+        {
+          "id": "acct_usage_spike",
+          "strength": "supporting"
+        }
+      ],
+      "solutions": [
+        "leak_allowance",
+        "bill_review",
+        "payment_arrangement"
+      ]
+    },
+    {
+      "id": "billing_error",
+      "name": "Billing error or double charge",
+      "type": "account",
+      "category": "billing",
+      "description": "Charged twice or charged wrongly.",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitivity": "standard",
+      "handling": null,
+      "signals": [
+        {
+          "id": "ask_bill_wrong",
+          "strength": "strong"
+        },
+        {
+          "id": "acct_bill_adjusted",
+          "strength": "supporting"
+        },
+        {
+          "id": "acct_repeat_contact",
+          "strength": "supporting"
+        },
+        {
+          "id": "acct_complaint",
+          "strength": "supporting"
+        }
+      ],
+      "solutions": [
+        "bill_review",
+        "ewowa",
+        "tio"
+      ]
+    },
+    {
+      "id": "back_billing",
+      "name": "Back-billing",
+      "type": "account",
+      "category": "billing",
+      "description": "A bill covering a long past period.",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitivity": "standard",
+      "handling": null,
+      "signals": [
+        {
+          "id": "acct_catchup_bill",
+          "strength": "strong"
+        },
+        {
+          "id": "acct_bill_adjusted",
+          "strength": "supporting"
+        }
+      ],
+      "solutions": [
+        "bill_review",
+        "payment_arrangement",
+        "ewowa",
+        "tio"
+      ]
+    },
+    {
+      "id": "price_rise",
+      "name": "Price rise or tariff change",
+      "type": "account",
+      "category": "billing",
+      "description": "Same usage, bigger bill.",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitivity": "standard",
+      "handling": null,
+      "signals": [
+        {
+          "id": "acct_bill_up_flat_usage",
+          "strength": "strong"
+        },
+        {
+          "id": "ask_bill_higher",
+          "strength": "supporting"
+        }
+      ],
+      "solutions": [
+        "plan_review",
+        "payment_arrangement"
+      ]
+    },
+    {
+      "id": "concession_lost",
+      "name": "Concession lost without noticing",
+      "type": "account",
+      "category": "billing",
+      "description": "Card expired or wasn't revalidated.",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitivity": "standard",
+      "handling": null,
+      "signals": [
+        {
+          "id": "acct_concession_lapsed",
+          "strength": "strong"
+        }
+      ],
+      "solutions": [
+        "concession_check",
+        "eap",
+        "water_seniors_rebate"
+      ]
+    },
+    {
+      "id": "concession_unclaimed",
+      "name": "Eligible but no concession linked",
+      "type": "account",
+      "category": "billing",
+      "description": "Holds a card but it isn't on the account.",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitivity": "standard",
+      "handling": null,
+      "signals": [
+        {
+          "id": "acct_no_concession",
+          "strength": "strong"
+        },
+        {
+          "id": "ask_concession_card",
+          "strength": "supporting"
+        }
+      ],
+      "solutions": [
+        "concession_check",
+        "eap",
+        "eces",
+        "water_seniors_rebate"
+      ]
+    },
+    {
+      "id": "solar_fault",
+      "name": "Solar fault or lower export unnoticed",
+      "type": "account",
+      "category": "billing",
+      "description": "Solar system stopped working or export rate dropped.",
+      "utilities": [
+        "electricity"
+      ],
+      "sensitivity": "standard",
+      "handling": null,
+      "signals": [
+        {
+          "id": "acct_solar_export_zero",
+          "strength": "strong"
+        }
+      ],
+      "solutions": [
+        "efficiency_help",
+        "bill_review"
+      ]
+    },
+    {
+      "id": "fees_piling_up",
+      "name": "Fees piling up",
+      "type": "account",
+      "category": "billing",
+      "description": "Late, dishonour and reconnection fees add to the debt.",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitivity": "standard",
+      "handling": null,
+      "signals": [
+        {
+          "id": "acct_dishonour",
+          "strength": "strong"
+        },
+        {
+          "id": "acct_disconnected",
+          "strength": "supporting"
+        },
+        {
+          "id": "acct_rising_arrears",
+          "strength": "supporting"
+        }
+      ],
+      "solutions": [
+        "fee_waiver",
+        "payment_arrangement"
+      ]
+    },
+    {
+      "id": "heat_cold",
+      "name": "Heatwave or cold snap",
+      "type": "life",
+      "category": "weather",
+      "description": "Air-con or heating drives bills up.",
+      "utilities": [
+        "electricity",
+        "gas"
+      ],
+      "sensitivity": "standard",
+      "handling": null,
+      "signals": [
+        {
+          "id": "acct_seasonal_peak",
+          "strength": "strong"
+        },
+        {
+          "id": "wx_extreme_heat",
+          "strength": "strong"
+        },
+        {
+          "id": "wx_warning",
+          "strength": "supporting"
+        }
+      ],
+      "solutions": [
+        "bill_smoothing",
+        "efficiency_help",
+        "tdes"
+      ]
+    },
+    {
+      "id": "disaster",
+      "name": "Bushfire, flood, cyclone or storm",
+      "type": "life",
+      "category": "weather",
+      "description": "Damage or displacement.",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitivity": "standard",
+      "handling": null,
+      "signals": [
+        {
+          "id": "ask_disaster",
+          "strength": "strong"
+        },
+        {
+          "id": "acct_outage_history",
+          "strength": "supporting"
+        },
+        {
+          "id": "wx_fire_danger",
+          "strength": "supporting"
+        }
+      ],
+      "solutions": [
+        "disaster_support",
+        "payment_extension",
+        "retailer_hardship_program"
+      ]
+    },
+    {
+      "id": "long_outage",
+      "name": "Long outage",
+      "type": "life",
+      "category": "weather",
+      "description": "Lost food or medicine, damaged appliances.",
+      "utilities": [
+        "electricity",
+        "telco"
+      ],
+      "sensitivity": "standard",
+      "handling": null,
+      "signals": [
+        {
+          "id": "acct_outage_history",
+          "strength": "strong"
+        },
+        {
+          "id": "ask_disaster",
+          "strength": "supporting"
+        }
+      ],
+      "solutions": [
+        "life_support_registration",
+        "ewowa",
+        "tio"
+      ]
+    },
+    {
+      "id": "cant_get_through",
+      "name": "Can't reach the company",
+      "type": "company",
+      "category": "service",
+      "description": "Long waits or no reply.",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitivity": "standard",
+      "handling": "A process problem to fix internally as well.",
+      "signals": [
+        {
+          "id": "ask_bad_experience",
+          "strength": "strong"
+        },
+        {
+          "id": "acct_repeat_contact",
+          "strength": "supporting"
+        },
+        {
+          "id": "acct_complaint",
+          "strength": "supporting"
+        }
+      ],
+      "solutions": [
+        "ewowa",
+        "tio",
+        "financial_counselling"
+      ]
+    },
+    {
+      "id": "hardship_not_offered",
+      "name": "Not told about hardship options",
+      "type": "company",
+      "category": "service",
+      "description": "Arrears grow without anyone mentioning help.",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitivity": "standard",
+      "handling": "A process gap. Flag for internal follow-up.",
+      "signals": [
+        {
+          "id": "acct_no_hardship_offer",
+          "strength": "strong"
+        },
+        {
+          "id": "acct_rising_arrears",
+          "strength": "supporting"
+        }
+      ],
+      "solutions": [
+        "retailer_hardship_program",
+        "proactive_outreach",
+        "telco_hardship_standard"
+      ]
+    },
+    {
+      "id": "unaffordable_plan",
+      "name": "Unaffordable payment plan",
+      "type": "company",
+      "category": "service",
+      "description": "Plan set above what the customer can pay.",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitivity": "standard",
+      "handling": "Reset the plan based on capacity to pay.",
+      "signals": [
+        {
+          "id": "acct_broken_plan",
+          "strength": "strong"
+        },
+        {
+          "id": "acct_hardship_exit",
+          "strength": "supporting"
+        }
+      ],
+      "solutions": [
+        "payment_arrangement",
+        "financial_counselling",
+        "hugs"
+      ]
+    },
+    {
+      "id": "improper_disconnection",
+      "name": "Disconnection without proper process",
+      "type": "company",
+      "category": "service",
+      "description": "Cut off without the required notices or hardship checks.",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitivity": "standard",
+      "handling": null,
+      "signals": [
+        {
+          "id": "acct_disconnected",
+          "strength": "strong"
+        },
+        {
+          "id": "acct_disconnection_warning",
+          "strength": "supporting"
+        },
+        {
+          "id": "acct_no_hardship_offer",
+          "strength": "supporting"
+        }
+      ],
+      "solutions": [
+        "disconnection_protection",
+        "ewowa",
+        "tio"
+      ]
+    },
+    {
+      "id": "debt_collection",
+      "name": "Debt sent to collectors or default listed",
+      "type": "company",
+      "category": "service",
+      "description": "Credit file damage and collector pressure.",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitivity": "standard",
+      "handling": null,
+      "signals": [
+        {
+          "id": "acct_collections",
+          "strength": "strong"
+        }
+      ],
+      "solutions": [
+        "telco_hardship_standard",
+        "ewowa",
+        "tio",
+        "legal_help",
+        "financial_counselling"
+      ]
+    },
+    {
+      "id": "missold",
+      "name": "Misleading sale or wrong plan",
+      "type": "company",
+      "category": "service",
+      "description": "Door-to-door or phone sale onto an unsuitable plan.",
+      "utilities": [
+        "electricity",
+        "gas",
+        "telco"
+      ],
+      "sensitivity": "standard",
+      "handling": null,
+      "signals": [
+        {
+          "id": "ask_bad_experience",
+          "strength": "strong"
+        },
+        {
+          "id": "acct_plan_mismatch",
+          "strength": "supporting"
+        }
+      ],
+      "solutions": [
+        "ewowa",
+        "tio",
+        "plan_review",
+        "consumer_protection"
+      ]
+    },
+    {
+      "id": "loyalty_tax",
+      "name": "Paying more on an old plan",
+      "type": "company",
+      "category": "service",
+      "description": "Never moved to a cheaper plan.",
+      "utilities": [
+        "electricity",
+        "gas",
+        "telco"
+      ],
+      "sensitivity": "standard",
+      "handling": null,
+      "signals": [
+        {
+          "id": "acct_plan_mismatch",
+          "strength": "strong"
+        }
+      ],
+      "solutions": [
+        "plan_review"
+      ]
+    },
+    {
+      "id": "online_only",
+      "name": "Online-only service",
+      "type": "company",
+      "category": "service",
+      "description": "App or portal is the only way to get help.",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitivity": "standard",
+      "handling": null,
+      "signals": [
+        {
+          "id": "ask_no_internet",
+          "strength": "strong"
+        },
+        {
+          "id": "acct_digital_disengaged",
+          "strength": "supporting"
+        }
+      ],
+      "solutions": [
+        "authorised_rep"
+      ]
+    },
+    {
+      "id": "low_literacy",
+      "name": "Low literacy or numeracy",
+      "type": "access",
+      "category": "access",
+      "description": "Bills are hard to read and understand.",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitivity": "standard",
+      "handling": "Explain by phone in plain language.",
+      "signals": [
+        {
+          "id": "ask_reading",
+          "strength": "strong"
+        },
+        {
+          "id": "acct_repeat_contact",
+          "strength": "supporting"
+        }
+      ],
+      "solutions": [
+        "authorised_rep",
+        "financial_counselling"
+      ]
+    },
+    {
+      "id": "language",
+      "name": "Limited English",
+      "type": "access",
+      "category": "access",
+      "description": "Language barrier with the provider.",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitivity": "standard",
+      "handling": null,
+      "signals": [
+        {
+          "id": "ask_language",
+          "strength": "strong"
+        },
+        {
+          "id": "acct_interpreter",
+          "strength": "strong"
+        }
+      ],
+      "solutions": [
+        "interpreter",
+        "authorised_rep"
+      ]
+    },
+    {
+      "id": "sensory_impairment",
+      "name": "Hearing, vision or speech impairment",
+      "type": "access",
+      "category": "access",
+      "description": "Standard bills and calls don't work.",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitivity": "standard",
+      "handling": null,
+      "signals": [
+        {
+          "id": "ask_sensory",
+          "strength": "strong"
+        },
+        {
+          "id": "acct_access_needs",
+          "strength": "strong"
+        }
+      ],
+      "solutions": [
+        "relay_service",
+        "authorised_rep"
+      ]
+    },
+    {
+      "id": "digital_exclusion",
+      "name": "No internet, smartphone or phone credit",
+      "type": "access",
+      "category": "access",
+      "description": "Can't use online channels or receive texts.",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitivity": "standard",
+      "handling": null,
+      "signals": [
+        {
+          "id": "ask_no_internet",
+          "strength": "strong"
+        },
+        {
+          "id": "acct_digital_disengaged",
+          "strength": "supporting"
+        },
+        {
+          "id": "acct_small_recharges",
+          "strength": "supporting"
+        }
+      ],
+      "solutions": [
+        "authorised_rep",
+        "plan_review"
+      ]
+    },
+    {
+      "id": "wrong_address",
+      "name": "Bills going to the wrong place",
+      "type": "access",
+      "category": "access",
+      "description": "Old address or spam folder.",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitivity": "standard",
+      "handling": null,
+      "signals": [
+        {
+          "id": "acct_returned_mail",
+          "strength": "strong"
+        },
+        {
+          "id": "acct_digital_disengaged",
+          "strength": "supporting"
+        }
+      ],
+      "solutions": [
+        "authorised_rep",
+        "bill_review"
+      ]
+    },
+    {
+      "id": "shame_stigma",
+      "name": "Shame, stigma or fear of calling",
+      "type": "access",
+      "category": "access",
+      "description": "Avoids contact until it's a crisis.",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitivity": "standard",
+      "handling": "Lead with reassurance; no judgement.",
+      "signals": [
+        {
+          "id": "ask_afraid_to_call",
+          "strength": "strong"
+        },
+        {
+          "id": "acct_unanswered_outreach",
+          "strength": "supporting"
+        },
+        {
+          "id": "acct_usage_drop",
+          "strength": "supporting"
+        }
+      ],
+      "solutions": [
+        "proactive_outreach",
+        "financial_counselling"
+      ]
+    },
+    {
+      "id": "distrust",
+      "name": "Distrust of companies or government",
+      "type": "access",
+      "category": "access",
+      "description": "Won't engage with the provider directly.",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitivity": "standard",
+      "handling": "An independent counsellor may be trusted more.",
+      "signals": [
+        {
+          "id": "ask_bad_experience",
+          "strength": "strong"
+        },
+        {
+          "id": "acct_unanswered_outreach",
+          "strength": "supporting"
+        }
+      ],
+      "solutions": [
+        "financial_counselling",
+        "ewowa",
+        "tio"
+      ]
+    },
+    {
+      "id": "unaware_of_help",
+      "name": "Not knowing rights or available help",
+      "type": "access",
+      "category": "access",
+      "description": "Doesn't know hardship programs or concessions exist.",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitivity": "standard",
+      "handling": null,
+      "signals": [
+        {
+          "id": "acct_no_hardship_offer",
+          "strength": "strong"
+        },
+        {
+          "id": "acct_no_concession",
+          "strength": "supporting"
+        }
+      ],
+      "solutions": [
+        "proactive_outreach",
+        "retailer_hardship_program",
+        "concession_check"
+      ]
+    },
+    {
+      "id": "older_fixed_income",
+      "name": "Older person on a fixed income",
+      "type": "life",
+      "category": "lifestage",
+      "description": "Pension not keeping pace with bills.",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitivity": "standard",
+      "handling": null,
+      "signals": [
+        {
+          "id": "ask_older",
+          "strength": "strong"
+        },
+        {
+          "id": "ask_fixed_income",
+          "strength": "supporting"
+        },
+        {
+          "id": "acct_concession_on_file",
+          "strength": "supporting"
+        }
+      ],
+      "solutions": [
+        "water_seniors_rebate",
+        "eap",
+        "eces",
+        "concession_check"
+      ]
+    },
+    {
+      "id": "first_time_renter",
+      "name": "First time setting up utilities",
+      "type": "life",
+      "category": "lifestage",
+      "description": "Unfamiliar with bills, connections and options.",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitivity": "standard",
+      "handling": null,
+      "signals": [
+        {
+          "id": "ask_first_setup",
+          "strength": "strong"
+        },
+        {
+          "id": "acct_move",
+          "strength": "supporting"
+        }
+      ],
+      "solutions": [
+        "connection_help",
+        "financial_counselling"
+      ]
+    },
+    {
+      "id": "international_student",
+      "name": "International student",
+      "type": "life",
+      "category": "lifestage",
+      "description": "Work-hour limits and little access to government support.",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitivity": "standard",
+      "handling": null,
+      "signals": [
+        {
+          "id": "ask_new_to_australia",
+          "strength": "strong"
+        },
+        {
+          "id": "ask_student",
+          "strength": "supporting"
+        }
+      ],
+      "solutions": [
+        "financial_counselling",
+        "payment_arrangement"
+      ]
+    },
+    {
+      "id": "new_migrant",
+      "name": "New migrant or refugee",
+      "type": "life",
+      "category": "lifestage",
+      "description": "Language, unfamiliar systems, limited support.",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitivity": "standard",
+      "handling": null,
+      "signals": [
+        {
+          "id": "ask_new_to_australia",
+          "strength": "strong"
+        },
+        {
+          "id": "ask_language",
+          "strength": "supporting"
+        }
+      ],
+      "solutions": [
+        "interpreter",
+        "financial_counselling",
+        "services_australia"
+      ]
+    },
+    {
+      "id": "leaving_institution",
+      "name": "Leaving prison or care",
+      "type": "life",
+      "category": "lifestage",
+      "description": "Starting from scratch with no history or savings.",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitivity": "sensitive",
+      "handling": "Self-report only; record the minimum needed.",
+      "signals": [
+        {
+          "id": "ask_leaving_institution",
+          "strength": "strong"
+        }
+      ],
+      "solutions": [
+        "services_australia",
+        "financial_counselling",
+        "connection_help"
+      ]
+    },
+    {
+      "id": "remote_prepay_community",
+      "name": "Remote community on a prepayment meter",
+      "type": "life",
+      "category": "lifestage",
+      "description": "Frequent self-disconnection when credit runs out.",
+      "utilities": [
+        "electricity"
+      ],
+      "sensitivity": "standard",
+      "handling": "Work with community organisations; design for the community's preferred contact methods.",
+      "signals": [
+        {
+          "id": "acct_prepay_low_credit",
+          "strength": "strong"
+        },
+        {
+          "id": "acct_remote_area",
+          "strength": "supporting"
+        },
+        {
+          "id": "ask_remote_community",
+          "strength": "supporting"
+        }
+      ],
+      "solutions": [
+        "prepay_hardship",
+        "eap",
+        "hugs"
+      ]
+    },
+    {
+      "id": "prepay_self_disconnection",
+      "name": "Prepayment self-disconnection",
+      "type": "knockon",
+      "category": "payments",
+      "description": "Power goes off when credit runs out.",
+      "utilities": [
+        "electricity"
+      ],
+      "sensitivity": "standard",
+      "handling": null,
+      "signals": [
+        {
+          "id": "acct_prepay_low_credit",
+          "strength": "strong"
+        },
+        {
+          "id": "ask_prepay",
+          "strength": "strong"
+        },
+        {
+          "id": "wx_extreme_heat",
+          "strength": "supporting"
+        }
+      ],
+      "solutions": [
+        "prepay_hardship",
+        "retailer_hardship_program",
+        "hugs"
+      ]
+    },
+    {
+      "id": "due_date_mismatch",
+      "name": "Due dates don't match pay days",
+      "type": "account",
+      "category": "payments",
+      "description": "Bill due before money arrives.",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitivity": "standard",
+      "handling": "Often fixed just by moving the due date or paying fortnightly.",
+      "signals": [
+        {
+          "id": "acct_payday_aligned",
+          "strength": "strong"
+        },
+        {
+          "id": "acct_missed_payment",
+          "strength": "supporting"
+        }
+      ],
+      "solutions": [
+        "bill_smoothing",
+        "centrepay"
+      ]
+    },
+    {
+      "id": "unbanked",
+      "name": "No bank account or cash only",
+      "type": "access",
+      "category": "payments",
+      "description": "Limited payment options.",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitivity": "standard",
+      "handling": null,
+      "signals": [
+        {
+          "id": "acct_cash_only",
+          "strength": "strong"
+        }
+      ],
+      "solutions": [
+        "centrepay",
+        "bill_smoothing"
+      ]
+    },
+    {
+      "id": "failed_payments",
+      "name": "Failed direct debit or expired card",
+      "type": "account",
+      "category": "payments",
+      "description": "Payment bounces and attracts fees.",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitivity": "standard",
+      "handling": null,
+      "signals": [
+        {
+          "id": "acct_dishonour",
+          "strength": "strong"
+        }
+      ],
+      "solutions": [
+        "fee_waiver",
+        "bill_smoothing"
+      ]
+    },
+    {
+      "id": "scam",
+      "name": "Scam or fake bill",
+      "type": "account",
+      "category": "payments",
+      "description": "Paid a scammer instead of the real provider.",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitivity": "standard",
+      "handling": null,
+      "signals": [
+        {
+          "id": "ask_scam",
+          "strength": "strong"
+        },
+        {
+          "id": "acct_scam_report",
+          "strength": "strong"
+        }
+      ],
+      "solutions": [
+        "consumer_protection",
+        "payment_extension"
+      ]
+    },
+    {
+      "id": "identity_theft",
+      "name": "Identity theft",
+      "type": "account",
+      "category": "payments",
+      "description": "Account opened in someone's name without consent.",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitivity": "sensitive",
+      "handling": "Rule out economic abuse before treating as stranger fraud.",
+      "signals": [
+        {
+          "id": "acct_identity_mismatch",
+          "strength": "strong"
+        },
+        {
+          "id": "ask_debts_not_mine",
+          "strength": "supporting"
+        }
+      ],
+      "solutions": [
+        "idcare",
+        "bill_review",
+        "ewowa",
+        "tio"
+      ]
+    },
+    {
+      "id": "account_other_name",
+      "name": "Account in someone else's name",
+      "type": "account",
+      "category": "legal",
+      "description": "Ex-partner, deceased person, housemate or landlord.",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitivity": "standard",
+      "handling": null,
+      "signals": [
+        {
+          "id": "ask_bill_other_name",
+          "strength": "strong"
+        },
+        {
+          "id": "acct_holder_change",
+          "strength": "supporting"
+        }
+      ],
+      "solutions": [
+        "account_transfer"
+      ]
+    },
+    {
+      "id": "bankruptcy",
+      "name": "Bankruptcy or debt agreement",
+      "type": "life",
+      "category": "legal",
+      "description": "Formal insolvency affects what can be collected.",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitivity": "standard",
+      "handling": null,
+      "signals": [
+        {
+          "id": "ask_bankruptcy",
+          "strength": "strong"
+        },
+        {
+          "id": "acct_collections",
+          "strength": "supporting"
+        }
+      ],
+      "solutions": [
+        "legal_help",
+        "financial_counselling"
+      ]
+    },
+    {
+      "id": "estate_admin",
+      "name": "Deceased estate administration",
+      "type": "account",
+      "category": "legal",
+      "description": "Executor sorting out the account.",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitivity": "sensitive",
+      "handling": null,
+      "signals": [
+        {
+          "id": "acct_deceased_flag",
+          "strength": "strong"
+        },
+        {
+          "id": "ask_bereaved",
+          "strength": "supporting"
+        }
+      ],
+      "solutions": [
+        "bereavement"
+      ]
+    },
+    {
+      "id": "attorney_complications",
+      "name": "Power of attorney or guardianship complications",
+      "type": "access",
+      "category": "legal",
+      "description": "Representative can't get access or recognition.",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitivity": "standard",
+      "handling": null,
+      "signals": [
+        {
+          "id": "ask_attorney",
+          "strength": "strong"
+        },
+        {
+          "id": "acct_third_party_authority",
+          "strength": "supporting"
+        }
+      ],
+      "solutions": [
+        "authorised_rep",
+        "legal_help"
+      ]
+    },
+    {
+      "id": "no_id",
+      "name": "No ID to open an account",
+      "type": "access",
+      "category": "legal",
+      "description": "Can't meet identity checks.",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitivity": "standard",
+      "handling": null,
+      "signals": [
+        {
+          "id": "ask_no_id",
+          "strength": "strong"
+        },
+        {
+          "id": "ask_homeless",
+          "strength": "supporting"
+        },
+        {
+          "id": "ask_leaving_institution",
+          "strength": "supporting"
+        }
+      ],
+      "solutions": [
+        "connection_help",
+        "financial_counselling"
+      ]
+    },
+    {
+      "id": "work_from_home",
+      "name": "Working or studying from home",
+      "type": "life",
+      "category": "usage",
+      "description": "Daytime heating, cooling and devices.",
+      "utilities": [
+        "electricity",
+        "gas",
+        "telco"
+      ],
+      "sensitivity": "standard",
+      "handling": null,
+      "signals": [
+        {
+          "id": "ask_work_from_home",
+          "strength": "strong"
+        },
+        {
+          "id": "acct_daytime_usage_rise",
+          "strength": "supporting"
+        }
+      ],
+      "solutions": [
+        "efficiency_help",
+        "plan_review"
+      ]
+    },
+    {
+      "id": "home_business",
+      "name": "Home business usage",
+      "type": "life",
+      "category": "usage",
+      "description": "Business equipment on a household bill.",
+      "utilities": [
+        "electricity",
+        "gas",
+        "telco"
+      ],
+      "sensitivity": "standard",
+      "handling": null,
+      "signals": [
+        {
+          "id": "ask_work_from_home",
+          "strength": "strong"
+        },
+        {
+          "id": "ask_business",
+          "strength": "supporting"
+        }
+      ],
+      "solutions": [
+        "plan_review",
+        "efficiency_help"
+      ]
+    },
+    {
+      "id": "large_household",
+      "name": "Large household",
+      "type": "life",
+      "category": "usage",
+      "description": "More people, more usage.",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitivity": "standard",
+      "handling": null,
+      "signals": [
+        {
+          "id": "ask_household_grew",
+          "strength": "strong"
+        },
+        {
+          "id": "acct_usage_spike",
+          "strength": "supporting"
+        }
+      ],
+      "solutions": [
+        "efficiency_help",
+        "plan_review",
+        "bill_smoothing"
+      ]
+    },
+    {
+      "id": "pool_ev",
+      "name": "Pool, spa or electric car",
+      "type": "life",
+      "category": "usage",
+      "description": "Pumps or charging add a lot of usage.",
+      "utilities": [
+        "electricity",
+        "water"
+      ],
+      "sensitivity": "standard",
+      "handling": null,
+      "signals": [
+        {
+          "id": "ask_pool_ev",
+          "strength": "strong"
+        }
+      ],
+      "solutions": [
+        "efficiency_help",
+        "plan_review"
+      ]
+    },
+    {
+      "id": "rationing",
+      "name": "Rationing heating, cooling or water",
+      "type": "knockon",
+      "category": "knockon",
+      "description": "Going without, with real health risks.",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitivity": "standard",
+      "handling": "Treat as urgent in extreme weather.",
+      "signals": [
+        {
+          "id": "ask_rationing",
+          "strength": "strong"
+        },
+        {
+          "id": "acct_usage_drop",
+          "strength": "supporting"
+        },
+        {
+          "id": "acct_prepay_low_credit",
+          "strength": "supporting"
+        },
+        {
+          "id": "wx_extreme_heat",
+          "strength": "supporting"
+        }
+      ],
+      "solutions": [
+        "proactive_outreach",
+        "concession_check",
+        "retailer_hardship_program",
+        "tdes"
+      ]
+    },
+    {
+      "id": "food_vs_bills",
+      "name": "Choosing between bills, food and medicine",
+      "type": "knockon",
+      "category": "knockon",
+      "description": "Essentials being traded off.",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitivity": "standard",
+      "handling": "Urgent: refer the same day.",
+      "signals": [
+        {
+          "id": "ask_trade_offs",
+          "strength": "strong"
+        }
+      ],
+      "solutions": [
+        "emergency_relief",
+        "financial_counselling",
+        "hugs"
+      ]
+    },
+    {
+      "id": "debt_spiral",
+      "name": "Debt spiral",
+      "type": "knockon",
+      "category": "knockon",
+      "description": "Fees and arrears compound.",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitivity": "standard",
+      "handling": null,
+      "signals": [
+        {
+          "id": "acct_rising_arrears",
+          "strength": "strong"
+        },
+        {
+          "id": "acct_repeated_late",
+          "strength": "supporting"
+        },
+        {
+          "id": "acct_dishonour",
+          "strength": "supporting"
+        }
+      ],
+      "solutions": [
+        "fee_waiver",
+        "retailer_hardship_program",
+        "financial_counselling"
+      ]
+    },
+    {
+      "id": "avoidance",
+      "name": "Avoiding bills until crisis",
+      "type": "knockon",
+      "category": "knockon",
+      "description": "No engagement until disconnection.",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitivity": "standard",
+      "handling": null,
+      "signals": [
+        {
+          "id": "acct_unanswered_outreach",
+          "strength": "strong"
+        },
+        {
+          "id": "acct_digital_disengaged",
+          "strength": "supporting"
+        },
+        {
+          "id": "acct_disconnection_warning",
+          "strength": "supporting"
+        }
+      ],
+      "solutions": [
+        "proactive_outreach",
+        "financial_counselling"
+      ]
+    },
+    {
+      "id": "disconnection_harm",
+      "name": "Disconnection with flow-on harm",
+      "type": "knockon",
+      "category": "knockon",
+      "description": "Lost food, missed work, kids can't do homework.",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitivity": "standard",
+      "handling": "Reconnect first, then work out a plan.",
+      "signals": [
+        {
+          "id": "acct_disconnected",
+          "strength": "strong"
+        }
+      ],
+      "solutions": [
+        "disconnection_protection",
+        "retailer_hardship_program",
+        "hugs"
+      ]
+    },
+    {
+      "id": "telco_cut_off",
+      "name": "Phone or internet cut off",
+      "type": "knockon",
+      "category": "knockon",
+      "description": "Can't work, study, bank or call for help.",
+      "utilities": [
+        "telco"
+      ],
+      "sensitivity": "standard",
+      "handling": "Keep essential access (e.g. emergency calls) where possible.",
+      "signals": [
+        {
+          "id": "acct_telco_barred",
+          "strength": "strong"
+        },
+        {
+          "id": "acct_small_recharges",
+          "strength": "supporting"
+        }
+      ],
+      "solutions": [
+        "telco_hardship_standard",
+        "tio",
+        "plan_review"
+      ]
+    }
+  ],
+  "solutions": [
+    {
+      "id": "payment_extension",
+      "name": "Payment extension",
+      "type": "Payment support",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "provider": "Us: customer service",
+      "how_to_access": "Offer extra time on this bill. Grant it if the customer asks before the due date and has no other extension or arrangement in place, and record the new due date on the account.",
+      "contact": "Any customer service agent",
+      "key_facts": "Extra time to pay one bill. Synergy's rule: available if requested before the due date and no other extension or arrangement is in place.",
+      "source_url": "https://synergy.net.au/Your-home/Help-and-advice/Hardship",
+      "verified": true,
+      "last_verified": "2026-10-19",
+      "used_for": [
+        "job_loss",
+        "irregular_income",
+        "benefit_problem",
+        "wage_theft",
+        "unexpected_expense",
+        "serious_illness",
+        "partner_died",
+        "moving_costs",
+        "disaster",
+        "scam"
+      ]
+    },
+    {
+      "id": "payment_arrangement",
+      "name": "Interest- and fee-free payment arrangement",
+      "type": "Payment support",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "provider": "Us: customer service or hardship team",
+      "how_to_access": "Agree a plan the customer can afford, based on their capacity to pay. Spread the bill and any arrears into smaller amounts and record the plan on the account.",
+      "contact": "Customer service; hardship team for larger or repeat arrears",
+      "key_facts": "The customer pays the bill and arrears in smaller amounts over time, with no interest or fees (Synergy describes its plans this way). Telcos must offer this as one of their hardship options.",
+      "source_url": "https://synergy.net.au/Your-home/Help-and-advice/Hardship",
+      "verified": true,
+      "last_verified": "2026-10-19",
+      "used_for": [
+        "job_loss",
+        "reduced_hours",
+        "irregular_income",
+        "business_struggling",
+        "student_low_income",
+        "housing_costs",
+        "competing_debts",
+        "unexpected_expense",
+        "supporting_family",
+        "cost_of_living",
+        "new_baby",
+        "medical_costs",
+        "separation",
+        "carer",
+        "housemate_left",
+        "shared_or_boarding",
+        "bill_shock",
+        "estimated_catchup",
+        "hidden_leak",
+        "back_billing",
+        "price_rise",
+        "fees_piling_up",
+        "unaffordable_plan",
+        "international_student"
+      ]
+    },
+    {
+      "id": "retailer_hardship_program",
+      "name": "Our hardship program",
+      "type": "Payment support",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "provider": "Us: hardship team",
+      "how_to_access": "Offer a hardship assessment and transfer the customer to the hardship team.",
+      "contact": "Hardship team (internal transfer). Reference: Synergy 13 13 53 | Horizon Power 1800 267 926",
+      "key_facts": "Electricity and gas retailers must have a hardship policy under WA rules. Synergy's Keeping Connected program, for example, gives a dedicated case manager, flexible terms and incentives for meeting payment goals.",
+      "source_url": "https://synergy.net.au/Your-home/Manage-account/Need-help-with-your-bill/Financial-hardship-support",
+      "verified": true,
+      "last_verified": "2026-10-19",
+      "used_for": [
+        "job_loss",
+        "reduced_hours",
+        "business_struggling",
+        "low_fixed_income",
+        "cost_of_living",
+        "serious_illness",
+        "mental_health",
+        "cognitive_decline",
+        "disability_costs",
+        "addiction",
+        "embedded_network",
+        "disaster",
+        "hardship_not_offered",
+        "unaware_of_help",
+        "prepay_self_disconnection",
+        "rationing",
+        "debt_spiral",
+        "disconnection_harm"
+      ]
+    },
+    {
+      "id": "watercorp_hardship",
+      "name": "Water Corporation hardship programs",
+      "type": "Payment support",
+      "utilities": [
+        "water"
+      ],
+      "provider": "External: Water Corporation",
+      "how_to_access": "For water debts, refer the customer to Water Corporation, directly or through a financial counsellor.",
+      "contact": "Water Corporation",
+      "key_facts": "Water Corporation's programs include Water Assist (an interest-free plan where Water Corporation matches payments), Time Assist and Start Over (now open to debts over $2,000), plus flexible plans and extensions.",
+      "source_url": "https://www.wa.gov.au/government/media-statements/Cook%20Labor%20Government/Water-bill-support-extended-to-more-Western-Australians-in-hardship-20241101",
+      "verified": true,
+      "last_verified": "2026-10-19",
+      "used_for": [
+        "job_loss"
+      ]
+    },
+    {
+      "id": "watercorp_medical",
+      "name": "Water Corporation Medical Assist (home dialysis)",
+      "type": "Allowance",
+      "utilities": [
+        "water"
+      ],
+      "provider": "External: Water Corporation",
+      "how_to_access": "Tell the customer the allowance is automatic once WA Home Therapies sends Water Corporation their details. There is nothing to apply for.",
+      "contact": "Water Corporation",
+      "key_facts": "Free water allowance of up to 30,000 litres for households doing home dialysis.",
+      "source_url": "https://www.centrecare.com.au/assets/uploads/resources/other/Water-Corp-Hardship-Products.pdf",
+      "verified": true,
+      "last_verified": "2026-10-19",
+      "used_for": [
+        "life_support_equipment",
+        "home_dialysis_water"
+      ]
+    },
+    {
+      "id": "hugs",
+      "name": "Hardship Utility Grant Scheme (HUGS)",
+      "type": "Grant",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water"
+      ],
+      "provider": "WA Government (Department of Communities). We assess and refer.",
+      "how_to_access": "Once payment arrangements and other hardship options are exhausted, assess the customer for HUGS and refer them to the HUGS Service Centre.",
+      "contact": "Our hardship team makes the referral; HUGS Service Centre hugs@communities.wa.gov.au",
+      "key_facts": "Covers up to 85% of the outstanding amount; caps apply and are higher north of the 26th parallel. The HUGS assessment can include referrals to financial counselling, legal advocacy and Foodbank.",
+      "source_url": "https://www.wa.gov.au/service/community-services/grants-and-subsidies/hardship-utility-grant-scheme",
+      "verified": true,
+      "last_verified": "2026-10-19",
+      "used_for": [
+        "job_loss",
+        "remote_living",
+        "unaffordable_plan",
+        "remote_prepay_community",
+        "prepay_self_disconnection",
+        "food_vs_bills",
+        "disconnection_harm"
+      ]
+    },
+    {
+      "id": "eap",
+      "name": "Energy Assistance Payment (EAP)",
+      "type": "Concession",
+      "utilities": [
+        "electricity"
+      ],
+      "provider": "WA Government; the credit is applied by Synergy or Horizon Power",
+      "how_to_access": "Register the customer's eligible concession card on the account so the annual credit is applied. If we're not Synergy or Horizon Power, refer them to ECES instead.",
+      "contact": "Customer service. Reference: Synergy 13 13 53 | Horizon Power 1800 267 926",
+      "key_facts": "Annual bill credit for holders of means-tested Commonwealth concession cards. Customers of other retailers use ECES instead.",
+      "source_url": "https://concessions.communities.wa.gov.au/Concessions/Pages/EAP.aspx",
+      "verified": true,
+      "last_verified": "2026-10-19",
+      "used_for": [
+        "low_fixed_income",
+        "single_parent",
+        "concession_lost",
+        "concession_unclaimed",
+        "older_fixed_income",
+        "remote_prepay_community"
+      ]
+    },
+    {
+      "id": "dependent_child_rebate",
+      "name": "Dependent Child Rebate",
+      "type": "Concession",
+      "utilities": [
+        "electricity"
+      ],
+      "provider": "WA Government; applied by the retailer, or through RevenueWA (ECES)",
+      "how_to_access": "If the customer gets the EAP and has dependent children, add the rebate to the account, or point them to ECES if we can't apply it.",
+      "contact": "Customer service. Reference: Synergy 13 13 53 | Horizon Power 1800 267 926 | RevenueWA",
+      "key_facts": "Extra rebate for EAP recipients with dependent children.",
+      "source_url": "https://www.wa.gov.au/service/community-services/grants-and-subsidies/apply-energy-concession",
+      "verified": true,
+      "last_verified": "2026-10-19",
+      "used_for": [
+        "new_baby",
+        "single_parent"
+      ]
+    },
+    {
+      "id": "aircon_rebate",
+      "name": "Air Conditioning Rebate",
+      "type": "Concession",
+      "utilities": [
+        "electricity"
+      ],
+      "provider": "WA Government; applied by the retailer, or through RevenueWA (ECES)",
+      "how_to_access": "Check the criteria first, then apply the rebate for an eligible EAP recipient or refer them to RevenueWA.",
+      "contact": "Customer service. Reference: Horizon Power 1800 267 926 | RevenueWA",
+      "key_facts": "Available in certain cases to EAP recipients. Check the criteria before offering it.",
+      "source_url": "https://www.wa.gov.au/service/community-services/grants-and-subsidies/apply-energy-concession",
+      "verified": true,
+      "last_verified": "2026-10-19",
+      "used_for": [
+        "temperature_medical",
+        "remote_living"
+      ]
+    },
+    {
+      "id": "eces",
+      "name": "Energy Concession Extension Scheme (ECES)",
+      "type": "Concession",
+      "utilities": [
+        "electricity"
+      ],
+      "provider": "External: RevenueWA",
+      "how_to_access": "If we can't apply the EAP directly (for example an embedded network or another retailer), refer the customer to apply online through RevenueWA.",
+      "contact": "Give the customer: osr.wa.gov.au/eces",
+      "key_facts": "For eligible concession card holders who can't get the EAP from their supplier. The EAP rate is $377.14 a year from 1 July 2026. Not available where a landlord forwards the bill or rent is all-inclusive.",
+      "source_url": "https://www.wa.gov.au/service/community-services/grants-and-subsidies/apply-energy-concession",
+      "verified": true,
+      "last_verified": "2026-10-19",
+      "used_for": [
+        "low_fixed_income",
+        "embedded_network",
+        "concession_unclaimed",
+        "older_fixed_income"
+      ]
+    },
+    {
+      "id": "lsees",
+      "name": "Life Support Equipment Energy Subsidy (LSEES)",
+      "type": "Subsidy",
+      "utilities": [
+        "electricity"
+      ],
+      "provider": "External: RevenueWA / Energy Policy WA",
+      "how_to_access": "Tell the customer about the subsidy and refer them to apply through the RevenueWA online portal with medical certification. Register them as a life support customer too.",
+      "contact": "Give the customer: osr.wa.gov.au",
+      "key_facts": "Annual subsidy for each item of specified life support equipment used at home on specialist medical advice.",
+      "source_url": "https://www.wa.gov.au/government/publications/apply-the-life-support-equipment-energy-subsidy",
+      "verified": true,
+      "last_verified": "2026-10-19",
+      "used_for": [
+        "life_support_equipment"
+      ]
+    },
+    {
+      "id": "life_support_registration",
+      "name": "Register the customer for life support",
+      "type": "Protection",
+      "utilities": [
+        "electricity"
+      ],
+      "provider": "Us: customer service",
+      "how_to_access": "Add life support registration to the account straight away when the customer or their carer tells us about the equipment. Follow up for medical confirmation.",
+      "contact": "Customer service. Reference: Synergy 13 13 53 | Horizon Power 1800 267 926",
+      "key_facts": "The WA Government advises anyone using life support equipment to register with their retailer as soon as possible. Do this before anything else.",
+      "source_url": "https://www.wa.gov.au/government/publications/apply-the-life-support-equipment-energy-subsidy",
+      "verified": true,
+      "last_verified": "2026-10-19",
+      "used_for": [
+        "life_support_equipment",
+        "long_outage"
+      ]
+    },
+    {
+      "id": "tdes",
+      "name": "Thermoregulatory Dysfunction Energy Subsidy (TDES)",
+      "type": "Subsidy",
+      "utilities": [
+        "electricity"
+      ],
+      "provider": "External: RevenueWA / Energy Policy WA",
+      "how_to_access": "Tell the customer about the subsidy and refer them to apply through the RevenueWA online portal with specialist medical advice.",
+      "contact": "Give the customer: RevenueWA (08) 9262 1373 | regional 1300 368 364",
+      "key_facts": "$832 a year, paid in advance, for means-tested concession card holders (or their dependants) who need heating or cooling because of a qualifying condition.",
+      "source_url": "https://www.wa.gov.au/service/community-services/grants-and-subsidies/apply-the-thermoregulatory-dysfunction-energy-subsidy",
+      "verified": true,
+      "last_verified": "2026-10-19",
+      "used_for": [
+        "temperature_medical",
+        "heat_cold",
+        "rationing"
+      ]
+    },
+    {
+      "id": "water_seniors_rebate",
+      "name": "Pensioner and seniors water service charge rebate",
+      "type": "Concession",
+      "utilities": [
+        "water"
+      ],
+      "provider": "External: Water Corporation / RevenueWA",
+      "how_to_access": "For an owner-occupier with an eligible card, refer them to apply to Water Corporation, which notifies their council.",
+      "contact": "Give the customer: Water Corporation 1300 659 951",
+      "key_facts": "Rebate or deferral on water service charges for owner-occupiers holding a Pensioner Concession Card, State Concession Card or WA Seniors Card.",
+      "source_url": "https://www.wa.gov.au/government/publications/apply-pensioners-or-seniors-rebate",
+      "verified": true,
+      "last_verified": "2026-10-19",
+      "used_for": [
+        "low_fixed_income",
+        "concession_lost",
+        "concession_unclaimed",
+        "older_fixed_income"
+      ]
+    },
+    {
+      "id": "leak_allowance",
+      "name": "Water Corporation leak allowance",
+      "type": "Allowance",
+      "utilities": [
+        "water"
+      ],
+      "provider": "External: Water Corporation",
+      "how_to_access": "Tell the customer to repair the leak, then apply online within six months of the repair.",
+      "contact": "Give the customer: watercorporation.com.au/leakapplication",
+      "key_facts": "Covers up to 50% of the estimated water lost through an undetected leak.",
+      "source_url": "https://www.watercorporation.com.au/Help-and-advice/Water-issues/Leaks/Leak-allowance-and-rebates/Apply-for-a-leak-allowance",
+      "verified": true,
+      "last_verified": "2026-10-19",
+      "used_for": [
+        "landlord_water_dispute",
+        "hidden_leak"
+      ]
+    },
+    {
+      "id": "bill_review",
+      "name": "Bill review, meter test or special read",
+      "type": "Billing fix",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "provider": "Us: customer service or billing team",
+      "how_to_access": "Review the bill and, if it still looks wrong, arrange a special meter read or meter test. Tell the customer what you find.",
+      "contact": "Billing team (internal)",
+      "key_facts": "Our first step for a suspected error, before it goes to an ombudsman.",
+      "source_url": "https://energyandwater.ombudsman.wa.gov.au/complaints/how-to-make-a-complaint",
+      "verified": true,
+      "last_verified": "2026-10-19",
+      "used_for": [
+        "previous_occupant_debt",
+        "bill_shock",
+        "estimated_catchup",
+        "faulty_meter",
+        "hidden_leak",
+        "billing_error",
+        "back_billing",
+        "solar_fault",
+        "wrong_address",
+        "identity_theft"
+      ]
+    },
+    {
+      "id": "ewowa",
+      "name": "Energy and Water Ombudsman WA",
+      "type": "Complaint",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water"
+      ],
+      "provider": "External: Energy and Water Ombudsman Western Australia",
+      "how_to_access": "Try to resolve the complaint first. If we can't, tell the customer they can lodge a complaint online or by phone, as we must.",
+      "contact": "Give the customer: 1800 754 004 (free call)",
+      "key_facts": "Free, independent complaint resolution for electricity, gas and water customers.",
+      "source_url": "https://energyandwater.ombudsman.wa.gov.au/complaints/how-to-make-a-complaint",
+      "verified": true,
+      "last_verified": "2026-10-19",
+      "used_for": [
+        "previous_occupant_debt",
+        "landlord_water_dispute",
+        "estimated_catchup",
+        "faulty_meter",
+        "billing_error",
+        "back_billing",
+        "long_outage",
+        "cant_get_through",
+        "improper_disconnection",
+        "debt_collection",
+        "missold",
+        "distrust",
+        "identity_theft"
+      ]
+    },
+    {
+      "id": "tio",
+      "name": "Telecommunications Industry Ombudsman",
+      "type": "Complaint",
+      "utilities": [
+        "telco"
+      ],
+      "provider": "External: Telecommunications Industry Ombudsman",
+      "how_to_access": "Try to resolve the complaint first. If we can't, tell the customer they can lodge it with the TIO online or by phone.",
+      "contact": "Give the customer: 1800 062 058",
+      "key_facts": "Free complaint resolution for phone and internet problems, including bills and disconnections.",
+      "source_url": "https://www.tio.com.au/",
+      "verified": true,
+      "last_verified": "2026-10-19",
+      "used_for": [
+        "previous_occupant_debt",
+        "billing_error",
+        "back_billing",
+        "long_outage",
+        "cant_get_through",
+        "improper_disconnection",
+        "debt_collection",
+        "missold",
+        "distrust",
+        "identity_theft",
+        "telco_cut_off"
+      ]
+    },
+    {
+      "id": "telco_hardship_standard",
+      "name": "Telco hardship protections",
+      "type": "Protection",
+      "utilities": [
+        "telco"
+      ],
+      "provider": "Us: hardship team (telco services; regulated by ACMA)",
+      "how_to_access": "Offer financial hardship assistance and record which options the customer chose.",
+      "contact": "Hardship team (internal)",
+      "key_facts": "Telcos must proactively identify customers who may be in hardship, offer at least six assistance options, take reasonable steps to keep services connected, and not sell a debt while a hardship arrangement is active.",
+      "source_url": "https://acma.gov.au/telecommunications-financial-hardship-industry-standard",
+      "verified": true,
+      "last_verified": "2026-10-19",
+      "used_for": [
+        "job_loss",
+        "hardship_not_offered",
+        "debt_collection",
+        "telco_cut_off"
+      ]
+    },
+    {
+      "id": "fv_protections",
+      "name": "Family violence protections",
+      "type": "Protection",
+      "utilities": [
+        "electricity",
+        "gas"
+      ],
+      "provider": "Us: family violence or hardship team (electricity and gas retailers are regulated by the ERA)",
+      "how_to_access": "Apply our family violence policy. Don't ask the customer to retell their story, protect their account and contact details from anyone else on the account, and consider their situation before any disconnection.",
+      "contact": "Family violence or hardship team (internal transfer)",
+      "key_facts": "Electricity and gas retailers must have a family violence policy covering staff training, protecting account information from third parties, not making customers repeat their disclosure, and considering circumstances before disconnection. Water and telco providers: follow your own policy.",
+      "source_url": "https://erawa.com.au/cproot/23939/2/ERA-WA-Media-Statement-Family-violence-protections-extended-to-gas-customers.PDF",
+      "verified": true,
+      "last_verified": "2026-10-19",
+      "used_for": [
+        "separation",
+        "family_violence",
+        "economic_abuse"
+      ]
+    },
+    {
+      "id": "fdv_helplines",
+      "name": "Family and domestic violence helplines",
+      "type": "Referral",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "provider": "External: WA and national services",
+      "how_to_access": "Offer the helpline numbers only when it is safe to do so. They answer 24 hours.",
+      "contact": "Give the customer: Women's DV Helpline 1800 007 339 | Men's DV Helpline 1800 000 599 | 1800RESPECT 1800 737 732 | Emergency 000",
+      "key_facts": "Crisis support, safety planning and refuge referrals.",
+      "source_url": "https://www.wa.gov.au/organisation/department-of-communities/family-and-domestic-violence-helplines-and-support-services",
+      "verified": true,
+      "last_verified": "2026-10-19",
+      "used_for": [
+        "family_violence",
+        "economic_abuse",
+        "elder_abuse"
+      ]
+    },
+    {
+      "id": "escaping_violence_payment",
+      "name": "Escaping Violence Payment",
+      "type": "Grant",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "provider": "External: Australian Government program",
+      "how_to_access": "Mention the payment and give the number so the customer can check whether they're eligible.",
+      "contact": "Give the customer: 1800 387 387",
+      "key_facts": "For people 18 or over who have recently experienced intimate partner violence, have a changed living situation and are under financial stress.",
+      "source_url": "https://consumerprotection.wa.gov.au/family-and-domestic-violence-support-services",
+      "verified": true,
+      "last_verified": "2026-10-19",
+      "used_for": [
+        "family_violence"
+      ]
+    },
+    {
+      "id": "financial_counselling",
+      "name": "Free financial counselling",
+      "type": "Referral",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "provider": "External: National Debt Helpline (run by Vinnies in WA) / Financial Counsellors' Association of WA",
+      "how_to_access": "Refer the customer for free financial counselling. Give them the number, or point them to fcawa.org to find a local counsellor.",
+      "contact": "Give the customer: 1800 007 007",
+      "key_facts": "Free, independent counsellors who look at the customer's whole situation, negotiate with creditors (including us) and refer to legal, food and other support. Water Corporation hardship programs often need an assessment from a registered financial counsellor.",
+      "source_url": "https://www.vinnies.org.au/wa/services-in-western-australia/national-debt-helpline",
+      "verified": true,
+      "last_verified": "2026-10-19",
+      "used_for": [
+        "job_loss",
+        "reduced_hours",
+        "irregular_income",
+        "business_struggling",
+        "benefit_problem",
+        "wage_theft",
+        "student_low_income",
+        "housing_costs",
+        "competing_debts",
+        "supporting_family",
+        "cost_of_living",
+        "serious_illness",
+        "mental_health",
+        "addiction",
+        "medical_costs",
+        "separation",
+        "economic_abuse",
+        "elder_abuse",
+        "single_parent",
+        "homelessness",
+        "cant_get_through",
+        "unaffordable_plan",
+        "debt_collection",
+        "low_literacy",
+        "shame_stigma",
+        "distrust",
+        "first_time_renter",
+        "international_student",
+        "new_migrant",
+        "leaving_institution",
+        "bankruptcy",
+        "no_id",
+        "food_vs_bills",
+        "debt_spiral",
+        "avoidance"
+      ]
+    },
+    {
+      "id": "interpreter",
+      "name": "Free interpreter (TIS National)",
+      "type": "Access",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "provider": "External: Translating and Interpreting Service (Australian Government)",
+      "how_to_access": "Call TIS National, ask for the customer's language and bring the interpreter into the call. Note the language on the account.",
+      "contact": "TIS National 131 450",
+      "key_facts": "Free phone interpreting so the customer can talk to us in their language.",
+      "source_url": "https://www.tisnational.gov.au/",
+      "verified": false,
+      "last_verified": null,
+      "used_for": [
+        "language",
+        "new_migrant"
+      ]
+    },
+    {
+      "id": "relay_service",
+      "name": "National Relay Service",
+      "type": "Access",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "provider": "External: Australian Government",
+      "how_to_access": "Accept calls through the National Relay Service and tell the customer it's available. Note their preferred contact method on the account.",
+      "contact": "Give the customer: accesshub.gov.au/about-the-nrs",
+      "key_facts": "Phone access for people who are deaf or have hearing or speech difficulties.",
+      "source_url": "https://www.accesshub.gov.au/about-the-nrs",
+      "verified": false,
+      "last_verified": null,
+      "used_for": [
+        "disability_costs",
+        "sensory_impairment"
+      ]
+    },
+    {
+      "id": "authorised_rep",
+      "name": "Authorised representative or alternative contact",
+      "type": "Access",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "provider": "Us: customer service",
+      "how_to_access": "With the customer's consent, add an authorised representative (financial counsellor, carer or family member) or change how we contact them. Check for signs of financial abuse before adding anyone.",
+      "contact": "Customer service",
+      "key_facts": "Lets someone the customer trusts help, and gets bills and notices to the customer in a form they can use.",
+      "source_url": null,
+      "verified": false,
+      "last_verified": null,
+      "used_for": [
+        "mental_health",
+        "cognitive_decline",
+        "disability_costs",
+        "online_only",
+        "low_literacy",
+        "language",
+        "sensory_impairment",
+        "digital_exclusion",
+        "wrong_address",
+        "attorney_complications"
+      ]
+    },
+    {
+      "id": "account_transfer",
+      "name": "Change account holder and review who owes the debt",
+      "type": "Account fix",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "provider": "Us: customer service",
+      "how_to_access": "Move the account into the right name and review who should owe the debt.",
+      "contact": "Customer service",
+      "key_facts": "Helps after a separation, when a housemate leaves, or when debt was put in someone's name without their agreement.",
+      "source_url": null,
+      "verified": false,
+      "last_verified": null,
+      "used_for": [
+        "separation",
+        "partner_died",
+        "economic_abuse",
+        "housemate_left",
+        "shared_or_boarding",
+        "account_other_name"
+      ]
+    },
+    {
+      "id": "bereavement",
+      "name": "Deceased account and bereavement support",
+      "type": "Account fix",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "provider": "Us: customer service",
+      "how_to_access": "Follow our bereavement process: close or transfer the account and pause collection while the estate is sorted out.",
+      "contact": "Customer service",
+      "key_facts": "Pausing collection takes pressure off the family while the estate is being dealt with.",
+      "source_url": null,
+      "verified": false,
+      "last_verified": null,
+      "used_for": [
+        "partner_died",
+        "estate_admin"
+      ]
+    },
+    {
+      "id": "efficiency_help",
+      "name": "Energy or water efficiency help",
+      "type": "Advice",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water"
+      ],
+      "provider": "Us, plus community programs",
+      "how_to_access": "Give usage advice, or arrange a meter audit (or a water audit for water customers).",
+      "contact": "Customer service or hardship team",
+      "key_facts": "Synergy's hardship policy includes meter audits and help to reduce use; Water Corporation considers a water audit for high-use hardship customers.",
+      "source_url": "https://www.centrecare.com.au/assets/uploads/resources/other/Water-Corp-Hardship-Products.pdf",
+      "verified": true,
+      "last_verified": "2026-10-19",
+      "used_for": [
+        "temperature_medical",
+        "household_grew",
+        "renter_inefficient_home",
+        "old_appliances",
+        "mould_damp",
+        "bill_shock",
+        "solar_fault",
+        "heat_cold",
+        "work_from_home",
+        "home_business",
+        "large_household",
+        "pool_ev"
+      ]
+    },
+    {
+      "id": "plan_review",
+      "name": "Plan or tariff review",
+      "type": "Advice",
+      "utilities": [
+        "electricity",
+        "gas",
+        "telco"
+      ],
+      "provider": "Us: customer service",
+      "how_to_access": "Compare the customer's current plan or tariff with our alternatives for their usage, and move them if another one is cheaper.",
+      "contact": "Customer service",
+      "key_facts": "Residential gas and telco customers can switch providers; most WA households can't switch electricity retailer but may be able to change tariff.",
+      "source_url": null,
+      "verified": false,
+      "last_verified": null,
+      "used_for": [
+        "student_low_income",
+        "household_grew",
+        "renter_inefficient_home",
+        "price_rise",
+        "missold",
+        "loyalty_tax",
+        "digital_exclusion",
+        "work_from_home",
+        "home_business",
+        "large_household",
+        "pool_ev",
+        "telco_cut_off"
+      ]
+    },
+    {
+      "id": "concession_check",
+      "name": "Link concession card to account",
+      "type": "Concession",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "provider": "Us: customer service",
+      "how_to_access": "Check whether the customer has a concession card and link it to the account. Remind them to register it with their other providers too.",
+      "contact": "Customer service",
+      "key_facts": "Many WA concessions only apply once the card is linked to the account.",
+      "source_url": "https://concessions.communities.wa.gov.au/Concessions/Pages/EAP.aspx",
+      "verified": true,
+      "last_verified": "2026-10-19",
+      "used_for": [
+        "low_fixed_income",
+        "cost_of_living",
+        "disability_costs",
+        "embedded_network",
+        "concession_lost",
+        "concession_unclaimed",
+        "unaware_of_help",
+        "older_fixed_income",
+        "rationing"
+      ]
+    },
+    {
+      "id": "centrepay",
+      "name": "Centrepay",
+      "type": "Payment support",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "provider": "External: Services Australia (we must accept Centrepay)",
+      "how_to_access": "If we accept Centrepay, help the customer set up regular deductions from their Centrelink payments to us.",
+      "contact": "Services Australia; customer service sets up the account side",
+      "key_facts": "Bills are paid automatically on payment day, which suits customers paid fortnightly.",
+      "source_url": "https://www.servicesaustralia.gov.au/centrepay",
+      "verified": false,
+      "last_verified": null,
+      "used_for": [
+        "low_fixed_income",
+        "due_date_mismatch",
+        "unbanked"
+      ]
+    },
+    {
+      "id": "bill_smoothing",
+      "name": "Smaller regular payments or paying in advance",
+      "type": "Payment support",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "provider": "Us: customer service",
+      "how_to_access": "Set up weekly or fortnightly payments, or let the customer pay in advance.",
+      "contact": "Customer service",
+      "key_facts": "Spreads big seasonal bills across the year. Synergy accepts payments in advance at no cost.",
+      "source_url": "https://www.synergy.net.au/-/media/Documents/Policies/Financial-Hardship-Policy.pdf",
+      "verified": true,
+      "last_verified": "2026-10-19",
+      "used_for": [
+        "reduced_hours",
+        "irregular_income",
+        "temperature_medical",
+        "household_grew",
+        "heat_cold",
+        "due_date_mismatch",
+        "unbanked",
+        "failed_payments",
+        "large_household"
+      ]
+    },
+    {
+      "id": "fee_waiver",
+      "name": "Fee waiver",
+      "type": "Payment support",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "provider": "Us: customer service",
+      "how_to_access": "Waive late, dishonour or reconnection fees for a customer having payment problems or affected by family violence.",
+      "contact": "Customer service",
+      "key_facts": "The WA electricity code includes a fee waiver for customers experiencing payment problems or affected by family violence. Other utilities: follow your own policy.",
+      "source_url": "https://www.legislation.wa.gov.au/legislation/prod/filestore.nsf/FileURL/mrdoc_45755.htm/$FILE/Code%20of%20Conduct%20for%20the%20Supply%20of%20Electricity%20to%20Small%20Use%20Customers%202022%20-%20%5B00-b0-00%5D.html",
+      "verified": true,
+      "last_verified": "2026-10-19",
+      "used_for": [
+        "family_violence",
+        "fees_piling_up",
+        "failed_payments",
+        "debt_spiral"
+      ]
+    },
+    {
+      "id": "disconnection_protection",
+      "name": "Pause disconnection and reconnect",
+      "type": "Protection",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "provider": "Us: customer service or credit team",
+      "how_to_access": "Hold any disconnection while the customer's hardship is assessed, or reconnect them if they've been cut off.",
+      "contact": "Credit team (internal)",
+      "key_facts": "WA codes limit disconnection (for example, gas can't be disconnected for a residential debt under $300). The ombudsman can step in if we didn't follow the process.",
+      "source_url": "https://www.erawa.com.au/cproot/23936/2/Notice-Final-decision-2023-Review-of-the-Compendium-of-Gas-Customer-licence-obligations.pdf",
+      "verified": true,
+      "last_verified": "2026-10-19",
+      "used_for": [
+        "family_violence",
+        "improper_disconnection",
+        "disconnection_harm"
+      ]
+    },
+    {
+      "id": "emergency_relief",
+      "name": "Emergency relief and food support",
+      "type": "Referral",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "provider": "External: local community services",
+      "how_to_access": "Refer the customer to a financial counsellor or a local community service for food or emergency relief.",
+      "contact": "Give the customer: National Debt Helpline 1800 007 007 (can refer)",
+      "key_facts": "Food parcels, vouchers and one-off help. HUGS assessments can include a Foodbank referral.",
+      "source_url": "https://www.wa.gov.au/government/media-statements/Cook%20Labor%20Government/Expanded-HUGS-program-to-further-support-public-housing-tenants-20250715",
+      "verified": true,
+      "last_verified": "2026-10-19",
+      "used_for": [
+        "homelessness",
+        "food_vs_bills"
+      ]
+    },
+    {
+      "id": "no_interest_loan",
+      "name": "No-interest loan for essential items",
+      "type": "Loan",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water"
+      ],
+      "provider": "External: Anglicare WA and other no-interest loan providers",
+      "how_to_access": "Refer the customer to apply for a no-interest loan to replace an inefficient appliance or cover an essential cost.",
+      "contact": "Give the customer: Anglicare WA",
+      "key_facts": "Helps replace an inefficient fridge, heater or hot water system, or cover an essential cost, without interest.",
+      "source_url": "https://www.disabilitygateway.gov.au/taxonomy/term/1966",
+      "verified": true,
+      "last_verified": "2026-10-19",
+      "used_for": [
+        "unexpected_expense",
+        "old_appliances"
+      ]
+    },
+    {
+      "id": "legal_help",
+      "name": "Free legal help with debt and credit",
+      "type": "Referral",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "provider": "External: Legal Aid WA / community legal centres",
+      "how_to_access": "Refer the customer for free legal advice.",
+      "contact": "Give the customer: legalaid.wa.gov.au",
+      "key_facts": "Advice on debts, defaults, bankruptcy, estates and economic abuse.",
+      "source_url": null,
+      "verified": false,
+      "last_verified": null,
+      "used_for": [
+        "competing_debts",
+        "economic_abuse",
+        "elder_abuse",
+        "debt_collection",
+        "bankruptcy",
+        "attorney_complications"
+      ]
+    },
+    {
+      "id": "consumer_protection",
+      "name": "Consumer Protection WA",
+      "type": "Referral",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "provider": "External: Consumer Protection WA (WA Government)",
+      "how_to_access": "Refer the customer by phone or online.",
+      "contact": "Give the customer: 1300 30 40 54",
+      "key_facts": "Help with scams, rental issues (landlord and tenant responsibilities) and unfair sales practices.",
+      "source_url": "https://www.erawa.com.au/water/on-tap-water-consumers-guide/useful-contacts",
+      "verified": true,
+      "last_verified": "2026-10-19",
+      "used_for": [
+        "renter_inefficient_home",
+        "landlord_water_dispute",
+        "mould_damp",
+        "missold",
+        "scam"
+      ]
+    },
+    {
+      "id": "idcare",
+      "name": "Identity theft support (IDCARE)",
+      "type": "Referral",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "provider": "External: IDCARE (not-for-profit)",
+      "how_to_access": "Secure the account, then refer the customer to IDCARE for a response plan.",
+      "contact": "Give the customer: idcare.org",
+      "key_facts": "Free help to respond when someone's identity has been misused.",
+      "source_url": "https://www.idcare.org/",
+      "verified": false,
+      "last_verified": null,
+      "used_for": [
+        "identity_theft"
+      ]
+    },
+    {
+      "id": "disaster_support",
+      "name": "Disaster relief",
+      "type": "Payment support",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "provider": "Us, plus the Australian Government",
+      "how_to_access": "Offer our disaster relief (bill deferral or a payment plan) and point the customer to any government disaster payments.",
+      "contact": "Customer service | Services Australia",
+      "key_facts": "Bill deferrals and payment plans from us, plus any government disaster payments that apply.",
+      "source_url": null,
+      "verified": false,
+      "last_verified": null,
+      "used_for": [
+        "disaster"
+      ]
+    },
+    {
+      "id": "mental_health_support",
+      "name": "Mental health and crisis support",
+      "type": "Referral",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "provider": "External: Lifeline and other services",
+      "how_to_access": "Offer the number if the customer is distressed. Lifeline's staff are trained to respond to distress.",
+      "contact": "Give the customer: Lifeline 13 11 14 | Emergency 000",
+      "key_facts": "24-hour crisis support.",
+      "source_url": "https://www.lifeline.org.au/",
+      "verified": false,
+      "last_verified": null,
+      "used_for": [
+        "mental_health"
+      ]
+    },
+    {
+      "id": "gambling_help",
+      "name": "Gambling Help",
+      "type": "Referral",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "provider": "External: Gambling Help Online",
+      "how_to_access": "Offer the number, by phone or online, 24 hours.",
+      "contact": "Give the customer: 1800 858 858",
+      "key_facts": "Free, confidential counselling for people affected by gambling, including family members.",
+      "source_url": "https://www.gamblinghelponline.org.au/",
+      "verified": false,
+      "last_verified": null,
+      "used_for": [
+        "addiction"
+      ]
+    },
+    {
+      "id": "carer_gateway",
+      "name": "Carer Gateway",
+      "type": "Referral",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "provider": "External: Australian Government",
+      "how_to_access": "Refer the customer by phone or online.",
+      "contact": "Give the customer: 1800 422 737",
+      "key_facts": "Support, respite and counselling for carers.",
+      "source_url": "https://www.carergateway.gov.au/",
+      "verified": false,
+      "last_verified": null,
+      "used_for": [
+        "carer"
+      ]
+    },
+    {
+      "id": "services_australia",
+      "name": "Check government payment entitlements",
+      "type": "Referral",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "provider": "External: Services Australia",
+      "how_to_access": "Suggest the customer checks with Centrelink or a financial counsellor that they're getting everything they're entitled to.",
+      "contact": "Give the customer: servicesaustralia.gov.au",
+      "key_facts": "Resolves delayed or stopped payments and checks for payments the household may be missing.",
+      "source_url": "https://www.servicesaustralia.gov.au/",
+      "verified": false,
+      "last_verified": null,
+      "used_for": [
+        "job_loss",
+        "benefit_problem",
+        "serious_illness",
+        "new_baby",
+        "carer",
+        "homelessness",
+        "new_migrant",
+        "leaving_institution"
+      ]
+    },
+    {
+      "id": "prepay_hardship",
+      "name": "Prepayment meter hardship assistance",
+      "type": "Payment support",
+      "utilities": [
+        "electricity"
+      ],
+      "provider": "Us: hardship team (Horizon Power for prepayment customers in its area)",
+      "how_to_access": "Offer prepayment hardship support. If the customer is a Horizon Power prepayment customer, refer them there.",
+      "contact": "Hardship team. Reference: Horizon Power 1800 267 926",
+      "key_facts": "Horizon Power's hardship information includes specific assistance for prepayment meter customers.",
+      "source_url": "https://happ.prod-cms12.horizonpower.com.au/globalassets/media/documents/home/financial_hardship_dl_brochure_2026.pdf",
+      "verified": true,
+      "last_verified": "2026-10-19",
+      "used_for": [
+        "remote_living",
+        "remote_prepay_community",
+        "prepay_self_disconnection"
+      ]
+    },
+    {
+      "id": "proactive_outreach",
+      "name": "Proactive, trained outreach",
+      "type": "Internal action",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "provider": "Us: hardship or financial care team",
+      "how_to_access": "Contact the customer through a safe channel and offer help before the debt grows.",
+      "contact": "Hardship team (internal)",
+      "key_facts": "Water Corporation uses data analytics to contact customers who may be in hardship; telcos must proactively identify them under the hardship standard.",
+      "source_url": "https://wa.gov.au/government/media-statements/McGowan%20Labor%20Government/Water-Corporation-partnership-to-assist-with-cost-of-living-pressures-20221213",
+      "verified": true,
+      "last_verified": "2026-10-19",
+      "used_for": [
+        "mental_health",
+        "cognitive_decline",
+        "hardship_not_offered",
+        "shame_stigma",
+        "unaware_of_help",
+        "rationing",
+        "avoidance"
+      ]
+    },
+    {
+      "id": "connection_help",
+      "name": "Move-in and move-out help",
+      "type": "Account fix",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "provider": "Us: customer service",
+      "how_to_access": "Check the move-in and final readings, connection fees and the ID we accept.",
+      "contact": "Customer service",
+      "key_facts": "Avoids overlapping bills and the customer paying for a previous occupant's use.",
+      "source_url": null,
+      "verified": false,
+      "last_verified": null,
+      "used_for": [
+        "moving_costs",
+        "first_time_renter",
+        "leaving_institution",
+        "no_id"
+      ]
+    },
+    {
+      "id": "fair_work",
+      "name": "Fair Work Ombudsman",
+      "type": "Referral",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "provider": "External: Fair Work Ombudsman (Australian Government)",
+      "how_to_access": "Refer the customer online or by phone for help with unpaid wages.",
+      "contact": "Give the customer: fairwork.gov.au",
+      "key_facts": "Help recovering unpaid wages.",
+      "source_url": "https://www.fairwork.gov.au/",
+      "verified": false,
+      "last_verified": null,
+      "used_for": [
+        "wage_theft"
+      ]
+    }
+  ]
+}

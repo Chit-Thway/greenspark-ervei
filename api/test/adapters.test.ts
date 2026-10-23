@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ModelAdapter } from "../src/adapters";
-import { start, TestClock } from "./helpers";
+import { allCases, start, TestClock } from "./helpers";
 
 const M = "staff-manager";
 
@@ -25,7 +25,7 @@ describe("model adapter boundary", () => {
     const h = await start(":memory:", new TestClock(), { modelAdapter: { getAssessments: async () => { throw new Error("model offline"); } } });
     const r = await h.call(M, "GET", "/api/cases?pageSize=100");
     expect(r.status).toBe(200);
-    expect(r.body.total).toBe(100);
+    expect(r.body.total).toBe(200);
     for (const i of r.body.items) expect(i.case.modelAssessment).toMatchObject({ status: "unavailable", priority: null, trend: null });
     expect((await h.call(M, "GET", "/api/cases?priorityLabels=routine")).body.total).toBe(0);
     expect((await h.call(M, "GET", "/api/cases/GS-2001/overview")).body.case.modelAssessment.status).toBe("unavailable");
@@ -46,10 +46,10 @@ describe("model adapter boundary", () => {
 
   it("keeps simulated seed assessments by default, including pending and unavailable", async () => {
     const h = await start();
-    const r = await h.call(M, "GET", "/api/cases?pageSize=100");
-    const by = (s: string) => r.body.items.filter((i: any) => i.case.modelAssessment.status === s).length;
-    expect([by("ready"), by("pending"), by("unavailable")]).toEqual([90, 5, 5]);
-    expect(r.body.items.every((i: any) => i.case.modelAssessment.isSimulated)).toBe(true);
+    const cases = await allCases(h);
+    const by = (s: string) => cases.filter((c) => c.modelAssessment.status === s).length;
+    expect([by("ready"), by("pending"), by("unavailable")]).toEqual([180, 10, 10]);
+    expect(cases.every((c) => c.modelAssessment.isSimulated)).toBe(true);
     await h.stop();
   });
 

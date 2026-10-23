@@ -32,25 +32,26 @@ describe("identity and reads", () => {
 
   it("lists, filters and paginates", async () => {
     const r = await h.call(M, "GET", "/api/cases");
-    expect(r.body).toMatchObject({ total: 100, page: 1, pageSize: 50, pageCount: 2, from: 1, to: 50 }); // 50 per page by default
+    expect(r.body).toMatchObject({ total: 200, page: 1, pageSize: 50, pageCount: 4, from: 1, to: 50 }); // 50 per page by default
     expect(r.body.items).toHaveLength(50);
     const second = await h.call(M, "GET", "/api/cases?page=2");
     expect(second.body.items).toHaveLength(50);
     expect(second.body).toMatchObject({ from: 51, to: 100 });
     const small = await h.call(M, "GET", "/api/cases?pageSize=8"); // other sizes still work
-    expect(small.body).toMatchObject({ pageSize: 8, pageCount: 13 });
+    expect(small.body).toMatchObject({ pageSize: 8, pageCount: 25 });
     expect(small.body.items).toHaveLength(8);
-    expect(r.body.counters.awaitingAssignment).toBeGreaterThan(0);
+    expect(r.body.counters).toEqual({ urgent: expect.any(Number), myActive: expect.any(Number) });
     const warm = await h.call(M, "GET", "/api/cases?circumstanceIds=keeping_warm_difficulty&pageSize=100");
     expect(warm.body.total).toBe(r.body.facets.circumstances.keeping_warm_difficulty);
     const both = await h.call(M, "GET", "/api/cases?circumstanceIds=keeping_warm_difficulty&status=resolved&pageSize=100");
     expect(both.body.items.every((i: any) => i.case.workflow.status === "resolved")).toBe(true);
-    expect((await h.call(M, "GET", "/api/cases?search=GS-2001")).body.items[0].case.id).toBe("GS-2001");
+    expect((await h.call(M, "GET", "/api/cases?search=DEMO-700001")).body.items[0].person.accountNumber).toBe("DEMO-700001");
+    expect((await h.call(M, "GET", "/api/cases?search=GS-2001")).body.total).toBe(0); // case IDs are internal
   });
 
   it("returns matching ids across all pages for selection pruning", async () => {
     const r = await h.call(M, "GET", "/api/cases/ids?status=resolved");
-    expect(r.body.ids).toHaveLength(10);
+    expect(r.body.ids).toHaveLength(20);
     expect((await h.call(M, "GET", "/api/cases/ids?status=bogus")).status).toBe(422);
   });
 
@@ -69,9 +70,15 @@ describe("identity and reads", () => {
 });
 
 describe("assignment", () => {
-  it("lets a manager assign and the worker finds it under assigned to me", async () => {
+  it("every seeded case has a support worker", async () => {
     const cases = await allCases(h);
-    const target = cases.find((c) => c.workflow.assignedToUserId === null)!;
+    expect(cases.every((c) => ["staff-alex", "staff-sarah", "staff-james", "staff-maya"].includes(c.workflow.assignedToUserId!))).toBe(true);
+    expect((await h.call(M, "GET", "/api/cases?view=unassigned")).status).toBe(422);
+  });
+
+  it("lets a manager reassign and the worker finds it under assigned to me", async () => {
+    const cases = await allCases(h);
+    const target = cases.find((c) => c.workflow.assignedToUserId !== "staff-alex")!;
     const r = await h.call(M, "POST", "/api/cases/bulk/assignment", { assigneeUserId: "staff-alex", items: [{ caseId: target.id, expectedVersion: target.version }] });
     expect(r.status).toBe(200);
     expect(r.body.updated[0]).toMatchObject({ id: target.id, version: target.version + 1 });
@@ -92,14 +99,14 @@ describe("assignment", () => {
   });
 
   it("is all-or-nothing when one item is stale", async () => {
-    const cases = (await allCases(h)).filter((c) => c.workflow.assignedToUserId === null).slice(0, 3);
+    const cases = (await allCases(h)).filter((c) => c.workflow.assignedToUserId === "staff-james").slice(0, 3);
     const items = cases.map((c, i) => ({ caseId: c.id, expectedVersion: i === 1 ? 99 : c.version }));
     const r = await h.call(M, "POST", "/api/cases/bulk/assignment", { assigneeUserId: "staff-sarah", items });
     expect(r.status).toBe(422);
     expect(r.body.error.code).toBe("bulk_validation_failed");
     expect(r.body.error.details).toEqual([expect.objectContaining({ caseId: cases[1]!.id, code: "version_conflict" })]);
     const after = await allCases(h);
-    for (const c of cases) expect(after.find((a) => a.id === c.id)!.workflow.assignedToUserId).toBeNull();
+    for (const c of cases) expect(after.find((a) => a.id === c.id)!.workflow.assignedToUserId).toBe("staff-james");
   });
 
   it("reports an unchanged assignment without bumping the version", async () => {
@@ -108,14 +115,15 @@ describe("assignment", () => {
     expect(r.body).toMatchObject({ actionId: null, updated: [], unchanged: [c.id] });
   });
 
-  it("can unassign and rejects duplicate ids or oversized bulk requests", async () => {
-    const c = (await allCases(h)).find((x) => x.workflow.assignedToUserId)!;
-    const ok = await h.call(M, "POST", "/api/cases/bulk/assignment", { assigneeUserId: null, items: [{ caseId: c.id, expectedVersion: c.version }] });
-    expect(ok.body.updated[0].workflow.assignedToUserId).toBeNull();
+  it("can't unassign, and rejects duplicate ids or oversized bulk requests", async () => {
+    const c = (await allCases(h))[0]!;
+    const no = await h.call(M, "POST", "/api/cases/bulk/assignment", { assigneeUserId: null, items: [{ caseId: c.id, expectedVersion: c.version }] });
+    expect(no.status).toBe(422);
+    expect((await allCases(h)).find((x) => x.id === c.id)!.workflow.assignedToUserId).toBe(c.workflow.assignedToUserId);
     const dup = { caseId: c.id, expectedVersion: 1 };
-    expect((await h.call(M, "POST", "/api/cases/bulk/assignment", { assigneeUserId: null, items: [dup, dup] })).status).toBe(422);
+    expect((await h.call(M, "POST", "/api/cases/bulk/assignment", { assigneeUserId: "staff-alex", items: [dup, dup] })).status).toBe(422);
     const many = Array.from({ length: 101 }, (_, i) => ({ caseId: `GS-${i}`, expectedVersion: 1 }));
-    expect((await h.call(M, "POST", "/api/cases/bulk/assignment", { assigneeUserId: null, items: many })).status).toBe(422);
+    expect((await h.call(M, "POST", "/api/cases/bulk/assignment", { assigneeUserId: "staff-alex", items: many })).status).toBe(422);
   });
 });
 
@@ -129,8 +137,6 @@ describe("status, notes and review permissions", () => {
     expect(ok.body.updated[0].workflow.status).toBe("waiting");
     const no = await h.call("staff-alex", "PATCH", `/api/cases/${other.id}/status`, { status: "waiting", expectedVersion: other.version });
     expect(no.status).toBe(403);
-    const unassigned = cases.find((c) => c.workflow.assignedToUserId === null)!;
-    expect((await h.call("staff-alex", "PATCH", `/api/cases/${unassigned.id}/status`, { status: "waiting", expectedVersion: unassigned.version })).status).toBe(403);
   });
 
   it("allows reopening a resolved case and any status move for a manager", async () => {
@@ -263,34 +269,65 @@ describe("status, notes and review permissions", () => {
 });
 
 describe("new case", () => {
-  it("creates a minimal case with unknown evidence and a pending model", async () => {
+  it("creates a minimal case with unknown evidence and a pending model, assigned to the worker who made it", async () => {
     const r = await h.call("staff-alex", "POST", "/api/cases", { displayName: "  Jordan Test ", suburb: "Perth" });
     expect(r.status).toBe(201);
     const c = r.body.case;
     expect(c).toMatchObject({ version: 1, supportAreaIds: [] });
-    expect(c.workflow).toMatchObject({ status: "new", assignedToUserId: null, reviewStatus: "needs_review" });
+    expect(c.workflow).toMatchObject({ status: "new", assignedToUserId: "staff-alex", reviewStatus: "needs_review" });
     expect(c.modelAssessment).toMatchObject({ status: "pending", priority: null, isSimulated: true });
     expect(Object.values(c.reportedAnswers).every((v) => v === null)).toBe(true);
     expect(Object.values(c.answerAvailability).every((v) => v === "unknown")).toBe(true);
     expect(r.body.person).toMatchObject({ displayName: "Jordan Test", suburb: "Perth" });
     expect(r.body.person).toMatchObject({ gender: null, preferredName: null, address: null, mobile: null, phone: null, email: null }); // not recorded
-    expect((await h.call(M, "GET", "/api/cases")).body.total).toBe(101);
+    expect((await h.call(M, "GET", "/api/cases")).body.total).toBe(201);
   });
 
-  it("accepts an existing person and rejects unknown people or empty input", async () => {
-    const person = (await h.call(M, "GET", "/api/cases/GS-2001/overview")).body.person.id;
-    const ok = await h.call(M, "POST", "/api/cases", { personId: person });
-    expect(ok.status).toBe(201);
-    expect(ok.body.case.personId).toBe(person);
+  it("keeps one case per account, and rejects unknown people or empty input", async () => {
+    const person = (await h.call(M, "GET", "/api/cases/GS-2001/overview")).body.person;
+    const again = await h.call(M, "POST", "/api/cases", { personId: person.id, assigneeUserId: "staff-maya" });
+    expect(again.status).toBe(422);
+    expect(again.body.error.details[0].code).toBe("account_has_case");
+    expect(again.body.error.message).toContain(person.accountNumber);
     expect((await h.call(M, "POST", "/api/cases", { personId: "demo-person-999" })).status).toBe(422);
     expect((await h.call(M, "POST", "/api/cases", { displayName: "", suburb: "" })).status).toBe(422);
     expect((await h.call(M, "POST", "/api/cases", {})).status).toBe(422);
+  });
+
+  it("gives each new person the next account number, and finds the case by it", async () => {
+    const a = await h.call("staff-alex", "POST", "/api/cases", { displayName: "First New", suburb: "Perth" });
+    const b = await h.call("staff-alex", "POST", "/api/cases", { displayName: "Second New", suburb: "Perth" });
+    expect(a.body.person.accountNumber).toBe("DEMO-700201");
+    expect(b.body.person.accountNumber).toBe("DEMO-700202");
+    const byAccount = await h.call(M, "GET", "/api/accounts/DEMO-700202");
+    expect(byAccount.status).toBe(200);
+    expect(byAccount.body.case.id).toBe(b.body.case.id);
+    expect((await h.call(M, "GET", "/api/accounts/DEMO-700001")).body.case.id).toBe("GS-2001");
+    expect((await h.call(M, "GET", "/api/accounts/DEMO-999999")).status).toBe(404);
+  });
+
+  it("names cases by account number in error messages", async () => {
+    const other = (await allCases(h)).find((c) => c.workflow.assignedToUserId === "staff-sarah")!;
+    const r = await h.call("staff-alex", "PATCH", `/api/cases/${other.id}/status`, { status: "waiting", expectedVersion: other.version });
+    expect(r.status).toBe(403);
+    expect(r.body.error.message).toMatch(/account DEMO-7\d{5}/);
+    expect(r.body.error.message).not.toContain(other.id);
+  });
+
+  it("needs a support worker for every new case", async () => {
+    const body = { displayName: "Sam Test", suburb: "Perth" };
+    const noWorker = await h.call(M, "POST", "/api/cases", body);
+    expect(noWorker.status).toBe(422);
+    expect(noWorker.body.error.details[0].code).toBe("assignee_required");
+    expect((await h.call(M, "POST", "/api/cases", { ...body, assigneeUserId: M })).status).toBe(422);
+    expect((await h.call("staff-alex", "POST", "/api/cases", { ...body, assigneeUserId: "staff-sarah" })).status).toBe(403);
+    expect((await h.call("staff-alex", "POST", "/api/cases", { ...body, assigneeUserId: "staff-alex" })).status).toBe(201);
   });
 });
 
 describe("undo", () => {
   async function assignOne() {
-    const c = (await allCases(h)).find((x) => x.workflow.assignedToUserId === null)!;
+    const c = (await allCases(h)).find((x) => x.workflow.assignedToUserId === "staff-alex")!;
     const r = await h.call(M, "POST", "/api/cases/bulk/assignment", { assigneeUserId: "staff-maya", items: [{ caseId: c.id, expectedVersion: c.version }] });
     return { c, actionId: r.body.actionId as string, version: r.body.updated[0].version as number };
   }
@@ -299,7 +336,7 @@ describe("undo", () => {
     const { c, actionId, version } = await assignOne();
     const u = await h.call(M, "POST", `/api/workflow-actions/${actionId}/undo`);
     expect(u.status).toBe(200);
-    expect(u.body.updated[0].workflow.assignedToUserId).toBeNull();
+    expect(u.body.updated[0].workflow.assignedToUserId).toBe("staff-alex");
     expect(u.body.updated[0].version).toBe(version + 1);
     expect(c.id).toBe(u.body.updated[0].id);
   });
@@ -321,7 +358,7 @@ describe("undo", () => {
   });
 
   it("is all-or-nothing for a bulk action", async () => {
-    const cases = (await allCases(h)).filter((x) => x.workflow.assignedToUserId === null).slice(0, 2);
+    const cases = (await allCases(h)).filter((x) => x.workflow.assignedToUserId === "staff-sarah").slice(0, 2);
     const r = await h.call(M, "POST", "/api/cases/bulk/assignment", { assigneeUserId: "staff-james", items: cases.map((c) => ({ caseId: c.id, expectedVersion: c.version })) });
     await h.call(M, "PATCH", `/api/cases/${cases[1]!.id}/status`, { status: "waiting", expectedVersion: r.body.updated[1].version });
     expect((await h.call(M, "POST", `/api/workflow-actions/${r.body.actionId}/undo`)).status).toBe(409);

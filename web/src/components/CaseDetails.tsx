@@ -1,9 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import type { CaseStatus, QueueCase, ReviewStatus, StaffUser } from "../domain/types";
-import type { CaseItem, Catalog } from "../data/api";
-import { describeFollowUp, formatDateTime, PERIOD_TEXT, STATUS_LABELS } from "../domain/format";
+import type { ApiClient, CaseItem, Catalog, ContactMethod, PlanKind, PlanStep, SupportPlan } from "../data/api";
+import { CaseFlowModal } from "../admin/CaseFlowModal";
+import { describeFollowUp, formatDateTime, PERIOD_TEXT, readableDates, STATUS_LABELS } from "../domain/format";
 import { isResolved } from "../domain/query";
 import { PriorityBadge } from "./Primitives";
+import { ageOn, PRIORITY_PROVIDER } from "../domain/types";
+import { AccountHistory, AccountSignals, ContactHistory, date, SupplyAndCollections, SupportHistory, UtilityAccount } from "./AccountDetails";
+import { CaseToc, type TocItem } from "./CaseToc";
 
 /** A missing contact detail is shown as not recorded, so it is never mistaken for "none". */
 function notRecorded(v: string | null | undefined): string {
@@ -20,14 +24,14 @@ function answerText(c: QueueCase, fieldId: string): { text: string; tone: "yes" 
 }
 
 export interface CaseActions {
-  onAssign: (userId: string | null) => Promise<boolean>;
+  onAssign: (userId: string) => Promise<boolean>;
   onStatus: (status: CaseStatus) => Promise<boolean>;
   onReview: (next: ReviewStatus) => Promise<boolean>;
   onNote: (text: string) => Promise<boolean>;
   onEditNote: (noteId: string, text: string) => Promise<boolean>;
 }
 
-export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffUser; busy: boolean; actions: CaseActions }) {
+export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffUser; busy: boolean; actions: CaseActions; loadPlan?: (caseId: string, kind?: PlanKind) => Promise<SupportPlan>; client?: ApiClient }) {
   const { data, item, user } = props;
   const c = item.case;
   const person = item.person ?? undefined;
@@ -54,39 +58,67 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
   const userName = (id: string) => data.users.find((u) => u.id === id)?.displayName ?? id;
   const fu = describeFollowUp(c.workflow.followUpAt, isResolved(c), data.asOf);
   const a = c.modelAssessment;
+  const fromFlow = data.circumstanceSource === "flow";
+  const [flowOpen, setFlowOpen] = useState(false);
+  // One call gives the Suggested plan and the order of Solutions to offer, so the two agree.
+  const supportAi = useAiPlan("support", c.id, c.version, c.circumstances.length ? props.loadPlan : undefined);
+  const aiOrder = fromFlow && supportAi?.plan?.order?.length ? supportAi.plan.order : undefined;
+  const orderedRecs = aiOrder
+    ? aiOrder.map((o) => c.recommendations.find((r) => r.recommendationId === o.id)!).filter(Boolean)
+    : c.recommendations;
+  const fromSignals = a.provider === PRIORITY_PROVIDER;
+  const acct = person?.account ?? null;
 
   // A new page should start at its heading for keyboard and screen-reader users.
   useEffect(() => { heading.current?.focus(); }, [c.id]);
 
   const history = c.assistance.reportedHistory;
+  // The table of contents lists the sections this case shows, in reading order (left column, then right).
+  const toc: TocItem[] = [
+    { id: "ov-contact", label: "Customer details" },
+    ...(acct ? [{ id: "ov-account", label: "Utility account" }] : []),
+    { id: "ov-model", label: fromSignals ? "Priority" : "Model assessment" },
+    ...(acct ? [{ id: "ov-signals", label: "Account signals" }] : []),
+    { id: "ov-assist", label: "Assistance reported" },
+    { id: "ov-support", label: "Support areas" },
+    ...(fromFlow && c.recommendations.length ? [{ id: "ov-solutions", label: "Solutions to offer" }] : []),
+    ...(acct ? [
+      { id: "ov-bills", label: acct.prepay ? "Prepaid top-ups" : "Bills" },
+      { id: "ov-support-history", label: "Support history" },
+      { id: "ov-supply", label: "Collections and supply" },
+    ] : []),
+    { id: "ov-review", label: "Worker review" },
+    { id: "ov-progress", label: "Case progress" },
+    { id: "ov-notes", label: "Case notes" },
+    ...(acct ? [{ id: "ov-contacts", label: "Contact history" }] : []),
+  ];
   return (
     <article className="case-page" aria-labelledby="case-title">
       <header className="case-head">
-        <span className="eyebrow">Case details · {c.id}</span>
+        <span className="eyebrow">Account · {person?.accountNumber ?? "Not recorded"}</span>
         <h1 id="case-title" tabIndex={-1} ref={heading}>{person?.displayName ?? "Unknown person"}</h1>
-        <p className="sub">{person?.suburb}, {person?.state} · {c.personId}</p>
+        <p className="sub">{person?.suburb}, {person?.state}</p>
         <div className="ov-row">
           <PriorityBadge c={c} />
           <span className={`sub follow-${fu.tone}`}>{fu.text}</span>
         </div>
       </header>
 
+      <div className="case-layout">
+      <CaseToc items={toc} />
       <div className="case-grid">
       <div className="case-col">
       <dl className="facts case-card">
-        <div><dt>Assigned worker</dt><dd>{assignedUser ? assignedUser.displayName : "Unassigned"}</dd></div>
-        <div><dt>Household</dt><dd>{person?.householdSummary}</dd></div>
+        <div><dt>Assigned worker</dt><dd>{assignedUser?.displayName ?? c.workflow.assignedToUserId}</dd></div>
         <div><dt>Case status</dt><dd>{STATUS_LABELS[c.workflow.status]}</dd></div>
-        <div>
-          <dt>Contact preference (demo)</dt>
-          <dd>{person?.contactPreference ? `${person.contactPreference.channel}, ${person.contactPreference.preferredWindow}` : "Not recorded"}</dd>
-        </div>
       </dl>
       <section className="case-card" aria-labelledby="ov-contact">
         <h3 id="ov-contact">Customer details <span className="sim">fictional</span></h3>
         <dl className="details">
           <div><dt>Preferred name</dt><dd>{notRecorded(person?.preferredName)}</dd></div>
           <div><dt>Gender</dt><dd>{notRecorded(person?.gender)}</dd></div>
+          <div><dt>Age</dt><dd>{acct ? `${ageOn(acct.dateOfBirth, data.asOf)} (born ${date(acct.dateOfBirth)})` : "Not recorded"}</dd></div>
+          <div><dt>Household</dt><dd>{notRecorded(person?.householdSummary)}</dd></div>
           <div className="wide">
             <dt>Address</dt>
             <dd>
@@ -102,60 +134,29 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
           <div><dt>Mobile</dt><dd>{notRecorded(person?.mobile)}</dd></div>
           <div><dt>Phone</dt><dd>{notRecorded(person?.phone)}</dd></div>
           <div className="wide"><dt>Email</dt><dd>{notRecorded(person?.email)}</dd></div>
+          <div><dt>Interpreter</dt><dd>{acct ? (acct.interpreterRequired ? "Required" : "Not required") : "Not recorded"}</dd></div>
         </dl>
       </section>
-
+      {acct ? <UtilityAccount account={acct} accountNumber={person?.accountNumber ?? null} /> : null}
 
       <section className="case-card model" aria-labelledby="ov-model">
-        <h3 id="ov-model">Model assessment <span className="sim">simulated · {a.provider}</span></h3>
+        {fromSignals ? (
+          <h3 id="ov-model">Priority <span className="sim">from signals</span></h3>
+        ) : (
+          <h3 id="ov-model">Model assessment <span className="sim">simulated · {a.provider}</span></h3>
+        )}
         {a.status === "ready" && a.priority ? (
           <>
             <p>Priority {a.priority.score}/100 ({a.priority.label}) · trend: {a.trend ?? "unknown"}</p>
             <p className="hint">{a.explanation}</p>
+            {fromSignals ? <p className="hint">Points for each flagged circumstance (by type, more if sensitive) and each signal behind them. A guide for ordering the queue, not a judgement about the customer.</p> : null}
           </>
         ) : (
-          <p>{a.status === "pending" ? "Assessment pending. No priority has been assigned." : "Assessment unavailable. No priority has been assigned."}</p>
+          <p>{a.explanation ?? (a.status === "pending" ? "Assessment pending. No priority has been assigned." : "Assessment unavailable. No priority has been assigned.")}</p>
         )}
       </section>
 
-      <section className="case-card" aria-labelledby="ov-support">
-        <h3 id="ov-support">Support areas and why</h3>
-        {c.circumstances.length === 0 ? <p className="muted">No circumstances flagged from the reported answers.</p> : null}
-        {data.supportAreas.filter((area) => c.supportAreaIds.includes(area.id)).map((area) => (
-          <div key={area.id} className="area-block">
-            <h4>{area.label}</h4>
-            {c.circumstances.filter((x) => data.circumstances.find((d) => d.id === x.circumstanceId)?.supportAreaId === area.id).map((x) => {
-              const def = data.circumstances.find((d) => d.id === x.circumstanceId)!;
-              const recs = c.recommendations.filter((r) => r.circumstanceIds.includes(x.circumstanceId));
-              return (
-                <div key={x.circumstanceId} className="circ">
-                  <strong>{def.label}</strong>
-                  <ul className="evidence">
-                    {x.evidenceFieldIds.map((fid) => {
-                      const f = field(fid);
-                      const ans = answerText(c, fid);
-                      return (
-                        <li key={fid}>
-                          <span>{f?.label ?? fid} <span className="sub">({fid}, {f ? PERIOD_TEXT[f.referencePeriod] : ""}{c.reportedAt ? `, reported ${c.reportedAt}` : ""})</span></span>
-                          <span className={`answer answer-${ans.tone}`}>{ans.text}</span>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                  {recs.length ? (
-                    <div className="suggest">
-                      <span className="sim">Suggested for staff review</span>
-                      <ul className="suggest-list">
-                        {recs.map((r) => <li key={r.recommendationId}>{data.recommendations.find((d) => d.id === r.recommendationId)?.label ?? r.recommendationId}</li>)}
-                      </ul>
-                    </div>
-                  ) : null}
-                </div>
-              );
-            })}
-          </div>
-        ))}
-      </section>
+      {acct ? <AccountSignals account={acct} asOf={data.asOf} weather={item.weatherSignals} summary={props.loadPlan ? <AiPlan kind="signals" caseId={c.id} version={c.version} load={props.loadPlan} /> : null} /> : null}
 
       <section className="case-card" aria-labelledby="ov-assist">
         <h3 id="ov-assist">Assistance already reported</h3>
@@ -171,6 +172,112 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
           <p className="muted">{c.answerAvailability.Q36b_1 === "unknown" ? "Unknown. Not recorded." : "None reported."}</p>
         )}
       </section>
+
+      <section className="case-card" aria-labelledby="ov-support">
+        <h3 id="ov-support">Support areas and why {fromFlow ? <span className="sim">hardship flow</span> : null}</h3>
+        {fromFlow ? (
+          <p className="hint">Worked out from account data and survey answers with the Flowchart&apos;s rules: one strong signal, or two supporting ones. Sensitive circumstances need a strong signal.</p>
+        ) : null}
+        {supportAi ? <AiPlanView kind="support" state={supportAi} /> : null}
+        {c.circumstances.length === 0 ? <p className="muted">{fromFlow ? "No circumstances flagged." : "No circumstances flagged from the reported answers."}</p> : null}
+        {data.supportAreas.filter((area) => c.supportAreaIds.includes(area.id)).map((area) => (
+          <div key={area.id} className="area-block">
+            <h4>{area.label}</h4>
+            {c.circumstances.filter((x) => data.circumstances.find((d) => d.id === x.circumstanceId)?.supportAreaId === area.id).map((x) => {
+              const def = data.circumstances.find((d) => d.id === x.circumstanceId)!;
+              const recs = c.recommendations.filter((r) => r.circumstanceIds.includes(x.circumstanceId));
+              return (
+                <div key={x.circumstanceId} className={`circ${def.sensitivity === "safety" ? " circ-safety" : ""}`}>
+                  <div className="circ-head">
+                    <strong>{def.label}</strong>
+                    {def.sensitivity && def.sensitivity !== "standard" ? <span className={`sens sens-${def.sensitivity}`}>{def.sensitivity === "safety" ? "Safety" : "Sensitive"}</span> : null}
+                  </div>
+                  {def.sensitivity === "safety" ? <p className="hint">Never actioned automatically. Route to trained staff.</p> : null}
+                  {def.handling ? <p className="hint">{def.handling}</p> : null}
+                  {x.signals ? (
+                    <>
+                    <p className="block-label">Why it&apos;s flagged</p>
+                    <ul className="evidence signals">
+                      {x.signals.map((sg) => (
+                        <li key={sg.id}>
+                          <span>{sg.name} <span className="sub">{readableDates(sg.evidence)}</span></span>
+                          <span className={`strength strength-${sg.strength}`}>{sg.strength === "strong" ? "Strong" : "Supporting"}</span>
+                        </li>
+                      ))}
+                    </ul>
+                    </>
+                  ) : (
+                    <ul className="evidence">
+                      {x.evidenceFieldIds.map((fid) => {
+                        const f = field(fid);
+                        const ans = answerText(c, fid);
+                        return (
+                          <li key={fid}>
+                            <span>{f?.label ?? fid} <span className="sub">({fid}, {f ? PERIOD_TEXT[f.referencePeriod] : ""}{c.reportedAt ? `, reported ${c.reportedAt}` : ""})</span></span>
+                            <span className={`answer answer-${ans.tone}`}>{ans.text}</span>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                  {recs.length ? (
+                    <div className="suggest">
+                      <span className="sim">{fromFlow ? "Solutions for staff review" : "Suggested for staff review"}</span>
+                      <ul className="suggest-list">
+                        {recs.map((r) => <li key={r.recommendationId}>{data.recommendations.find((d) => d.id === r.recommendationId)?.label ?? r.recommendationId}</li>)}
+                      </ul>
+                    </div>
+                  ) : null}
+                </div>
+              );
+            })}
+          </div>
+        ))}
+      </section>
+
+      {fromFlow && c.recommendations.length ? (
+        <section className="case-card" aria-labelledby="ov-solutions">
+          <h3 id="ov-solutions">Solutions to offer <span className="sim">for staff review</span></h3>
+          <p className="hint">What we can offer this customer, or refer them to. Check eligibility before offering.</p>
+          {aiOrder ? (
+            <div className="order-toggle">
+              <span className="hint">Ordered by AI to match the Suggested plan. Check before acting.</span>
+            </div>
+          ) : null}
+          {aiOrder?.some((o) => o.due) ? <SolutionTimeline steps={aiOrder} names={(id) => data.recommendations.find((x) => x.id === id)?.label ?? id} interpreter={!!supportAi?.plan?.interpreter} /> : null}
+          <ol className="suggest-list solutions">
+            {orderedRecs.map((r, rank) => {
+              const step = aiOrder?.find((o) => o.id === r.recommendationId);
+              const why = step?.reason;
+              const d = data.recommendations.find((x) => x.id === r.recommendationId);
+              const forNames = r.circumstanceIds.map((id) => data.circumstances.find((x) => x.id === id)?.label ?? id);
+              return (
+                <li key={r.recommendationId} className="solution">
+                  <strong>{why ? <span className="rank-num">{rank + 1}</span> : null}{d?.label ?? r.recommendationId}</strong>
+                  {why ? <p className="rank-why">{why}</p> : null}
+                  {step?.due ? (
+                    <p className="rank-when">
+                      By <strong>{dueDate(step.due)}</strong>{step.method ? <> · {METHOD_LABEL[step.method]}{supportAi?.plan?.interpreter && step.method === "phone" ? " with an interpreter" : ""}</> : null}
+                    </p>
+                  ) : null}
+                  <dl className="solution-facts">
+                    {d?.howToAccess ? <div><dt>What to do</dt><dd>{d.howToAccess}</dd></div> : null}
+                    {d?.provider ? <div><dt>Who</dt><dd>{d.provider}</dd></div> : null}
+                    {d?.contact ? <div><dt>Contact</dt><dd>{d.contact}</dd></div> : null}
+                    {d?.description ? <div><dt>Good to know</dt><dd>{d.description}</dd></div> : null}
+                    <div><dt>For</dt><dd>{forNames.join(", ")}</dd></div>
+                  </dl>
+                  {d?.sourceUrl ? <a className="sub" href={d.sourceUrl} target="_blank" rel="noreferrer">Source{d.verified ? "" : " (not re-checked)"}</a> : null}
+                </li>
+              );
+            })}
+          </ol>
+        </section>
+      ) : null}
+
+      {acct ? <AccountHistory account={acct} asOf={data.asOf} /> : null}
+      {acct ? <SupportHistory account={acct} /> : null}
+      {acct ? <SupplyAndCollections account={acct} /> : null}
 
       </div>
       <div className="case-col">
@@ -193,13 +300,12 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
         <label className="field">
           <span>Assigned worker</span>
           <select value={assignee} disabled={!isManager || props.busy} onChange={(e) => setAssignee(e.target.value)}>
-            <option value="">Unassigned</option>
             {workers.map((w) => <option key={w.id} value={w.id}>{w.displayName}</option>)}
           </select>
         </label>
         {isManager ? (
           <div className="actions">
-            <button type="button" className="btn" disabled={props.busy || assignee === (c.workflow.assignedToUserId ?? "")} onClick={() => props.actions.onAssign(assignee || null)}>
+            <button type="button" className="btn" disabled={props.busy || !assignee || assignee === (c.workflow.assignedToUserId ?? "")} onClick={() => props.actions.onAssign(assignee)}>
               Save assignment
             </button>
           </div>
@@ -283,8 +389,78 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
           </div>
         </form>
       </section>
+      {acct ? <ContactHistory account={acct} /> : null}
+      {fromFlow && props.client ? (
+        <button type="button" className="btn case-flow-btn" onClick={() => setFlowOpen(true)}>Flowchart for this case</button>
+      ) : null}
+      {flowOpen && props.client ? <CaseFlowModal client={props.client} data={data} c={c} person={person ?? null} weather={item.weatherSignals ?? []} onClose={() => setFlowOpen(false)} /> : null}
+      </div>
       </div>
       </div>
     </article>
+  );
+}
+
+/** The AI-drafted plan (Claude or Gemini), fetched when the case opens and again whenever the case changes. */
+const AI_TITLE: Record<PlanKind, string> = { support: "Suggested plan", signals: "What the signals say" };
+const METHOD_LABEL: Record<ContactMethod, string> = { phone: "Phone call", sms: "SMS", email: "Email", letter: "Letter" };
+const dueDate = (iso: string) => new Date(`${iso}T00:00:00Z`).toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
+
+const AI_LOADING: Record<PlanKind, string> = { support: "Drafting a support plan…", signals: "Summarising the signals…" };
+const AI_SOURCE: Record<PlanKind, string> = { support: "circumstances, signals and solutions below", signals: "account signals below" };
+
+type AiState = { plan?: SupportPlan; error?: string; loading: boolean };
+
+/** Fetches one AI summary when the case opens and again whenever the case changes. */
+function useAiPlan(kind: PlanKind, caseId: string, version: number, load?: (caseId: string, kind?: PlanKind) => Promise<SupportPlan>): AiState | null {
+  const [state, setState] = useState<AiState>({ loading: true });
+  useEffect(() => {
+    if (!load) return;
+    let live = true;
+    setState({ loading: true });
+    load(caseId, kind).then((plan) => live && setState({ plan, loading: false }), (e: unknown) => live && setState({ error: e instanceof Error ? e.message : "Could not draft a plan.", loading: false }));
+    return () => { live = false; };
+  }, [kind, caseId, version, load]);
+  return load ? state : null;
+}
+
+function AiPlan(props: { kind: PlanKind; caseId: string; version: number; load: (caseId: string, kind?: PlanKind) => Promise<SupportPlan> }) {
+  const state = useAiPlan(props.kind, props.caseId, props.version, props.load)!;
+  return <AiPlanView kind={props.kind} state={state} />;
+}
+
+function AiPlanView({ kind, state }: { kind: PlanKind; state: AiState }) {
+  return (
+    <div className="ai-plan" aria-live="polite">
+      <p className="block-label">{AI_TITLE[kind]} <span className="sim">AI draft · check before acting</span></p>
+      {state.loading ? <p className="muted">{AI_LOADING[kind]}</p> : state.error ? <p className="muted">{state.error}</p> : <p>{state.plan!.text}</p>}
+      {state.plan ? <p className="hint">Drafted by {state.plan.model} from the {AI_SOURCE[kind]}. No name or contact details were sent.</p> : null}
+    </div>
+  );
+}
+
+/** The AI order's steps by date: each day once, with what to offer and how to get in touch. */
+function SolutionTimeline({ steps, names, interpreter }: { steps: PlanStep[]; names: (id: string) => string; interpreter: boolean }) {
+  const dated = steps.map((s, rank) => ({ ...s, rank })).filter((s) => s.due).sort((a, b) => a.due!.localeCompare(b.due!) || a.rank - b.rank);
+  const days = [...new Set(dated.map((s) => s.due!))];
+  return (
+    <div className="timeline">
+      <p className="block-label">Timeline <span className="sim">AI draft · check before acting</span></p>
+      <ol className="tl-days">
+        {days.map((day) => (
+          <li key={day} className="tl-day">
+            <span className="tl-date">{dueDate(day)}</span>
+            <ul className="tl-steps">
+              {dated.filter((s) => s.due === day).map((s) => (
+                <li key={s.id}>
+                  <span className="tl-name">{names(s.id)}</span>
+                  {s.method ? <span className="tl-method">{METHOD_LABEL[s.method]}{interpreter && s.method === "phone" ? " with an interpreter" : ""}</span> : null}
+                </li>
+              ))}
+            </ul>
+          </li>
+        ))}
+      </ol>
+    </div>
   );
 }

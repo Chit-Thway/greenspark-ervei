@@ -8,8 +8,8 @@ const me = "staff-alex";
 const q = (over: Partial<typeof DEFAULT_QUERY>) => ({ ...DEFAULT_QUERY, ...over });
 
 describe("queue filters", () => {
-  it("returns all 100 cases by default", () => {
-    expect(applyFilters(data, DEFAULT_QUERY, me)).toHaveLength(100);
+  it("returns all 200 cases by default", () => {
+    expect(applyFilters(data, DEFAULT_QUERY, me)).toHaveLength(200);
   });
 
   it("ORs within circumstances and ANDs across groups", () => {
@@ -24,22 +24,24 @@ describe("queue filters", () => {
 
   it("excludes unscored cases when a minimum score is set instead of treating them as zero", () => {
     const res = applyFilters(data, q({ minPriorityScore: 1 }), me);
-    expect(res).toHaveLength(90);
+    expect(res).toHaveLength(180);
     expect(res.every((c) => c.modelAssessment.priority !== null)).toBe(true);
   });
 
-  it("searches name, case id and suburb", () => {
+  it("searches name, account number and suburb, not internal case IDs", () => {
     const first = data.people[0]!;
     expect(applyFilters(data, q({ search: first.displayName.toUpperCase() }), me).length).toBeGreaterThan(0);
-    expect(applyFilters(data, q({ search: "GS-2001" }), me).map((c) => c.id)).toContain("GS-2001");
+    expect(applyFilters(data, q({ search: first.accountNumber! }), me).map((c) => c.personId)).toEqual([first.id]);
+    expect(applyFilters(data, q({ search: "GS-2001" }), me)).toHaveLength(0);
     expect(applyFilters(data, q({ search: first.suburb }), me).length).toBeGreaterThan(0);
     expect(applyFilters(data, q({ search: "zzzz-no-match" }), me)).toHaveLength(0);
   });
 
-  it("assigned-to-me and unassigned views use the current user", () => {
+  it("the assigned-to-me view uses the current user, and every case has a worker", () => {
     const mine = applyFilters(data, q({ view: "mine" }), me);
+    expect(mine.length).toBeGreaterThan(0);
     expect(mine.every((c) => c.workflow.assignedToUserId === me)).toBe(true);
-    expect(applyFilters(data, q({ view: "unassigned" }), me)).toHaveLength(20);
+    expect(data.cases.every((c) => c.workflow.assignedToUserId !== null)).toBe(true);
   });
 
   it("assistance filters keep unknown separate from No", () => {
@@ -54,37 +56,37 @@ describe("sorting, paging and counters", () => {
   it("sorts by priority with unscored cases last", () => {
     const sorted = sortCases(data.cases, data.people, "priority_desc");
     const scores = sorted.map((c) => c.modelAssessment.priority?.score ?? null);
-    expect(scores.slice(0, 90).every((s) => s !== null)).toBe(true);
-    expect(scores.slice(90).every((s) => s === null)).toBe(true);
+    expect(scores.slice(0, 180).every((s) => s !== null)).toBe(true);
+    expect(scores.slice(180).every((s) => s === null)).toBe(true);
     const asc = sortCases(data.cases, data.people, "priority_asc").map((c) => c.modelAssessment.priority?.score ?? null);
-    expect(asc.slice(90).every((s) => s === null)).toBe(true);
+    expect(asc.slice(180).every((s) => s === null)).toBe(true);
   });
 
   it("shows 50 cases per page by default", () => {
     expect(DEFAULT_QUERY.pageSize).toBe(50);
     const p = paginate(data.cases, 1, DEFAULT_QUERY.pageSize);
-    expect([p.items.length, p.pageCount, p.from, p.to]).toEqual([50, 2, 1, 50]);
+    expect([p.items.length, p.pageCount, p.from, p.to]).toEqual([50, 4, 1, 50]);
   });
 
   it("paginates in other sizes and clamps the page", () => {
     const p = paginate(data.cases, 99, 8);
-    expect(p.pageCount).toBe(13);
-    expect(p.page).toBe(13);
-    expect(p.from).toBe(97);
-    expect(p.to).toBe(100);
+    expect(p.pageCount).toBe(25);
+    expect(p.page).toBe(25);
+    expect(p.from).toBe(193);
+    expect(p.to).toBe(200);
     expect(paginate([], 1, 8)).toMatchObject({ total: 0, from: 0, to: 0, pageCount: 1 });
   });
 
   it("global counters ignore resolved cases", () => {
     const c = overviewCounters(data.cases, me);
     const active = data.cases.filter((x) => x.workflow.status !== "resolved");
-    expect(c.awaitingAssignment).toBe(active.filter((x) => !x.workflow.assignedToUserId).length);
+    expect(c.urgent).toBe(active.filter((x) => x.modelAssessment.status === "ready" && x.modelAssessment.priority?.label === "urgent").length);
     expect(c.myActive).toBe(active.filter((x) => x.workflow.assignedToUserId === me).length);
   });
 
   it("facet counts follow the other active filters", () => {
     const f = facetCounts(data, q({ status: "resolved" }), me);
-    expect(f.view.all).toBe(10);
+    expect(f.view.all).toBe(20);
   });
 
   it("counts active filters for the reset control", () => {

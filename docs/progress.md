@@ -125,3 +125,11 @@ The separate **View case** button is gone from the case queue. A case opens from
 ## Update: no full profile page
 
 There is not going to be a full profile page, so the "Full profile link appears when the profile route is configured." message is gone, along with the link itself and its `GREENSPARK_PROFILE_URL_TEMPLATE` setting (web, API, tests and deployment notes). The case page stays the one place to see a person. Older notes in this file and in the implementation plan that mention a profile owner or profile route are history. The always-null `fullProfilePath` field is left in the fixture.
+
+## Update: Admin flowchart
+
+A new **Admin** page (`/admin`, linked in the header, open to every demo user) shows the utility-hardship JSON as an interactive flowchart in the dashboard's style: 107 signals → 99 circumstances → 49 solutions, with strong/supporting links, path tracing, search, a utility filter and a details panel. Everything is editable (items, links, link strength, categories, circumstance types, overview, scoring rules, guardrails) and each change is written to `data/admin/utility_hardship_mapping.json` straight away, with Undo. See [admin-flowchart.md](admin-flowchart.md).
+
+- Both directions of every link (`points_to`, `used_for`) and the counts are rebuilt automatically, and a no-op save leaves the file byte-identical, so Git diffs show only what was changed.
+- 19 shared tests, 12 API tests and 10 browser tests (including an accessibility scan and a 390 px layout) cover it.
+- Limits: there is no sign-in or per-person history (anyone using the demo can edit); Undo covers the current browser session only; on the free Render plan edits reset on each deploy (see [deploy.md](deploy.md)).

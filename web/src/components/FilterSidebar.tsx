@@ -8,7 +8,6 @@ import { Checkbox } from "./Primitives";
 const VIEWS: { id: QueueView; label: string }[] = [
   { id: "all", label: "All cases" },
   { id: "mine", label: "Assigned to me" },
-  { id: "unassigned", label: "Unassigned" },
   { id: "needs_review", label: "Needs review" },
 ];
 
@@ -55,7 +54,9 @@ export function FilterSidebar(props: {
       <fieldset className="group">
         <legend>Support areas</legend>
         {data.supportAreas.map((area) => {
-          const children = data.circumstances.filter((c) => c.supportAreaId === area.id);
+          // The flowchart has many circumstances; only list ones that match a case, or are selected.
+          const children = data.circumstances.filter((c) => c.supportAreaId === area.id && (!facets || (facets.circumstances[c.id] ?? 0) > 0 || query.circumstanceIds.includes(c.id)));
+          if (!children.length) return null;
           const selected = children.filter((c) => query.circumstanceIds.includes(c.id));
           const all = selected.length === children.length;
           const open = expanded[area.id] ?? false; // areas start collapsed
@@ -124,7 +125,7 @@ export function FilterSidebar(props: {
       </fieldset>
 
       <fieldset className="group">
-        <legend>Model priority · simulated</legend>
+        <legend>{data.circumstanceSource === "flow" ? "Priority" : "Model priority · simulated"}</legend>
         {PRIORITY_LABELS.map((l: PriorityLabel) => (
           <Checkbox
             key={l}
@@ -176,7 +177,6 @@ export function FilterSidebar(props: {
           <span>Assigned worker</span>
           <select value={query.assignedToUserId} onChange={(e) => onChange({ assignedToUserId: e.target.value })}>
             <option value="">Any worker</option>
-            <option value="__none__">Unassigned</option>
             {workers.map((w) => (
               <option key={w.id} value={w.id}>{w.displayName}</option>
             ))}

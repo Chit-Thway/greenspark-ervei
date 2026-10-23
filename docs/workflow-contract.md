@@ -15,14 +15,14 @@ The actor always comes from the server-side session, never from the request body
 | Action | Manager | Assigned worker | Other worker |
 | --- | --- | --- | --- |
 | Read queue, overview, catalogs | yes | yes | yes |
-| Create case | yes | yes | yes |
-| Assign / reassign / unassign | yes | no | no |
+| Create case | yes (chooses the worker) | yes (assigned to themselves) | yes (assigned to themselves) |
+| Assign / reassign | yes | no | no |
 | Change status | yes | own cases only | no |
 | Add note | yes | own cases only | no |
 | Record review | yes | own cases only | no |
 | Undo an action | any action | own actions only | own actions only |
 
-A case's worker is `workflow.assignedToUserId`. Unassigned cases can only be changed by a manager (except creating them).
+A case's worker is `workflow.assignedToUserId`. Every case has one: there is no unassigned state. On start, the server gives any case without a worker (from an older database) the fixture's worker, or the support workers in turn for cases created in the queue.
 
 ## Versioning
 
@@ -38,7 +38,7 @@ A case's worker is `workflow.assignedToUserId`. Unassigned cases can only be cha
 { "assigneeUserId": "staff-alex", "items": [{ "caseId": "GS-2001", "expectedVersion": 1 }] }
 ```
 
-- `assigneeUserId` must be an active user with role `support_worker`, or `null` to unassign.
+- `assigneeUserId` must be an active user with role `support_worker`. Cases can't be unassigned.
 - Assigning to the current assignee is a no-op that is reported, not an error, and does not bump the version.
 - Resolved cases may be reassigned.
 - Maximum 100 items per request.
@@ -60,7 +60,7 @@ Statuses are `new`, `in_progress`, `waiting`, `resolved`; any to any is allowed 
 
 ## New case
 
-`POST /api/cases` with either an existing `personId` or a minimal identity (`displayName`, `suburb`). New cases start at version 1, status `new`, unassigned, `reviewStatus: needs_review`, evidence all unknown/not recorded, and `modelAssessment.status: "pending"` with null priority. Created person ids are server-generated and stable.
+`POST /api/cases` with either an existing `personId` or a minimal identity (`displayName`, `suburb`). Each account has one case: a `personId` that already has a case is rejected (`account_has_case`). A new person gets the next free account number. A manager must send `assigneeUserId` (a support worker); a support worker's new case is assigned to them (they may send their own id, nobody else's). New cases start at version 1, status `new`, `reviewStatus: needs_review`, evidence all unknown/not recorded, and `modelAssessment.status: "pending"` with null priority. Created person ids are server-generated and stable.
 
 ## Undo
 
@@ -75,6 +75,9 @@ Every assignment or status mutation writes an **action log** row. A bulk request
 5. The action is at most 10 minutes old (proposal, configurable).
 
 Undo restores the recorded previous values, bumps each case's version, and logs a new action. An undo cannot itself be undone; the user repeats the original change instead. If any case fails the checks, the whole undo is refused with `409 undo_conflict` and the offending case ids, and nothing changes.
+
+An undo that would leave a case without a worker (from an action recorded before every case had one) is refused with `undo_conflict`.
+
 
 ## Error shape
 

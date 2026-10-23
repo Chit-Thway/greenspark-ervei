@@ -11,13 +11,16 @@
     "test": "vitest run"
   },
   "devDependencies": {
+    "@types/compression": "^1.8.1",
     "@types/express": "^5.0.6",
     "tsx": "^4.23.15",
     "vitest": "^5.0.5"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^1.1.0",
+    "@greenspark/shared": "*",
+    "compression": "^1.8.1",
     "express": "^5.3.0",
-    "zod": "^4.6.7",
-    "@greenspark/shared": "*"
+    "zod": "^4.6.7"
   }
 }

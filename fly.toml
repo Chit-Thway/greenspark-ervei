@@ -1,0 +1,30 @@
+# Fly.io config. Built from the repo's Dockerfile; /data is a Fly volume holding the SQLite case database and the Admin flow JSON.
+app = "greenspark-ervei"
+primary_region = "iad"
+# A little swap as headroom on the smallest (256 MB) machine.
+swap_size_mb = 256
+
+[build]
+  dockerfile = "Dockerfile"
+
+[[mounts]]
+  source = "greenspark_data"
+  destination = "/data"
+
+[http_service]
+  internal_port = 3001
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [[http_service.checks]]
+    method = "GET"
+    path = "/api/health"
+    interval = "30s"
+    timeout = "5s"
+    grace_period = "20s"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"
