@@ -16,6 +16,7 @@ import { PriorityModelPage } from "./components/PriorityModelPage";
 import { CasePageGuide } from "./components/CasePageGuide";
 import { PredictionsPage } from "./components/PredictionsPage";
 import { RiskModelPage } from "./components/RiskModelPage";
+import { CaseVisualPage } from "./components/CaseVisualPage";
 import { AdminPage } from "./admin/AdminPage";
 
 interface Notice {
@@ -425,6 +426,8 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; o
         <CasePageGuide />
       ) : props.page === "riskmodel" ? (
         <RiskModelPage client={client} />
+      ) : props.page === "visual" && props.predictionsAccount ? (
+        <CaseVisualPage client={client} data={catalog} accountNumber={props.predictionsAccount} navigate={navigate} />
       ) : props.page === "predictions" && props.predictionsAccount ? (
         <PredictionsPage client={client} accountNumber={props.predictionsAccount} navigate={navigate} />
       ) : openAccount ? (

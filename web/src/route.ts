@@ -17,12 +17,19 @@ export function predictionsAccountFromPath(path: string): string | null {
   try { return decodeURIComponent(m[1]!); } catch { return null; }
 }
 
+/** The account number in an /accounts/:accountNumber/visual path (the at-a-glance page), or null. */
+export function visualAccountFromPath(path: string): string | null {
+  const m = /^\/accounts\/([^/]+)\/visual\/?$/.exec(path);
+  if (!m) return null;
+  try { return decodeURIComponent(m[1]!); } catch { return null; }
+}
+
 /** True for clicks that should keep the browser's own behaviour (new tab, new window, download). */
 export function isModifiedClick(e: { metaKey: boolean; ctrlKey: boolean; shiftKey: boolean; altKey: boolean; button: number }): boolean {
   return e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0;
 }
 
-export type Page = "queue" | "case" | "admin" | "data" | "priority" | "casepage" | "riskmodel" | "predictions";
+export type Page = "queue" | "case" | "admin" | "data" | "priority" | "casepage" | "riskmodel" | "predictions" | "visual";
 
 /** Behind-the-scenes pages, under the BTS menu. */
 export const FLOWCHART_PATH = "/bts/flowchart";
@@ -38,6 +45,7 @@ export function pageFromPath(path: string): Page {
   if (/^\/bts\/case-page\/?$/.test(path)) return "casepage";
   if (/^\/bts\/risk-model\/?$/.test(path)) return "riskmodel";
   if (predictionsAccountFromPath(path)) return "predictions";
+  if (visualAccountFromPath(path)) return "visual";
   return accountFromPath(path) ? "case" : "queue";
 }
 
@@ -54,5 +62,5 @@ export function useRoute() {
     setPath(window.location.pathname);
     window.scrollTo(0, 0);
   }, []);
-  return { accountNumber: accountFromPath(path), predictionsAccount: predictionsAccountFromPath(path), page: pageFromPath(path), navigate };
+  return { accountNumber: accountFromPath(path), predictionsAccount: predictionsAccountFromPath(path) ?? visualAccountFromPath(path), page: pageFromPath(path), navigate };
 }

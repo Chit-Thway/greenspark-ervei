@@ -314,7 +314,7 @@ export function AccountHistory({ account: a, asOf }: { account: CustomerAccount;
 }
 
 /** Bars for each month's kWh, oldest on the left, with a line for the same month last year. */
-function UsageChart({ usage }: { usage: { month: string; kWh: number; kWhLastYear: number | null }[] }) {
+export function UsageChart({ usage }: { usage: { month: string; kWh: number; kWhLastYear: number | null }[] }) {
   const months = [...usage].sort((a, b) => a.month.localeCompare(b.month));
   if (months.length < 2) return null;
   const W = 600, H = 120, top = 8, bottom = 18;

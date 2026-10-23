@@ -3,6 +3,7 @@ import type { CaseStatus, QueueCase, ReviewStatus, StaffUser } from "../domain/t
 import type { ApiClient, CaseItem, Catalog, ContactMethod, PlanKind, PlanStep, SupportPlan } from "../data/api";
 import { CaseFlowModal } from "../admin/CaseFlowModal";
 import { RiskCard } from "./PredictionsPage";
+import { accountHref, isModifiedClick } from "../route";
 import { describeFollowUp, formatDateTime, PERIOD_TEXT, readableDates, STATUS_LABELS } from "../domain/format";
 import { isResolved } from "../domain/query";
 import { PriorityBadge } from "./Primitives";
@@ -103,6 +104,9 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
         <div className="ov-row">
           <PriorityBadge c={c} />
           <span className={`sub follow-${fu.tone}`}>{fu.text}</span>
+          {person?.accountNumber && props.navigate ? (
+            <a className="btn btn-small" href={`${accountHref(person.accountNumber)}/visual`} onClick={(e) => { if (isModifiedClick(e)) return; e.preventDefault(); props.navigate!(`${accountHref(person.accountNumber!)}/visual`); }}>At a glance</a>
+          ) : null}
         </div>
       </header>
 
