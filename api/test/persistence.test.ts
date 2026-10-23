@@ -75,11 +75,12 @@ describe("databases seeded before people had accounts", () => {
     try {
       let h = await start(db);
       await h.call("staff-manager", "POST", "/api/cases", { displayName: "Queue Person", suburb: "Perth", assigneeUserId: "staff-maya" });
-      // Simulate an older database: seeded people without the account field.
+      // Simulate an older database: seeded people without the account, and no accounts table rows.
       for (const r of h.store.db.prepare("SELECT id, doc FROM people WHERE is_created = 0").all() as { id: string; doc: string }[]) {
-        const { account: _, ...rest } = JSON.parse(r.doc);
+        const { account: _, signalSummary: __, ...rest } = JSON.parse(r.doc);
         h.store.db.prepare("UPDATE people SET doc = ? WHERE id = ?").run(JSON.stringify(rest), r.id);
       }
+      h.store.db.exec("DELETE FROM accounts");
       // Read the row itself: the store keeps people in memory, since the app never changes them after writing.
       expect(JSON.parse((h.store.db.prepare("SELECT doc FROM people WHERE id = ?").get("demo-person-001") as { doc: string }).doc).account).toBeUndefined();
       await h.stop();
@@ -87,8 +88,13 @@ describe("databases seeded before people had accounts", () => {
       h = await start(db);
       const people = h.store.allPeople();
       expect(people).toHaveLength(201);
-      expect(people.filter((p) => p.account)).toHaveLength(200);
-      expect(people.find((p) => p.displayName === "Queue Person")!.account).toBeUndefined();
+      // Accounts are kept in their own table; people carry a signal summary instead, for the queue.
+      expect(people.filter((p) => p.account)).toHaveLength(0);
+      expect(people.filter((p) => p.signalSummary)).toHaveLength(200);
+      expect((h.store.db.prepare("SELECT COUNT(*) AS n FROM accounts").get() as { n: number }).n).toBe(200);
+      expect(h.store.getPersonWithAccount("demo-person-001")!.account?.sourceCustomerId).toMatch(/^C\d{6}$/);
+      const queuePerson = people.find((p) => p.displayName === "Queue Person")!;
+      expect(h.store.getPersonWithAccount(queuePerson.id)!.account).toBeUndefined();
       await h.stop();
     } finally {
       rmSync(dir, { recursive: true, force: true });

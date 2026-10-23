@@ -33,7 +33,8 @@ export function checkMethod(m: string, r: ContactRules): Method {
 }
 
 /** Today's date in Perth, where the customers are. */
-export const perthToday = (now: Date) => new Intl.DateTimeFormat("en-CA", { timeZone: "Australia/Perth" }).format(now);
+const PERTH_DAY = new Intl.DateTimeFormat("en-CA", { timeZone: "Australia/Perth" });
+export const perthToday = (now: Date) => PERTH_DAY.format(now);
 
 /** The date `n` working days after `today` (0 is today, or the next weekday if today is a weekend). */
 export function addWorkingDays(today: string, n: number): string {
@@ -56,16 +57,17 @@ const COMMON = [
   "You help staff at an Australian electricity retailer support customers who may be in hardship.",
   "Write ONE short paragraph for the support worker. Use only the facts given; do not invent amounts, dates or programs.",
   "Plain, kind, practical language. Never judge the customer. No headings or lists. Write dates like 10 Oct 2026.",
-  "Anything marked safety must be passed to trained staff, not handled in the call.",
+  "\"Safety\" has one meaning here: a circumstance the facts mark as safety (such as family violence or abuse), which must be passed to trained staff, not handled in the call. " +
+    "Never call anything else (weather, health, money or supply problems, or any signal) a safety issue, and don't use the word safety unless a circumstance is marked safety.",
 ].join(" ");
 
 const TASK: Record<PlanKind, string> = {
   support: "In 60 to 100 words: what seems to be going on, what to offer first and why, and anything to handle with care. Speak to the worker (\"Start by…\"). " +
     "Describe the situation accurately: if supply is already disconnected, talk about reconnecting, not preventing disconnection. " +
-    "Also order EVERY solution id in the list by priority and impact for this customer (stopping harm such as being without power or safety risks first, then the biggest, quickest relief). " +
+    "Also order EVERY solution id in the list by priority and impact for this customer (stopping harm such as being without power, or circumstances marked safety, first, then the biggest, quickest relief). " +
     "The order must match the paragraph: anything the paragraph says to do first or the same day must be near the top. " +
     "Give each a reason of at most 12 words, about THIS customer's circumstances and signals only; never mention eligibility groups or situations from a solution's key facts that the case does not show. " +
-    "For each solution also give dueInWorkingDays (0 = today; anything urgent, safety-related or about being without power is 0) and a sensible sequence " +
+    "For each solution also give dueInWorkingDays (0 = today; anything urgent, for a circumstance marked safety, or about being without power is 0) and a sensible sequence " +
     "(for example a grant that needs other options tried first comes after them), and the method to contact the customer about it, " +
     "chosen only from the allowed methods in the facts, preferring their preferred channel unless another suits the step better; use phone for anything due today when phone is allowed. " +
     "Answer as JSON: {\"summary\": string, \"order\": [{\"id\": string, \"reason\": string, \"dueInWorkingDays\": number, \"method\": string}]}.",

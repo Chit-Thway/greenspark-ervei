@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { FlowKind } from "@greenspark/shared";
 import type { ApiClient } from "../data/api";
-import { FlowBoard } from "./FlowBoard";
+import { FLOW_COLUMNS, FlowBoard, type FlowColumn } from "./FlowBoard";
 import { FlowDetail } from "./FlowDetail";
 import { FlowSettings } from "./FlowSettings";
+import { DATA_SOURCE_GROUPS } from "./dataSources";
 import { UTILITY_LABEL, buildIndex, entityOf, nodeKey, search, trace, type Ref } from "./flowModel";
 import { useFlow } from "./useFlow";
 import "./admin.css";
@@ -16,6 +17,16 @@ export function AdminPage({ client }: { client: ApiClient }) {
   const [utility, setUtility] = useState("all");
   const [showAllLinks, setShowAllLinks] = useState(true);
   const [strongOnly, setStrongOnly] = useState(false);
+  const [hiddenColumns, setHiddenColumns] = useState<Set<FlowColumn>>(() => {
+    try { return new Set(JSON.parse(localStorage.getItem("flow-hidden-columns") ?? "[]") as FlowColumn[]); } catch { return new Set(); }
+  });
+  const toggleColumn = (c: FlowColumn, show: boolean) => setHiddenColumns((h) => {
+    const next = new Set(h);
+    if (show) next.delete(c); else next.add(c);
+    if (FLOW_COLUMNS.every((x) => next.has(x.id))) return h; // keep at least one column
+    try { localStorage.setItem("flow-hidden-columns", JSON.stringify([...next])); } catch { /* per-browser preference only */ }
+    return next;
+  });
   const [query, setQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -135,6 +146,15 @@ export function AdminPage({ client }: { client: ApiClient }) {
           <label><input type="checkbox" checked={showAllLinks} onChange={(e) => setShowAllLinks(e.target.checked)} /> Show all links</label>
           <label><input type="checkbox" checked={strongOnly} onChange={(e) => setStrongOnly(e.target.checked)} /> Strong signals only</label>
         </div>
+        <fieldset className="col-toggles">
+          <legend className="sr-only">Columns to show</legend>
+          <span className="seg-label" aria-hidden="true">Columns</span>
+          {FLOW_COLUMNS.map((c) => (
+            <label key={c.id}>
+              <input type="checkbox" checked={!hiddenColumns.has(c.id)} onChange={(e) => toggleColumn(c.id, e.target.checked)} /> {c.label}
+            </label>
+          ))}
+        </fieldset>
       </div>
 
       <div className="legend" aria-label="Legend">
@@ -150,11 +170,12 @@ export function AdminPage({ client }: { client: ApiClient }) {
 
       <div className="flow-layout">
         <div>
-          <p className="swipe">Swipe sideways to see all three columns.</p>
+          <p className="swipe">Swipe sideways to see all the columns.</p>
           <div className="board-scroll">
             <FlowBoard
               doc={doc} index={index} selected={selected} trace={tracing} utility={utility} showAllLinks={showAllLinks} strongOnly={strongOnly}
               matches={matches} readOnly={flow.readOnly} onSelect={select} onAdd={(kind) => { setSelected(null); setCreating(kind); }}
+              sources={DATA_SOURCE_GROUPS} onSourceSelect={() => select(null)} hidden={hiddenColumns}
             />
           </div>
         </div>

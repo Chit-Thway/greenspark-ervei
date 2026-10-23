@@ -12,12 +12,13 @@ import { MAX_BULK_ITEMS, WorkflowService, type MutationResult } from "./service"
 import type { Store } from "./store";
 import type { Clock } from "./clock";
 import { FlowFile } from "./flow";
+import type { Predictions } from "./predictions";
 import { draftPlan, PLAN_KINDS, perthToday, planFacts, type AiConfig, type ContactRules, type PlanKind, type SupportPlan } from "./plan";
-import { FlowError, detectWeatherSignals, evaluateCase, flowCatalog, parseOp, type FlowDoc, type WeatherSignal, type WeatherSnapshot } from "@greenspark/shared";
+import { FlowError, POSTCODE_LOCATION, detectWeatherSignals, evaluateCase, flowCatalog, parseOp, type FlowDoc, type WeatherSignal, type WeatherSnapshot } from "@greenspark/shared";
 import { SyntheticModelAdapter, withAssessments, type ModelAdapter } from "./adapters";
 
 const STATUSES = ["new", "in_progress", "waiting", "resolved"] as const;
-const SORTS = ["priority_desc", "priority_asc", "followup", "name", "updated"] as const;
+const SORTS = ["priority_desc", "priority_asc", "risk_desc", "followup", "name", "updated"] as const;
 const VIEWS = ["all", "mine", "needs_review"] as const;
 
 const item = z.object({ caseId: z.string().min(1), expectedVersion: z.number().int().min(1) }).strict();
@@ -65,14 +66,18 @@ export interface AppOptions {
   basicAuth?: string | null;
   /** AI service (Claude or Gemini), key and models for the AI summaries. No key turns them off. */
   ai?: AiConfig | null;
+  /** Keys for each AI service, so managers can switch the model while the server runs (demo settings). */
+  aiKeys?: Partial<Record<"claude" | "gemini", string>>;
   /** Bureau of Meteorology forecasts and warnings for weather signals. Without it there are none. */
   weather?: { current(): WeatherSnapshot | null; status(): unknown; setMode(mode: "live" | "demo" | "off"): Promise<void> };
+  /** The 90-day risk model's scores and model card. Without it there are no predictions. */
+  predictions?: Predictions | null;
 }
 
-/** A person as the case list needs them: everything but the utility account. */
+/** A person as the case list needs them: everything but the utility account and its signal summary. */
 function listPerson(p: Person | undefined): Person | null {
   if (!p) return null;
-  const { account: _account, ...rest } = p;
+  const { account: _account, signalSummary: _summary, ...rest } = p;
   return rest;
 }
 
@@ -90,10 +95,25 @@ export function createApp(store: Store, options: AppOptions = {}) {
   const catalogs = new WeakMap<FlowDoc, ReturnType<typeof flowCatalog>>();
   const catalogOf = (doc: FlowDoc) => { let c = catalogs.get(doc); if (!c) catalogs.set(doc, (c = flowCatalog(doc))); return c; };
   const currentFlow = currentFlowDoc;
+  /** The 90-day risk scores for a person, by their dataset customer ID; null without an account or a score. */
+  const predictionFor = (person: Person | null) => {
+    const p = options.predictions;
+    const id = person && p ? store.sourceCustomerId(person.id) : null;
+    const score = id ? p!.byCustomer.get(id) ?? null : null;
+    if (!score) return null;
+    // Each outcome's average rate (on held-out customers), so the page can say how this customer compares.
+    const outcomes = Object.fromEntries(Object.entries(score.outcomes).map(([k, o]) => [k, { ...o, baseRate: p!.model.outcomes[k]?.test.baseRate ?? null }]));
+    return { ...score, outcomes, modelId: p!.model.id, horizonDays: p!.model.horizonDays };
+  };
+  /** Just the chance of any harm, for a queue row. */
+  const riskFor = (person: Person | null) => {
+    const p = predictionFor(person)?.outcomes.any_adverse;
+    return p ? { probability: p.probability, baseRate: p.baseRate } : null;
+  };
   /** The weather signals for a person's postcode, from the latest forecast, looking ahead from today in Perth. */
   const weatherFor = (person: Person | null): WeatherSignal[] => {
     const w = options.weather?.current() ?? null;
-    return person ? detectWeatherSignals(person.address?.postcode, person.account?.region.northOf26th ?? false, w, perthToday(clock())) : [];
+    return person ? detectWeatherSignals(person.address?.postcode, (person.account?.region.northOf26th ?? person.signalSummary?.northOf26th ?? false), w, perthToday(clock())) : [];
   };
   const weatherKey = () => { const w = options.weather?.current(); return w ? `${w.fetchedAt}` : ""; };
   // Each case's result is kept per flowchart version until the case changes (every change bumps its version)
@@ -215,6 +235,29 @@ export function createApp(store: Store, options: AppOptions = {}) {
     res.json(await flow.apply(ops));
   });
 
+  // The map view: every case matching the filters, grouped by postcode, most urgent first in each.
+  app.get("/api/cases/map", async (req, res) => {
+    const data = await dataset();
+    const matches = sortCases(applyFilters(data, queryOf(req), actor(res).id), data.people, "priority_desc");
+    const people = new Map(data.people.map((p) => [p.id, p]));
+    const places = new Map<string, { postcode: string; suburb: string; lat: number; lng: number; count: number; labels: Record<string, number>; cases: { accountNumber: string | null; displayName: string; score: number | null; label: string | null; status: string }[] }>();
+    let unplaced = 0;
+    for (const c of matches) {
+      const p = people.get(c.personId);
+      const postcode = p?.address?.postcode ?? "";
+      const at = POSTCODE_LOCATION[postcode];
+      if (!p || !at) { unplaced++; continue; }
+      let place = places.get(postcode);
+      if (!place) places.set(postcode, (place = { postcode, suburb: p.suburb, lat: at[0], lng: at[1], count: 0, labels: {}, cases: [] }));
+      place.count++;
+      const label = c.modelAssessment.priority?.label ?? "none";
+      place.labels[label] = (place.labels[label] ?? 0) + 1;
+      // Enough to list in the panel; the rest are counted.
+      if (place.cases.length < 50) place.cases.push({ accountNumber: p.accountNumber ?? null, displayName: p.displayName, score: c.modelAssessment.priority?.score ?? null, label: c.modelAssessment.priority?.label ?? null, status: c.workflow.status });
+    }
+    res.json({ total: matches.length, unplaced, places: [...places.values()] });
+  });
+
   app.get("/api/cases/ids", async (req, res) => {
     const data = await dataset();
     res.json({ ids: applyFilters(data, queryOf(req), actor(res).id).map((c) => c.id) });
@@ -224,13 +267,14 @@ export function createApp(store: Store, options: AppOptions = {}) {
     const q = queryOf(req);
     const me = actor(res).id;
     const data = await dataset();
-    const matches = sortCases(applyFilters(data, q, me), data.people, q.sort);
+    const byPerson = new Map(data.people.map((p) => [p.id, p]));
+    const matches = sortCases(applyFilters(data, q, me), data.people, q.sort, (c) => riskFor(byPerson.get(c.personId) ?? null)?.probability ?? null);
     const page = paginate(matches, q.page, q.pageSize);
     const people = new Map(data.people.map((x) => [x.id, x]));
     const f = facetCounts(data, q, me);
     res.json({
       // The list leaves out each person's utility account (the case page fetches it), which keeps pages small.
-      items: page.items.map((c) => ({ case: c, person: listPerson(people.get(c.personId)) })),
+      items: page.items.map((c) => ({ case: c, person: listPerson(people.get(c.personId)), risk: riskFor(people.get(c.personId) ?? null) })),
       total: page.total, page: page.page, pageSize: q.pageSize, pageCount: page.pageCount, from: page.from, to: page.to,
       counters: overviewCounters(data.cases, me),
       facets: {
@@ -245,27 +289,58 @@ export function createApp(store: Store, options: AppOptions = {}) {
 
   // The account number is the customer's main ID; each account has one case.
   app.get("/api/accounts/:accountNumber", async (req, res) => {
-    const person = store.getPersonByAccount(String(req.params.accountNumber));
+    const found = store.getPersonByAccount(String(req.params.accountNumber));
+    const person = found && store.getPersonWithAccount(found.id);
     const c = person && store.getCaseForPerson(person.id);
     if (!person || !c) throw new ApiError("not_found", "No case was found for that account number.");
-    res.json({ case: await enrichOne(c), person, weatherSignals: weatherFor(person) });
+    res.json({ case: await enrichOne(c), person, weatherSignals: weatherFor(person), prediction: predictionFor(person) });
   });
 
   app.get("/api/cases/:caseId/overview", async (req, res) => {
     const c = store.getCase(String(req.params.caseId));
     if (!c) throw new ApiError("not_found", "Case not found.");
-    const person = store.getPerson(c.personId);
-    res.json({ case: await enrichOne(c), person, weatherSignals: weatherFor(person) });
+    const person = store.getPersonWithAccount(c.personId);
+    res.json({ case: await enrichOne(c), person, weatherSignals: weatherFor(person), prediction: predictionFor(person) });
+  });
+
+  // The risk model: what it predicts, how it was trained and how well it did on held-out customers.
+  app.get("/api/model/risk", (_req, res) => {
+    const m = options.predictions?.model;
+    if (!m) throw new ApiError("not_found", "No risk model is loaded on this server.");
+    res.json({ model: m, scoredCustomers: options.predictions!.byCustomer.size });
   });
 
   app.get("/api/weather", (_req, res) => { res.json(options.weather?.status() ?? { mode: "off", available: false }); });
-  // Managers switch the weather source for everyone: the sample heatwave, the Bureau's live data, or off.
+  // Anyone can switch the weather source for everyone: the sample heatwave, the Bureau's live data, or off.
   app.post("/api/weather/mode", async (req, res) => {
-    if (actor(res).role !== "manager") throw new ApiError("forbidden", "Only managers can change the weather source.");
     if (!options.weather) throw new ApiError("not_found", "Weather signals aren't set up on this server.");
-    const { mode } = parse(z.object({ mode: z.enum(["live", "demo", "off"]) }), req.body);
+    const { mode } = parse(z.object({ mode: z.enum(["live", "demo"]) }), req.body); // "off" is only for the WEATHER_MODE setting (tests)
     await options.weather.setMode(mode);
     res.json(options.weather.status());
+  });
+
+  // The AI model in use; anyone can switch it in the demo settings until the server restarts.
+  let ai: AiConfig | null = options.ai ?? null;
+  const AI_MODELS: { provider: "claude" | "gemini"; model: string; label: string }[] = [
+    { provider: "claude", model: "claude-haiku-5-5", label: "Claude Haiku 5.5 · fast, cheapest" },
+    { provider: "claude", model: "claude-sonnet-5-5", label: "Claude Sonnet 5.5 · stronger, costs more" },
+    { provider: "gemini", model: "gemini-flash-lite-latest", label: "Gemini Flash-Lite · free tier" },
+    { provider: "gemini", model: "gemini-flash-latest", label: "Gemini Flash · free tier, often busy" },
+  ];
+  const keyFor = (p: "claude" | "gemini") => options.aiKeys?.[p] ?? (ai?.provider === p ? ai.apiKey : null);
+  const aiStatus = () => ({
+    provider: ai?.provider ?? null, model: ai?.models.support ?? null, on: !!ai?.apiKey,
+    options: AI_MODELS.map((m) => ({ ...m, available: !!keyFor(m.provider) })),
+  });
+  app.get("/api/ai", (_req, res) => { res.json(aiStatus()); });
+  app.post("/api/ai", (req, res) => {
+    const { model } = parse(z.object({ model: z.string() }), req.body);
+    const choice = AI_MODELS.find((m) => m.model === model);
+    if (!choice) throw new ApiError("validation_failed", "That model isn't one of the options.");
+    const apiKey = keyFor(choice.provider);
+    if (!apiKey) throw new ApiError("validation_failed", `No ${choice.provider === "claude" ? "Anthropic" : "Gemini"} API key is set on the server.`);
+    ai = { provider: choice.provider, apiKey, models: { support: model, signals: model } };
+    res.json(aiStatus());
   });
 
   // Plans are kept per case version and flowchart version, so each case calls the AI once until it changes.
@@ -280,12 +355,13 @@ export function createApp(store: Store, options: AppOptions = {}) {
     const kind = (PLAN_KINDS.includes(req.query.kind as PlanKind) ? req.query.kind : "support") as PlanKind;
     // Weather signals change with the forecast, so they are part of the key: a new heat forecast drafts a new plan.
     const wxSignals = weatherFor(store.getPerson(raw.personId));
-    const key = `${kind}:${raw.id}@${raw.version}:${wxSignals.map((s) => s.evidence).join("|")}`;
+    // The model is part of the key too, so switching it drafts fresh summaries.
+    const key = `${kind}:${raw.id}@${raw.version}:${ai ? `${ai.provider}/${ai.models[kind]}` : "off"}:${wxSignals.map((s) => s.evidence).join("|")}`;
     let plan = byDoc.get(key);
     if (!plan) {
       const c = await enrichOne(raw);
       const cat = doc ? catalogOf(doc) : store.catalog;
-      const person = store.getPerson(c.personId);
+      const person = store.getPersonWithAccount(c.personId);
       const facts = planFacts(kind, c, person, cat, store.catalog.asOf, wxSignals);
       const acct = person?.account;
       const contact: ContactRules | undefined = acct ? {
@@ -293,7 +369,7 @@ export function createApp(store: Store, options: AppOptions = {}) {
         doNotCall: acct.contactPreferences.doNotCall, interpreter: acct.interpreterRequired,
       } : undefined;
       if (!facts) throw new ApiError("not_found", "Nothing to summarise for this case.");
-      plan = draftPlan(kind, facts, options.ai ?? null, c.recommendations.map((r) => r.recommendationId), contact, perthToday(clock()));
+      plan = draftPlan(kind, facts, ai, c.recommendations.map((r) => r.recommendationId), contact, perthToday(clock()));
       byDoc.set(key, plan);
       plan.catch(() => byDoc.delete(key)); // failures are retried on the next load
     }
@@ -302,7 +378,7 @@ export function createApp(store: Store, options: AppOptions = {}) {
 
   app.post("/api/cases", async (req, res) => {
     const c = service.createCase(actor(res), parse(newCaseBody, req.body));
-    res.status(201).json({ case: await enrichOne(c), person: store.getPerson(c.personId) });
+    res.status(201).json({ case: await enrichOne(c), person: store.getPersonWithAccount(c.personId) });
   });
 
   app.post("/api/cases/bulk/assignment", async (req, res) => {

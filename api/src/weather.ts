@@ -15,7 +15,9 @@ const REFRESH_MS = 60 * 60 * 1000;
 
 export type WeatherMode = "live" | "demo" | "off";
 
-const perthDay = (iso: string) => new Intl.DateTimeFormat("en-CA", { timeZone: "Australia/Perth" }).format(new Date(iso));
+// Made once: building a date formatter is slow, and this runs for every case on every queue request.
+const PERTH_DAY = new Intl.DateTimeFormat("en-CA", { timeZone: "Australia/Perth" });
+const perthDay = (iso: string) => PERTH_DAY.format(new Date(iso));
 const attr = (tag: string, name: string) => new RegExp(`${name}="([^"]*)"`).exec(tag)?.[1] ?? "";
 
 async function getText(file: string): Promise<string> {

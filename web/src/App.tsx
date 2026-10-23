@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, lazy, Suspense } from "react";
 import type { CaseStatus, QueueQuery, ReviewStatus, StaffUser } from "./domain/types";
 import { ApiClientError, createApiClient, type Catalog, type CaseItem, type CaseListResponse, type ErrorDetail, type MutationResult } from "./data/api";
 import { ASSISTANCE_OPTIONS, DEFAULT_QUERY, MAX_BULK_ITEMS, activeFilterCount } from "./domain/query";
@@ -6,11 +6,18 @@ import { addSelection } from "./domain/selection";
 import { PRIORITY_TEXT, STATUS_LABELS } from "./domain/format";
 import { FilterSidebar } from "./components/FilterSidebar";
 import { CaseTable } from "./components/CaseTable";
+import type { MapSummary } from "./data/api";
+// Leaflet only loads when the map view is first opened.
+const CaseMap = lazy(() => import("./components/CaseMap").then((m) => ({ default: m.CaseMap })));
 import { CaseDetails } from "./components/CaseDetails";
-import { accountHref, DATA_SOURCES_PATH, FLOWCHART_PATH, PRIORITY_MODEL_PATH, CASE_PAGE_PATH, isModifiedClick, useRoute, type Page } from "./route";
+import { accountHref, DATA_SOURCES_PATH, FLOWCHART_PATH, PRIORITY_MODEL_PATH, CASE_PAGE_PATH, RISK_MODEL_PATH, isModifiedClick, useRoute, type Page } from "./route";
 import { DataSourcesPage } from "./components/DataSourcesPage";
 import { PriorityModelPage } from "./components/PriorityModelPage";
 import { CasePageGuide } from "./components/CasePageGuide";
+import { PredictionsPage } from "./components/PredictionsPage";
+import { RiskModelPage } from "./components/RiskModelPage";
+import { CaseVisualPage } from "./components/CaseVisualPage";
+import { DemoSettings } from "./components/DemoSettings";
 import { AdminPage } from "./admin/AdminPage";
 
 interface Notice {
@@ -33,7 +40,7 @@ export function App() {
   const userRef = useRef(userId);
   userRef.current = userId;
   const client = useMemo(() => createApiClient(() => userRef.current), []);
-  const { accountNumber, page, navigate } = useRoute();
+  const { accountNumber, predictionsAccount, page, navigate } = useRoute();
 
   const loadCatalog = useCallback(() => {
     setError(null);
@@ -56,18 +63,22 @@ export function App() {
   if (error) return <div className="state-screen" role="alert"><h1>We couldn’t load the case queue</h1><p>{error}</p><button className="btn" onClick={loadCatalog}>Try again</button></div>;
   if (!catalog) return <div className="state-screen" role="status"><p>Loading cases…</p></div>;
   const user = catalog.users.find((u) => u.id === userId) ?? catalog.users[0]!;
-  return <Workspace key={user.id} catalog={catalog} user={user} client={client} openAccount={accountNumber} page={page} navigate={navigate} onSwitchUser={switchUser} />;
+  return <Workspace key={user.id} catalog={catalog} user={user} client={client} openAccount={accountNumber} predictionsAccount={predictionsAccount} page={page} navigate={navigate} onSwitchUser={switchUser} />;
 }
 
 type Client = ReturnType<typeof createApiClient>;
 
-function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; openAccount: string | null; page: Page; navigate: (to: string) => void; onSwitchUser: (id: string) => void }) {
+function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; openAccount: string | null; predictionsAccount: string | null; page: Page; navigate: (to: string) => void; onSwitchUser: (id: string) => void }) {
   const { catalog, user, client, navigate } = props;
   // The open case is named by its account number (the main ID); case IDs stay internal.
   const openAccount = props.openAccount;
   const accountOf = (i: CaseItem | null | undefined) => i?.person?.accountNumber ?? null;
   const [query, setQuery] = useState<QueueQuery>(DEFAULT_QUERY);
   const [searchText, setSearchText] = useState("");
+  const [view, setView] = useState<"list" | "map">(() => { try { return localStorage.getItem("queue-view") === "map" ? "map" : "list"; } catch { return "list"; } });
+  const chooseView = (v: "list" | "map") => { setView(v); try { localStorage.setItem("queue-view", v); } catch { /* per-browser preference only */ } };
+  const [mapSummary, setMapSummary] = useState<MapSummary | null>(null);
+  const [mapError, setMapError] = useState<string | null>(null);
   const [list, setList] = useState<CaseListResponse | null>(null);
   const [listError, setListError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -181,6 +192,20 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; o
     );
     return () => { current = false; };
   }, [client, query, refreshTick]);
+
+  // The map shows every matching case, so it ignores the page and sort; it loads only while the map is shown.
+  const { page: _page, sort: _sort, ...mapQuery } = query;
+  const mapKey = JSON.stringify(mapQuery);
+  useEffect(() => {
+    if (view !== "map" || !client.mapSummary) return;
+    let current = true;
+    client.mapSummary(query).then(
+      (m) => { if (current) { setMapSummary(m); setMapError(null); } },
+      (e: unknown) => { if (current) setMapError(e instanceof Error ? e.message : "Could not load the map."); },
+    );
+    return () => { current = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reload on filter changes only, not paging or sorting
+  }, [client, view, mapKey, refreshTick]);
 
   // Filter changes (and data changes) drop selected IDs that no longer match.
   useEffect(() => {
@@ -384,22 +409,23 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; o
         <nav className="mainnav" aria-label="Main">
           <BtsMenu page={props.page} navigate={navigate} />
         </nav>
-        <label className="whoami">
-          <span className="whoami-label">Demo view</span>
-          <select value={user.id} onChange={(e) => props.onSwitchUser(e.target.value)} aria-label="Demo user (not real sign-in)">
-            {catalog.users.map((u) => <option key={u.id} value={u.id}>{u.displayName} · {u.role === "manager" ? "Manager" : "Support worker"}</option>)}
-          </select>
-        </label>
+        <DemoSettings client={client} users={catalog.users} user={user} onSwitchUser={props.onSwitchUser} />
       </header>
 
       {props.page === "admin" ? (
         <AdminPage client={client} />
       ) : props.page === "data" ? (
-        <DataSourcesPage client={client} isManager={user.role === "manager"} />
+        <DataSourcesPage client={client} />
       ) : props.page === "priority" ? (
         <PriorityModelPage />
       ) : props.page === "casepage" ? (
         <CasePageGuide />
+      ) : props.page === "riskmodel" ? (
+        <RiskModelPage client={client} />
+      ) : props.page === "visual" && props.predictionsAccount ? (
+        <CaseVisualPage client={client} data={catalog} accountNumber={props.predictionsAccount} navigate={navigate} />
+      ) : props.page === "predictions" && props.predictionsAccount ? (
+        <PredictionsPage client={client} accountNumber={props.predictionsAccount} navigate={navigate} />
       ) : openAccount ? (
         <main id="queue" className="detail-main" tabIndex={-1}>
           <a
@@ -415,7 +441,7 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; o
           </a>
           <NoticeBar notice={notice} busy={busy} onUndo={undo} onDismiss={() => say(null)} />
           {openItem ? (
-            <CaseDetails key={openItem.case.id} data={catalog} item={openItem} user={user} busy={busy} actions={actions} loadPlan={client.supportPlan} client={client} />
+            <CaseDetails key={openItem.case.id} data={catalog} item={openItem} user={user} busy={busy} actions={actions} loadPlan={client.supportPlan} client={client} navigate={navigate} />
           ) : caseLoad?.status === "missing" ? (
             <div className="empty" role="alert"><h1>Case not found</h1><p>There is no case for account {openAccount}. It may have been mistyped.</p></div>
           ) : caseLoad?.status === "error" ? (
@@ -450,6 +476,10 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; o
             <div className="panel-head">
               <h2 id="list-title">{({ all: "All cases", mine: "Assigned to me", needs_review: "Needs review" })[query.view]} <span className="pill">{list?.total ?? "–"}</span></h2>
               <span className="sim">{catalog.circumstanceSource === "flow" ? "Fictional demo data" : "Model suggestions · simulated data"}</span>
+              <span className="view-switch" role="group" aria-label="Show cases as">
+                <button type="button" aria-pressed={view === "list"} onClick={() => chooseView("list")}>List</button>
+                <button type="button" aria-pressed={view === "map"} onClick={() => chooseView("map")}>Map</button>
+              </span>
             </div>
 
             <div className="toolbar">
@@ -457,11 +487,12 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; o
                 <span className="sr-only">Search by name, account number or suburb</span>
                 <input type="search" placeholder="Search name, account number or suburb…" value={searchText} onChange={(e) => setSearchText(e.target.value)} />
               </label>
-              <label className="sort">
+              <label className="sort" hidden={view === "map"}>
                 <span className="sr-only">Sort cases</span>
                 <select value={query.sort} onChange={(e) => change({ sort: e.target.value as QueueQuery["sort"] })}>
                   <option value="priority_desc">Priority: highest first</option>
                   <option value="priority_asc">Priority: lowest first</option>
+                  <option value="risk_desc">Predicted risk: highest first</option>
                   <option value="followup">Follow-up: soonest</option>
                   <option value="updated">Recently updated</option>
                   <option value="name">Name A–Z</option>
@@ -479,7 +510,19 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; o
               {query.assignedToUserId ? <Chip label={`Worker: ${catalog.users.find((u) => u.id === query.assignedToUserId)?.displayName ?? query.assignedToUserId}`} onRemove={() => change({ assignedToUserId: "" })} /> : null}
             </div>
 
-            {selected.size > 0 ? (
+            {view === "map" ? (
+              mapError && !mapSummary ? (
+                <div className="empty" role="alert"><h3>We couldn’t load the map</h3><p>{mapError}</p><button type="button" className="btn" onClick={refresh}>Try again</button></div>
+              ) : !mapSummary ? (
+                <div className="empty" role="status"><p>Loading the map…</p></div>
+              ) : (
+                <Suspense fallback={<div className="empty" role="status"><p>Loading the map…</p></div>}>
+                  <CaseMap summary={mapSummary} onOpen={open} />
+                </Suspense>
+              )
+            ) : null}
+
+            {view === "list" && selected.size > 0 ? (
               <div className="bulkbar" role="region" aria-label="Selected cases">
                 <strong>{selected.size} selected</strong>
                 <span className="hint">Maximum {MAX_BULK_ITEMS} cases per action.</span>
@@ -505,7 +548,7 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; o
               </div>
             ) : null}
 
-            {listError && !list ? (
+            {view === "map" ? null : listError && !list ? (
               <div className="empty" role="alert"><h3>We couldn’t load cases</h3><p>{listError}</p><button type="button" className="btn" onClick={refresh}>Try again</button></div>
             ) : !list ? (
               <div className="empty" role="status"><p>Loading cases…</p></div>
@@ -520,7 +563,7 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; o
             )}
             {listError && list ? <p className="list-error" role="alert">Couldn’t refresh: {listError} <button type="button" className="link-btn" onClick={refresh}>Retry</button></p> : null}
 
-            <div className="pager">
+            <div className="pager" hidden={view === "map"}>
               <span aria-live="polite">{list ? `Showing ${list.from}–${list.to} of ${list.total} cases` : ""}</span>
               <nav aria-label="Pagination">
                 <button type="button" className="btn btn-small" disabled={!list || list.page <= 1} onClick={() => change({ page: query.page - 1 })}>Previous</button>
@@ -589,7 +632,7 @@ function BtsMenu(props: { page: Page; navigate: (to: string) => void }) {
     document.addEventListener("keydown", close);
     return () => { document.removeEventListener("mousedown", close); document.removeEventListener("keydown", close); };
   }, [open]);
-  const items = [[FLOWCHART_PATH, "Flowchart", "admin"], [DATA_SOURCES_PATH, "Data sources", "data"], [PRIORITY_MODEL_PATH, "Priority model", "priority"], [CASE_PAGE_PATH, "Case page", "casepage"]] as const;
+  const items = [[FLOWCHART_PATH, "Flowchart", "admin"], [DATA_SOURCES_PATH, "Data sources", "data"], [PRIORITY_MODEL_PATH, "Priority model", "priority"], [CASE_PAGE_PATH, "Case page", "casepage"], [RISK_MODEL_PATH, "Risk model", "riskmodel"]] as const;
   const inside = items.some(([, , page]) => page === props.page);
   return (
     <div className="bts" ref={ref}>
