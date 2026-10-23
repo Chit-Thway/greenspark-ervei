@@ -1,10 +1,25 @@
-# Single-container image for Coolify (or any Docker host): API + built web app.
+# Single-container image for Coolify, Fly or any Docker host: the API and the built web app.
+# Layers go from least to most often changed, so a code-only change reuses the installed packages and the data.
 FROM node:22-slim
 WORKDIR /app
-COPY . .
-RUN npm ci && npm run build
-# The full import's accounts arrive compressed (see .dockerignore); unpack them when present.
+
+# 1. Dependencies: only reinstalled when a package.json or the lock file changes. The e2e workspace (Playwright)
+#    isn't needed in the image.
+COPY package.json package-lock.json ./
+COPY api/package.json api/
+COPY shared/package.json shared/
+COPY web/package.json web/
+COPY e2e/package.json e2e/
+RUN npm ci -w api -w shared -w web --include-workspace-root --no-audit --no-fund
+
+# 2. Data: only re-copied when it changes. The full import's accounts arrive compressed (see .dockerignore).
+COPY data ./data
 RUN if [ -f data/synthetic/accounts.all.jsonl.gz ]; then gunzip -f data/synthetic/accounts.all.jsonl.gz; fi
+
+# 3. Code: changes most often, so it comes last.
+COPY . .
+RUN npm run build
+
 ENV NODE_ENV=production PORT=3001 \
     GREENSPARK_DB=/data/greenspark.sqlite \
     GREENSPARK_FLOW_FILE=/data/utility_hardship_mapping.json
