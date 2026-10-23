@@ -244,6 +244,7 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
               <span className="hint">Ordered by AI to match the Suggested plan. Check before acting.</span>
             </div>
           ) : null}
+          {aiOrder?.some((o) => o.due) ? <SolutionTimeline steps={aiOrder} names={(id) => data.recommendations.find((x) => x.id === id)?.label ?? id} interpreter={!!supportAi?.plan?.interpreter} /> : null}
           <ol className="suggest-list solutions">
             {orderedRecs.map((r, rank) => {
               const step = aiOrder?.find((o) => o.id === r.recommendationId);
@@ -271,7 +272,6 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
               );
             })}
           </ol>
-          {aiOrder?.some((o) => o.due) ? <SolutionTimeline steps={aiOrder} names={(id) => data.recommendations.find((x) => x.id === id)?.label ?? id} interpreter={!!supportAi?.plan?.interpreter} /> : null}
         </section>
       ) : null}
 

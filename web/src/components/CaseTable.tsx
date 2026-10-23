@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import type { Catalog, CaseItem } from "../data/api";
 import { describeFollowUp, shortName, STATUS_LABELS } from "../domain/format";
 import { isResolved } from "../domain/query";
@@ -95,10 +95,7 @@ export function CaseTable(props: {
                 </td>
                 <td data-label="Support needs">
                   {labels.length ? (
-                    <>
-                      <span>{labels[0]}</span>
-                      {labels.length > 1 ? <span className="sub">+ {labels.length - 1} more</span> : null}
-                    </>
+                    <SupportNeeds labels={labels} />
                   ) : (
                     <span className="muted">No circumstances flagged</span>
                   )}
@@ -121,5 +118,39 @@ export function CaseTable(props: {
         </tbody>
       </table>
     </div>
+  );
+}
+
+/** The first support need and a count; hovering or focusing shows the full list in a tooltip. */
+function SupportNeeds({ labels }: { labels: string[] }) {
+  const [at, setAt] = useState<{ left: number; top: number; above: boolean } | null>(null);
+  const ref = useRef<HTMLSpanElement>(null);
+  const id = useId();
+  const show = () => {
+    const box = ref.current?.getBoundingClientRect();
+    if (!box) return;
+    // Fixed to the window, so the table's scroll area can't clip it; flips above when near the bottom.
+    const above = box.bottom + 260 > window.innerHeight && box.top > 260;
+    setAt({ left: Math.min(box.left, window.innerWidth - 336), top: above ? box.top - 6 : box.bottom + 6, above });
+  };
+  const hide = () => setAt(null);
+  useEffect(() => {
+    if (!at) return;
+    window.addEventListener("scroll", hide, true);
+    return () => window.removeEventListener("scroll", hide, true);
+  }, [at]);
+  if (labels.length === 1) return <span>{labels[0]}</span>;
+  return (
+    <span ref={ref} className="needs" tabIndex={0} aria-describedby={at ? id : undefined}
+      onMouseEnter={show} onMouseLeave={hide} onFocus={show} onBlur={hide} onKeyDown={(e) => { if (e.key === "Escape") hide(); }}>
+      <span>{labels[0]}</span>
+      <span className="sub">+ {labels.length - 1} more</span>
+      {at ? (
+        <span role="tooltip" id={id} className={`needs-tip${at.above ? " above" : ""}`} style={{ left: Math.max(8, at.left), top: at.top }}>
+          <span className="needs-tip-title">{labels.length} support needs</span>
+          <ul>{labels.map((l) => <li key={l}>{l}</li>)}</ul>
+        </span>
+      ) : null}
+    </span>
   );
 }
