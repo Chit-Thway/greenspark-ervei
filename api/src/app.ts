@@ -18,7 +18,7 @@ import { FlowError, POSTCODE_LOCATION, detectWeatherSignals, evaluateCase, flowC
 import { SyntheticModelAdapter, withAssessments, type ModelAdapter } from "./adapters";
 
 const STATUSES = ["new", "in_progress", "waiting", "resolved"] as const;
-const SORTS = ["priority_desc", "priority_asc", "followup", "name", "updated"] as const;
+const SORTS = ["priority_desc", "priority_asc", "risk_desc", "followup", "name", "updated"] as const;
 const VIEWS = ["all", "mine", "needs_review"] as const;
 
 const item = z.object({ caseId: z.string().min(1), expectedVersion: z.number().int().min(1) }).strict();
@@ -102,6 +102,11 @@ export function createApp(store: Store, options: AppOptions = {}) {
     // Each outcome's average rate (on held-out customers), so the page can say how this customer compares.
     const outcomes = Object.fromEntries(Object.entries(score.outcomes).map(([k, o]) => [k, { ...o, baseRate: p!.model.outcomes[k]?.test.baseRate ?? null }]));
     return { ...score, outcomes, modelId: p!.model.id, horizonDays: p!.model.horizonDays };
+  };
+  /** Just the chance of any harm, for a queue row. */
+  const riskFor = (person: Person | null) => {
+    const p = predictionFor(person)?.outcomes.any_adverse;
+    return p ? { probability: p.probability, baseRate: p.baseRate } : null;
   };
   /** The weather signals for a person's postcode, from the latest forecast, looking ahead from today in Perth. */
   const weatherFor = (person: Person | null): WeatherSignal[] => {
@@ -260,13 +265,14 @@ export function createApp(store: Store, options: AppOptions = {}) {
     const q = queryOf(req);
     const me = actor(res).id;
     const data = await dataset();
-    const matches = sortCases(applyFilters(data, q, me), data.people, q.sort);
+    const byPerson = new Map(data.people.map((p) => [p.id, p]));
+    const matches = sortCases(applyFilters(data, q, me), data.people, q.sort, (c) => riskFor(byPerson.get(c.personId) ?? null)?.probability ?? null);
     const page = paginate(matches, q.page, q.pageSize);
     const people = new Map(data.people.map((x) => [x.id, x]));
     const f = facetCounts(data, q, me);
     res.json({
       // The list leaves out each person's utility account (the case page fetches it), which keeps pages small.
-      items: page.items.map((c) => ({ case: c, person: listPerson(people.get(c.personId)) })),
+      items: page.items.map((c) => ({ case: c, person: listPerson(people.get(c.personId)), risk: riskFor(people.get(c.personId) ?? null) })),
       total: page.total, page: page.page, pageSize: q.pageSize, pageCount: page.pageCount, from: page.from, to: page.to,
       counters: overviewCounters(data.cases, me),
       facets: {

@@ -493,6 +493,7 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; o
                 <select value={query.sort} onChange={(e) => change({ sort: e.target.value as QueueQuery["sort"] })}>
                   <option value="priority_desc">Priority: highest first</option>
                   <option value="priority_asc">Priority: lowest first</option>
+                  <option value="risk_desc">Predicted risk: highest first</option>
                   <option value="followup">Follow-up: soonest</option>
                   <option value="updated">Recently updated</option>
                   <option value="name">Name A–Z</option>

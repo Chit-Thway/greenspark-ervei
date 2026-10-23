@@ -17,7 +17,11 @@ export interface Catalog {
 }
 
 /** `weatherSignals`: the customer's weather signals from the latest forecast (case page only). */
-export interface CaseItem { case: QueueCase; person: Person | null; weatherSignals?: WeatherSignal[]; prediction?: Prediction | null }
+export interface CaseItem {
+  case: QueueCase; person: Person | null; weatherSignals?: WeatherSignal[]; prediction?: Prediction | null;
+  /** Queue rows only: the predicted chance of any harm in 90 days, and its average. */
+  risk?: { probability: number; baseRate: number | null } | null;
+}
 
 /** The 90-day risk model's scores for one customer (case page only). */
 export interface Prediction {

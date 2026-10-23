@@ -285,7 +285,7 @@ export interface QueueDataset {
 }
 
 export type QueueView = "all" | "mine" | "needs_review";
-export type SortKey = "priority_desc" | "priority_asc" | "followup" | "name" | "updated";
+export type SortKey = "priority_desc" | "priority_asc" | "risk_desc" | "followup" | "name" | "updated";
 
 export interface QueueQuery {
   search: string;
