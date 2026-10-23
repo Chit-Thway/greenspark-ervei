@@ -25,12 +25,13 @@ describe("account routes", () => {
 describe("pages", () => {
   it("knows the queue, case pages and the Flowchart page", async () => {
     const { pageFromPath } = await import("./route");
-    expect(pageFromPath("/")).toBe("queue");
+    expect(pageFromPath("/")).toBe("outlook");
+    expect(pageFromPath("/queue")).toBe("queue");
     expect(pageFromPath("/flowchart")).toBe("admin");
     expect(pageFromPath("/flowchart/")).toBe("admin");
     expect(pageFromPath("/admin")).toBe("admin"); // old links still work
-    expect(pageFromPath("/flowchart/extra")).toBe("queue");
+    expect(pageFromPath("/flowchart/extra")).toBe("outlook");
     expect(pageFromPath("/accounts/DEMO-700011")).toBe("case");
-    expect(pageFromPath("/cases/GS-2011")).toBe("queue");
+    expect(pageFromPath("/cases/GS-2011")).toBe("outlook");
   });
 });

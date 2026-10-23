@@ -22,7 +22,8 @@ test("Flowchart and Data sources are in the BTS menu", async ({ page }) => {
   await page.addInitScript((u) => localStorage.setItem("greenspark.demoUser", u), "staff-manager");
   await page.goto("/");
   const nav = page.getByRole("navigation", { name: "Main" });
-  await expect(nav.getByRole("link", { name: "Case queue" })).toHaveCount(0); // the logo leads to the queue
+  await expect(nav.getByRole("link", { name: "Weather outlook" })).toHaveAttribute("aria-current", "page"); // the home page
+  await expect(nav.getByRole("link", { name: "Case queue" })).toHaveAttribute("href", "/queue");
   await nav.getByRole("button", { name: /BTS/ }).click();
   await nav.getByRole("link", { name: "Flowchart" }).click();
   await expect(page).toHaveURL(/\/bts\/flowchart$/);

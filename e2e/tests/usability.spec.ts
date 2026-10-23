@@ -74,7 +74,7 @@ test.describe("states and content rules", () => {
   test("a failed list request shows an error with retry", async ({ page }) => {
     await page.route("**/api/cases?*", (route) => route.abort());
     await page.addInitScript(() => localStorage.setItem("greenspark.demoUser", "staff-manager"));
-    await page.goto("/");
+    await page.goto("/queue");
     await expect(page.getByRole("heading", { name: "We couldn’t load cases" })).toBeVisible();
     await page.unroute("**/api/cases?*");
     await page.getByRole("button", { name: "Try again" }).click();
@@ -97,7 +97,7 @@ test.describe("case pages", () => {
     await expect(page.locator("#queue")).not.toContainText("Support areas Filters"); // no sidebar on a case page
     await expect(page.locator("#sidebar")).toHaveCount(0);
     await page.goBack();
-    await expect(page).toHaveURL(/\/$/);
+    await expect(page).toHaveURL(/\/queue$/);
     await expect(page.getByText("Page 2 of 4")).toBeVisible(); // same page of results
     await expect(page.getByRole("combobox", { name: "Sort cases" })).toHaveValue("name"); // and the same sort
     await page.goForward();
@@ -113,7 +113,7 @@ test.describe("case pages", () => {
     await expect(page.locator(".case-table")).toBeVisible();
   });
 
-  test("the GreenSpark logo and name lead back to the case queue", async ({ page }) => {
+  test("the GreenSpark logo and name lead to the weather outlook", async ({ page }) => {
     await openQueue(page);
     const brand = page.getByRole("link", { name: /ERVEI casework/ });
     await expect(brand.locator("strong")).toHaveText("ERVEI"); // ERVEI is the main name, with "Community support workspace" beneath it
@@ -125,11 +125,14 @@ test.describe("case pages", () => {
     await expect(page).toHaveURL(new RegExp(`/accounts/${id}$`));
     await brand.click();
     await expect(page).toHaveURL(/\/$/);
-    await expect(page.locator(".case-table")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Who this week’s weather could hurt" })).toBeVisible();
     await expect(page.locator(".case-page")).toHaveCount(0);
+    await page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Case queue" }).click();
+    await expect(page).toHaveURL(/\/queue$/);
+    await expect(page.locator(".case-table")).toBeVisible();
     await brand.focus(); // keyboard users can use it too
     await page.keyboard.press("Enter");
-    await expect(page.locator(".case-table")).toBeVisible();
+    await expect(page.locator(".outlook")).toBeVisible();
   });
 
   test("a modified click leaves the browser to open the case in a new tab", async ({ page, context }) => {

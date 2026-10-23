@@ -4,7 +4,7 @@ export const MANAGER = "staff-manager";
 
 export async function openQueue(page: Page, user = MANAGER) {
   await page.addInitScript((u) => localStorage.setItem("greenspark.demoUser", u), user);
-  await page.goto("/");
+  await page.goto("/queue");
   await expect(page.locator(".case-table")).toBeVisible();
 }
 

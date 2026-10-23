@@ -14,7 +14,7 @@ import type { Clock } from "./clock";
 import { FlowFile } from "./flow";
 import type { Predictions } from "./predictions";
 import { draftPlan, PLAN_KINDS, perthToday, planFacts, type AiConfig, type ContactRules, type PlanKind, type SupportPlan } from "./plan";
-import { FlowError, POSTCODE_LOCATION, detectWeatherSignals, evaluateCase, flowCatalog, parseOp, type FlowDoc, type WeatherSignal, type WeatherSnapshot } from "@greenspark/shared";
+import { FlowError, POSTCODE_LOCATION, POSTCODE_TOWN, customerOutlook, townHazards, detectWeatherSignals, evaluateCase, flowCatalog, parseOp, type FlowDoc, type WeatherSignal, type WeatherSnapshot } from "@greenspark/shared";
 import { SyntheticModelAdapter, withAssessments, type ModelAdapter } from "./adapters";
 
 const STATUSES = ["new", "in_progress", "waiting", "resolved"] as const;
@@ -256,6 +256,56 @@ export function createApp(store: Store, options: AppOptions = {}) {
       if (place.cases.length < 50) place.cases.push({ accountNumber: p.accountNumber ?? null, displayName: p.displayName, score: c.modelAssessment.priority?.score ?? null, label: c.modelAssessment.priority?.label ?? null, status: c.workflow.status });
     }
     res.json({ total: matches.length, unplaced, places: [...places.values()] });
+  });
+
+  // The weather outlook: the next week's forecast for each town, and the customers it puts at risk, most at risk first.
+  app.get("/api/outlook", async (_req, res) => {
+    const w = options.weather?.current() ?? null;
+    const status = options.weather?.status() ?? { mode: "off" };
+    if (!w) return res.json({ available: false, weather: status });
+    const today = perthToday(clock());
+    const data = await dataset();
+    const cases = new Map(data.cases.map((c) => [c.personId, c]));
+    let uncovered = 0;
+    const rows = data.people.flatMap((p) => {
+      const risk = riskFor(p);
+      const o = customerOutlook(p, w, today, !!risk && risk.baseRate !== null && risk.probability >= 4 * risk.baseRate, risk?.probability ?? 0);
+      if (!o) { uncovered++; return []; }
+      const c = cases.get(p.id);
+      // The town's hazards are sent once with the town, so each row only says when it starts and the worst of it.
+      const worst = o.hazards.reduce<typeof o.hazards[number] | null>((a, h) => (!a || h.severity > a.severity ? h : a), null);
+      return [{
+        personId: o.personId, townId: o.townId, tier: o.tier, score: o.score, exposure: o.exposure,
+        kinds: [...new Set(o.hazards.map((h) => h.kind))], dates: [...new Set(o.hazards.map((h) => h.date))], firstDate: o.hazards[0]?.date ?? null, worst: worst?.text ?? null,
+        sensitivity: o.sensitivity.map(({ id, group, label }) => ({ id, group, label })), accountNumber: p.accountNumber ?? null, displayName: p.displayName, suburb: p.suburb, postcode: p.address?.postcode ?? null, risk,
+        priority: c?.modelAssessment.priority ? { label: c.modelAssessment.priority.label, score: c.modelAssessment.priority.score } : null, status: c?.workflow.status ?? null,
+      }];
+    });
+    // Each town sits at the average of its postcodes; its own hazards use the north's heat limits above the 26th parallel.
+    const towns = Object.entries(w.towns).flatMap(([id, t]) => {
+      const spots = Object.entries(POSTCODE_TOWN).filter(([, town]) => town === id).flatMap(([pc]) => (POSTCODE_LOCATION[pc] ? [POSTCODE_LOCATION[pc]!] : []));
+      if (!spots.length) return [];
+      const lat = spots.reduce((n, s) => n + s[0], 0) / spots.length, lng = spots.reduce((n, s) => n + s[1], 0) / spots.length;
+      const here = rows.filter((r) => r.townId === id);
+      return [{
+        id, name: t.name, district: t.district, districtName: w.districts[t.district] ?? t.district, lat, lng, days: t.days.filter((d) => d.date >= today),
+        hazards: townHazards(w, id, lat > -26, today), customers: here.length, exposed: here.filter((r) => r.exposure > 0).length,
+        act: here.filter((r) => r.tier === "act").length, watch: here.filter((r) => r.tier === "watch").length,
+      }];
+    });
+    const dates = [...new Set(towns.flatMap((t) => t.days.map((d) => d.date)))].sort().slice(0, 7);
+    const days = dates.map((date) => {
+      const peak = towns.flatMap((t) => t.days.filter((d) => d.date === date && d.max !== null).map((d) => ({ max: d.max!, town: t.name }))).sort((a, b) => b.max - a.max)[0] ?? null;
+      const on = rows.filter((r) => r.dates.includes(date));
+      return { date, peak, exposed: on.length, act: on.filter((r) => r.tier === "act").length, watch: on.filter((r) => r.tier === "watch").length };
+    });
+    const listed = rows.filter((r) => r.tier).sort((a, b) => (a.tier === b.tier ? 0 : a.tier === "act" ? -1 : 1) || b.score - a.score);
+    res.json({
+      available: true, weather: status, today, demo: w.demo, issuedAt: w.issuedAt, days, towns,
+      warnings: w.warnings.filter((x) => x.districts.length).map((x) => ({ title: x.title, districts: x.districts.map((d) => w.districts[d] ?? d), expires: x.expires })),
+      totals: { covered: rows.length, uncovered, exposed: rows.filter((r) => r.exposure > 0).length, act: listed.filter((r) => r.tier === "act").length, watch: listed.filter((r) => r.tier === "watch").length },
+      customers: listed.map(({ dates: _dates, ...r }) => r),
+    });
   });
 
   app.get("/api/cases/ids", async (req, res) => {

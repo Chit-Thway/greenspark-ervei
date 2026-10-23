@@ -10,7 +10,7 @@ import type { MapSummary } from "./data/api";
 // Leaflet only loads when the map view is first opened.
 const CaseMap = lazy(() => import("./components/CaseMap").then((m) => ({ default: m.CaseMap })));
 import { CaseDetails } from "./components/CaseDetails";
-import { accountHref, DATA_SOURCES_PATH, FLOWCHART_PATH, PRIORITY_MODEL_PATH, CASE_PAGE_PATH, RISK_MODEL_PATH, isModifiedClick, useRoute, type Page } from "./route";
+import { accountHref, DATA_SOURCES_PATH, FLOWCHART_PATH, PRIORITY_MODEL_PATH, CASE_PAGE_PATH, RISK_MODEL_PATH, QUEUE_PATH, isModifiedClick, useRoute, type Page } from "./route";
 import { DataSourcesPage } from "./components/DataSourcesPage";
 import { PriorityModelPage } from "./components/PriorityModelPage";
 import { CasePageGuide } from "./components/CasePageGuide";
@@ -18,6 +18,7 @@ import { PredictionsPage } from "./components/PredictionsPage";
 import { RiskModelPage } from "./components/RiskModelPage";
 import { CaseVisualPage } from "./components/CaseVisualPage";
 import { DemoSettings } from "./components/DemoSettings";
+import { OutlookPage } from "./components/OutlookPage";
 import { AdminPage } from "./admin/AdminPage";
 
 interface Notice {
@@ -148,8 +149,9 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; o
   }, [openAccount]);
 
   useEffect(() => {
+    if (props.page === "outlook") return; // the outlook page sets its own
     document.title = openItem && openAccount ? `${accountOf(openItem) ?? ""} · ${catalogNameFor(openItem)} · ERVEI` : "Case queue · ERVEI";
-  }, [openItem, openAccount]);
+  }, [openItem, openAccount, props.page]);
 
   // Debounce the search box so we don't query on every keystroke.
   useEffect(() => {
@@ -396,7 +398,7 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; o
         <a
           className="brand"
           href="/"
-          aria-label="ERVEI casework: go to the case queue"
+          aria-label="ERVEI casework: go to the weather outlook"
           onClick={(e) => {
             if (isModifiedClick(e)) return; // let the browser open a new tab
             e.preventDefault();
@@ -407,12 +409,17 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; o
           <span><strong>ERVEI</strong><span className="brand-sub">Community support workspace</span></span>
         </a>
         <nav className="mainnav" aria-label="Main">
+          {([["/", "Weather outlook", "outlook"], [QUEUE_PATH, "Case queue", "queue"]] as const).map(([href, label, page]) => (
+            <a key={href} href={href} aria-current={props.page === page ? "page" : undefined} onClick={(e) => { if (isModifiedClick(e)) return; e.preventDefault(); navigate(href); }}>{label}</a>
+          ))}
           <BtsMenu page={props.page} navigate={navigate} />
         </nav>
         <DemoSettings client={client} users={catalog.users} user={user} onSwitchUser={props.onSwitchUser} />
       </header>
 
-      {props.page === "admin" ? (
+      {props.page === "outlook" ? (
+        <OutlookPage client={client} navigate={navigate} />
+      ) : props.page === "admin" ? (
         <AdminPage client={client} />
       ) : props.page === "data" ? (
         <DataSourcesPage client={client} />
@@ -430,11 +437,11 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; o
         <main id="queue" className="detail-main" tabIndex={-1}>
           <a
             className="back-link"
-            href="/"
+            href={QUEUE_PATH}
             onClick={(e) => {
               if (isModifiedClick(e)) return;
               e.preventDefault();
-              navigate("/");
+              navigate(QUEUE_PATH);
             }}
           >
             ← Back to case queue

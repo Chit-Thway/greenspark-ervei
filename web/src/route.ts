@@ -29,7 +29,10 @@ export function isModifiedClick(e: { metaKey: boolean; ctrlKey: boolean; shiftKe
   return e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0;
 }
 
-export type Page = "queue" | "case" | "admin" | "data" | "priority" | "casepage" | "riskmodel" | "predictions" | "visual";
+export type Page = "outlook" | "queue" | "case" | "admin" | "data" | "priority" | "casepage" | "riskmodel" | "predictions" | "visual";
+
+/** The home page is the weather outlook; the case queue has its own page. */
+export const QUEUE_PATH = "/queue";
 
 /** Behind-the-scenes pages, under the BTS menu. */
 export const FLOWCHART_PATH = "/bts/flowchart";
@@ -46,10 +49,11 @@ export function pageFromPath(path: string): Page {
   if (/^\/bts\/risk-model\/?$/.test(path)) return "riskmodel";
   if (predictionsAccountFromPath(path)) return "predictions";
   if (visualAccountFromPath(path)) return "visual";
-  return accountFromPath(path) ? "case" : "queue";
+  if (accountFromPath(path)) return "case";
+  return /^\/queue\/?$/.test(path) ? "queue" : "outlook";
 }
 
-/** Minimal path router: the queue lives at "/", each case at "/accounts/:accountNumber" and the BTS pages under "/bts/". */
+/** Minimal path router: the outlook lives at "/", the queue at "/queue", each case at "/accounts/:accountNumber" and the BTS pages under "/bts/". */
 export function useRoute() {
   const [path, setPath] = useState(() => window.location.pathname);
   useEffect(() => {

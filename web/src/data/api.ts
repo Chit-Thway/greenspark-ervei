@@ -85,6 +85,8 @@ export interface ApiClient {
   overview(caseId: string): Promise<CaseItem>;
   /** The case for an account number (each account has one case). */
   account(accountNumber: string): Promise<CaseItem>;
+  /** The weather outlook: the week's forecast and the customers it puts at risk. Optional so test clients can leave it out. */
+  outlook?(): Promise<Outlook>;
   /** The risk model's card. Optional so test clients can leave it out. */
   riskModel?(): Promise<RiskModelCard>;
   assign(assigneeUserId: string, items: VersionedId[]): Promise<MutationResult>;
@@ -111,6 +113,32 @@ export interface MapPlace {
   cases: { accountNumber: string | null; displayName: string; score: number | null; label: string | null; status: string }[];
 }
 export interface MapSummary { total: number; unplaced: number; places: MapPlace[] }
+
+export type HazardKind = "heat" | "hot" | "fire" | "warning";
+export interface OutlookHazard { kind: HazardKind; date: string; severity: number; text: string }
+export interface OutlookTown {
+  id: string; name: string; district: string; districtName: string; lat: number; lng: number;
+  days: { date: string; max: number | null; min: number | null; precis: string }[];
+  hazards: OutlookHazard[]; customers: number; exposed: number; act: number; watch: number;
+}
+export interface OutlookCustomer {
+  personId: string; townId: string; tier: "act" | "watch"; score: number; exposure: number;
+  kinds: HazardKind[]; firstDate: string | null; worst: string | null;
+  sensitivity: { id: string; group: "health" | "supply" | "cost" | "isolation"; label: string }[];
+  accountNumber: string | null; displayName: string; suburb: string; postcode: string | null;
+  risk: { probability: number; baseRate: number | null } | null;
+  priority: { label: string; score: number } | null; status: string | null;
+}
+export type Outlook =
+  | { available: false; weather: WeatherStatus }
+  | {
+    available: true; weather: WeatherStatus; today: string; demo: boolean; issuedAt: string | null;
+    days: { date: string; peak: { max: number; town: string } | null; exposed: number; act: number; watch: number }[];
+    towns: OutlookTown[];
+    warnings: { title: string; districts: string[]; expires: string | null }[];
+    totals: { covered: number; uncovered: number; exposed: number; act: number; watch: number };
+    customers: OutlookCustomer[];
+  };
 
 export interface VersionedId { caseId: string; expectedVersion: number }
 
@@ -172,6 +200,7 @@ export function createApiClient(getUser: () => string, base = ""): ApiClient {
     matchingIds: async (q) => (await req<{ ids: string[] }>("GET", `/api/cases/ids?${queryString(q, false)}`)).ids,
     overview: (id) => req("GET", `/api/cases/${encodeURIComponent(id)}/overview`),
     riskModel: () => req("GET", "/api/model/risk"),
+    outlook: () => req("GET", "/api/outlook"),
     account: (accountNumber) => req("GET", `/api/accounts/${encodeURIComponent(accountNumber)}`),
     assign: (assigneeUserId, items) => req("POST", "/api/cases/bulk/assignment", { assigneeUserId, items }),
     setStatus: (status, items) =>
