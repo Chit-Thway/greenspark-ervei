@@ -108,13 +108,13 @@ export function detectWeatherSignals(postcode: string | null | undefined, northO
 }
 
 /**
- * A sample snapshot for demos: a three-day heatwave over the Lower West, South West and Central Wheat Belt from
- * tomorrow, ending in a cool change. Each town has its own week: sea-breeze coasts run a few degrees under inland
- * suburbs, the Wheatbelt is hottest, the south coast stays mild, and the Kimberley is in its humid pre-wet build-up.
+ * A sample snapshot for demos: a three-day heatwave over the Lower West (Perth to Mandurah) from tomorrow, ending
+ * in a cool change. Each town has its own week: sea-breeze coasts run a few degrees under inland suburbs, the South
+ * West and Wheatbelt are warm but spared, the south coast stays mild, and the Kimberley is in its humid build-up.
  */
 export function sampleWeather(today: string, now = new Date()): WeatherSnapshot {
   const day = (n: number) => { const d = new Date(`${today}T00:00:00Z`); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
-  const hotDistricts = new Set(["WA_PW009", "WA_PW010", "WA_PW014"]);
+  const hotDistricts = new Set(["WA_PW009"]);
   const towns: WeatherSnapshot["towns"] = {};
   for (const id of new Set(Object.values(POSTCODE_TOWN))) {
     const district = TOWN_DISTRICT[id] ?? "WA_PW009";
@@ -132,17 +132,17 @@ export function sampleWeather(today: string, now = new Date()): WeatherSnapshot 
       }),
     };
   }
-  // Fire danger peaks on the hottest day, a day longer inland in the Wheat Belt.
+  // Fire danger peaks on the hottest day.
   const fireDanger: WeatherSnapshot["fireDanger"] = {};
   for (const d of hotDistricts) {
     fireDanger[d] = [0, 1, 2, 3].map((n) => ({
-      date: day(n), rating: n === 2 || (d === "WA_PW014" && n === 3) ? "Extreme" : n === 0 ? "Moderate" : "High",
+      date: day(n), rating: n === 2 ? "Extreme" : n === 0 ? "Moderate" : "High",
       area: d === "WA_PW009" ? "Swan Coastal Plain" : DISTRICTS[d]!,
     }));
   }
   return {
     fetchedAt: now.toISOString(), issuedAt: now.toISOString(), demo: true, towns, districts: DISTRICTS, fireDanger,
-    warnings: [{ id: "SAMPLE", title: "Severe Heatwave Warning for Lower West, South West and Central Wheat Belt", districts: [...hotDistricts], expires: `${day(4)}T00:00:00Z` }],
+    warnings: [{ id: "SAMPLE", title: "Severe Heatwave Warning for Lower West", districts: [...hotDistricts], expires: `${day(4)}T00:00:00Z` }],
   };
 }
 
@@ -159,13 +159,13 @@ const SAMPLE_MAX: Record<string, number[]> = {
   WA_PT028: [30, 36, 39, 37, 28, 25, 27], // Fremantle
   WA_PT055: [30, 35, 38, 36, 28, 25, 26], // Rockingham
   WA_PT012: [29, 34, 37, 36, 27, 24, 26], // Mandurah
-  // South West: hot inland at Collie, milder on the coast and in the karri country.
-  WA_PT020: [32, 38, 41, 40, 30, 25, 27], // Collie
-  WA_PT003: [29, 34, 37, 36, 27, 24, 25], // Bunbury
-  WA_PT004: [27, 32, 35, 35, 26, 23, 24], // Busselton
-  WA_PT040: [28, 34, 38, 37, 27, 22, 24], // Manjimup
-  // Central Wheat Belt: the hottest of the heatwave, and slowest to cool.
-  WA_PT050: [36, 41, 44, 43, 36, 30, 31], // Northam
+  // South West: outside the heatwave, warm inland at Collie and milder on the coast and in the karri country.
+  WA_PT020: [30, 33, 35, 34, 30, 27, 28], // Collie
+  WA_PT003: [27, 29, 31, 30, 27, 25, 26], // Bunbury
+  WA_PT004: [25, 27, 29, 28, 25, 24, 25], // Busselton
+  WA_PT040: [26, 28, 31, 30, 26, 23, 24], // Manjimup
+  // Central Wheat Belt: hot on the edge of the heatwave, but under the extreme-heat limit.
+  WA_PT050: [33, 35, 37, 36, 33, 30, 31], // Northam
   // Outside the heatwave: a mild south coast, warm Goldfields and Midwest.
   WA_PT001: [22, 24, 29, 25, 20, 19, 21], // Albany
   WA_PT009: [31, 33, 36, 37, 35, 30, 29], // Kalgoorlie
