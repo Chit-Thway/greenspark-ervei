@@ -21,8 +21,8 @@ export function priorityLabel(score: number): PriorityLabel {
   return score >= 80 ? "urgent" : score >= 60 ? "high" : score >= 35 ? "moderate" : "routine";
 }
 
-/** Signals that mean things are getting worse, shown as a rising trend. */
-const WORSENING = new Set(["acct_rising_arrears", "acct_usage_drop", "acct_prepay_low_credit", "acct_disconnection_warning"]);
+/** Signals that mean things are getting worse (or about to, for weather), shown as a rising trend. */
+const WORSENING = new Set(["acct_rising_arrears", "acct_usage_drop", "acct_prepay_low_credit", "acct_disconnection_warning", "wx_extreme_heat", "wx_fire_danger", "wx_warning"]);
 
 /**
  * The priority for one case. `hasData` is false when the case has no account and no survey answers, in which

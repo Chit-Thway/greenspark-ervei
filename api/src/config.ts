@@ -24,3 +24,7 @@ export const GEMINI_MODELS = {
   support: process.env.GEMINI_MODEL || "gemini-flash-lite-latest",
   signals: process.env.GEMINI_SIGNALS_MODEL || "gemini-flash-lite-latest",
 };
+
+// Weather signals: "demo" (the default) uses a built-in sample heatwave, "live" fetches Bureau of Meteorology
+// forecasts hourly, "off" turns them off. This is the mode at start-up; it can be switched on the Data sources page.
+export const WEATHER_MODE = (["live", "demo", "off"].includes(process.env.WEATHER_MODE ?? "") ? process.env.WEATHER_MODE : "demo") as "live" | "demo" | "off";

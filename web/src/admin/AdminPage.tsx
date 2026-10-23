@@ -142,6 +142,7 @@ export function AdminPage({ client }: { client: ApiClient }) {
         <span><svg viewBox="0 0 26 10" aria-hidden="true"><path d="M1 5H25" stroke="var(--moderate)" strokeWidth="1.8" strokeDasharray="3 3" /></svg>Supporting signal</span>
         <span><i className="mk acct" aria-hidden="true" />From account data</span>
         <span><i className="mk ask" aria-hidden="true" />Asked of the customer</span>
+        <span><i className="mk wx" aria-hidden="true" />From weather forecasts</span>
         <span><i className="dot sensitive" aria-hidden="true" />Sensitive</span>
         <span><i className="dot safety" aria-hidden="true" />Safety</span>
         <span><span className="ut"><i className="y">E</i><i className="y">G</i><i className="y">W</i><i className="y">P</i></span>Electricity, gas, water, phone/internet</span>

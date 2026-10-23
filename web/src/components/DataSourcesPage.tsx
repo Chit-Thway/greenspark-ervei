@@ -1,4 +1,5 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import type { ApiClient, WeatherMode, WeatherStatus } from "../data/api";
 
 interface Source { file: string; rows: string; contains: string; extracted: string; leftOut?: string }
 
@@ -48,7 +49,48 @@ const SOURCES: Source[] = [
   { file: "prepay_self_disconnections.csv", rows: "8,320", contains: "Each time a prepay meter ran out of credit.", extracted: "Times in the last 12 months: start, hours without power, hot day." },
 ];
 
-export function DataSourcesPage() {
+const MODES: [WeatherMode, string, string][] = [
+  ["demo", "Sample heatwave", "A built-in heatwave over the Perth, South West and Wheatbelt districts for the next few days, so the signals always show."],
+  ["live", "Live Bureau data", "The Bureau's real forecasts and warnings, refreshed every hour. Usually quiet unless hot weather is coming."],
+  ["off", "Off", "No weather signals."],
+];
+
+/** Shows which weather source the server is using, and lets managers switch it for everyone. */
+function WeatherSource({ client, isManager }: { client: ApiClient; isManager: boolean }) {
+  const [status, setStatus] = useState<WeatherStatus | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => { client.weather?.().then(setStatus, () => setError("Couldn't load the weather status.")); }, [client]);
+  if (!client.weather || !status) return error ? <p className="muted">{error}</p> : null;
+  if (status.available === false) return <p className="muted">Weather signals aren't set up on this server.</p>;
+  const choose = async (mode: WeatherMode) => {
+    if (!client.setWeatherMode || mode === status.mode) return;
+    setBusy(true);
+    setError(null);
+    try { setStatus(await client.setWeatherMode(mode)); } catch (e) { setError(e instanceof Error ? e.message : "Couldn't change the weather source."); } finally { setBusy(false); }
+  };
+  const when = (iso: string | null) => (iso ? new Date(iso).toLocaleString("en-AU", { timeZone: "Australia/Perth", dateStyle: "medium", timeStyle: "short" }) : "not yet");
+  return (
+    <div className="wx-source">
+      <div className="wx-modes" role="radiogroup" aria-label="Weather source">
+        {MODES.map(([mode, label]) => (
+          <button key={mode} type="button" role="radio" aria-checked={status.mode === mode} disabled={!isManager || busy} onClick={() => void choose(mode)}>{label}</button>
+        ))}
+      </div>
+      <p className="hint">{MODES.find((m) => m[0] === status.mode)?.[2]} {isManager ? "Switching applies to everyone, straight away." : "Only managers can switch it."}</p>
+      {status.mode !== "off" ? (
+        <p className="hint">
+          {busy ? "Loading the forecast…" : <>Forecast loaded {when(status.fetchedAt)}{status.mode === "live" && status.issuedAt ? `, issued by the Bureau ${when(status.issuedAt)}` : ""}. {status.towns} towns.
+          {status.warnings.length ? ` Active warnings: ${status.warnings.join("; ")}.` : " No active warnings."}</>}
+        </p>
+      ) : null}
+      {status.error ? <p className="muted">Last fetch failed: {status.error}. Showing the last good forecast.</p> : null}
+      {error ? <p className="muted" role="alert">{error}</p> : null}
+    </div>
+  );
+}
+
+export function DataSourcesPage({ client, isManager }: { client: ApiClient; isManager: boolean }) {
   useEffect(() => { document.title = "Data sources · ERVEI"; }, []);
   return (
     <main id="queue" className="bts-page" tabIndex={-1}>
@@ -70,6 +112,24 @@ export function DataSourcesPage() {
           <li><strong>From the dataset:</strong> everything on the Utility account, Bills, Support history, Collections and supply, and Contact history sections, plus suburb, postcode and preferred contact channel.</li>
           <li><strong>Never used for signals or priority:</strong> future-outcome labels and intervention outcomes, which exist to train and evaluate models.</li>
         </ul>
+      </section>
+
+      <section className="case-card" aria-labelledby="ds-weather">
+        <h2 id="ds-weather">Live data: Bureau of Meteorology</h2>
+        <p className="hint">Fetched by the server every hour, matched to each customer's postcode, and used for the three weather signals. Free anonymous products, under the Bureau's copyright terms.</p>
+        <p className="block-label">Weather source</p>
+        <WeatherSource client={client} isManager={isManager} />
+        <div className="table-scroll">
+          <table className="mini-table ds-table">
+            <thead><tr><th scope="col">Product</th><th scope="col">What's in it</th><th scope="col">What is used</th></tr></thead>
+            <tbody>
+              <tr><th scope="row"><code>IDW14199</code></th><td>WA town forecasts: 116 towns, today plus 7 days, each tagged with its forecast district.</td><td>Daily maximum and minimum temperatures, for the Extreme heat forecast signal.</td></tr>
+              <tr><th scope="row"><code>IDW13010</code></th><td>WA district forecasts for 14 districts, with fire danger ratings for each fire weather area.</td><td>The highest fire danger rating in each district, usually for tomorrow, for the Extreme fire danger forecast signal.</td></tr>
+              <tr><th scope="row"><code>IDW2xxxx</code></th><td>Warnings, which only exist while active. Found by listing the Bureau's anonymous FTP folder.</td><td>Title, the districts covered (not cancelled ones) and expiry, for the Weather warning signal. Marine and sheep graziers warnings are left out.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p className="hint">Each dataset postcode is matched to its nearest forecast town (Perth suburbs to the nearest metro point). The server starts with the sample heatwave (set <code>WEATHER_MODE</code> to <code>live</code> or <code>off</code> to change that); a switch above lasts until the server restarts. Sample evidence is marked "(sample forecast)".</p>
       </section>
 
       <section className="case-card" aria-labelledby="ds-files">

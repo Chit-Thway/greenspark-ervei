@@ -28,10 +28,10 @@
       "Measure outcomes, not flags: did the customer actually get connected to the help?"
     ],
     "counts": {
-      "signals": 107,
+      "signals": 110,
       "circumstances": 99,
       "solutions": 49,
-      "links": 510
+      "links": 517
     }
   },
   "circumstance_types": [
@@ -2692,6 +2692,82 @@
           "strength": "strong"
         }
       ]
+    },
+    {
+      "id": "wx_extreme_heat",
+      "name": "Extreme heat forecast",
+      "source": "weather",
+      "detect": "Bureau of Meteorology forecast maximum of 38°C or more (42°C north of the 26th parallel) at the customer's nearest forecast town in the next 7 days.",
+      "example_rule": "max(forecast_max_7d) >= 38",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "life_support_equipment",
+          "strength": "supporting"
+        },
+        {
+          "id": "temperature_medical",
+          "strength": "supporting"
+        },
+        {
+          "id": "heat_cold",
+          "strength": "strong"
+        },
+        {
+          "id": "prepay_self_disconnection",
+          "strength": "supporting"
+        },
+        {
+          "id": "rationing",
+          "strength": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "wx_fire_danger",
+      "name": "Extreme fire danger forecast",
+      "source": "weather",
+      "detect": "Bureau of Meteorology fire danger rating of Extreme or Catastrophic in the customer's forecast district (the free forecast usually rates tomorrow only).",
+      "example_rule": "fire_danger_next in (Extreme, Catastrophic)",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "disaster",
+          "strength": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "wx_warning",
+      "name": "Weather warning for the area",
+      "source": "weather",
+      "detect": "An active Bureau of Meteorology warning (heatwave, severe weather, fire weather, cyclone or flood) for the customer's forecast district.",
+      "example_rule": "active_warning(district)",
+      "utilities": [
+        "electricity",
+        "gas",
+        "water",
+        "telco"
+      ],
+      "sensitive": false,
+      "points_to": [
+        {
+          "id": "heat_cold",
+          "strength": "supporting"
+        }
+      ]
     }
   ],
   "circumstances": [
@@ -3190,6 +3266,10 @@
         {
           "id": "acct_life_support",
           "strength": "strong"
+        },
+        {
+          "id": "wx_extreme_heat",
+          "strength": "supporting"
         }
       ],
       "solutions": [
@@ -3217,6 +3297,10 @@
         },
         {
           "id": "acct_seasonal_peak",
+          "strength": "supporting"
+        },
+        {
+          "id": "wx_extreme_heat",
           "strength": "supporting"
         }
       ],
@@ -4390,6 +4474,14 @@
         {
           "id": "acct_seasonal_peak",
           "strength": "strong"
+        },
+        {
+          "id": "wx_extreme_heat",
+          "strength": "strong"
+        },
+        {
+          "id": "wx_warning",
+          "strength": "supporting"
         }
       ],
       "solutions": [
@@ -4419,6 +4511,10 @@
         },
         {
           "id": "acct_outage_history",
+          "strength": "supporting"
+        },
+        {
+          "id": "wx_fire_danger",
           "strength": "supporting"
         }
       ],
@@ -5134,6 +5230,10 @@
         {
           "id": "ask_prepay",
           "strength": "strong"
+        },
+        {
+          "id": "wx_extreme_heat",
+          "strength": "supporting"
         }
       ],
       "solutions": [
@@ -5562,6 +5662,10 @@
         },
         {
           "id": "acct_prepay_low_credit",
+          "strength": "supporting"
+        },
+        {
+          "id": "wx_extreme_heat",
           "strength": "supporting"
         }
       ],

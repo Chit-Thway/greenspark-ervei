@@ -1,12 +1,13 @@
 // Applies the hardship flowchart (signals -> circumstances -> solutions) to the case queue.
-// Signals come from each person's account (accountSignals.ts) and from survey answers that say the same thing
-// as one of the flow's self-report signals. Circumstances are flagged with the flow's own scoring rules:
+// Signals come from each person's account (accountSignals.ts), from survey answers that say the same thing
+// as one of the flow's self-report signals, and from Bureau of Meteorology forecasts for their postcode (weather.ts). Circumstances are flagged with the flow's own scoring rules:
 //   at least 1 strong signal, or at least 2 supporting signals;
 //   sensitive and safety circumstances need at least 1 strong signal;
 //   safety circumstances are never actioned automatically (the case page routes them to trained staff).
 // Solutions are the flagged circumstances' solutions. Everything is worked out again whenever the flow changes.
 import { ACCOUNT_SIGNAL_IDS, detectAccountSignals } from "./accountSignals";
 import { priorityFromSignals } from "./priority";
+import { WEATHER_SIGNAL_IDS, type WeatherSignal } from "./weather";
 import type { FlowDoc } from "./flow";
 import type {
   CaseCircumstance, CaseRecommendation, CaseSignal, CircumstanceDefinition, Person, QueueCase, QueueDataset,
@@ -64,6 +65,7 @@ const applies = (utilities: string[]) => utilities.includes(CASE_UTILITY);
  */
 export function signalHasData(signal: { id: string; source: string }): boolean {
   if (signal.source === "account") return ACCOUNT_SIGNAL_IDS.includes(signal.id);
+  if (signal.source === "weather") return WEATHER_SIGNAL_IDS.includes(signal.id);
   return [...SURVEY_SIGNALS, ...TRANSCRIPT_SIGNALS, ...ACCOUNT_FACT_SIGNALS].some((m) => m.signalId === signal.id);
 }
 
@@ -85,7 +87,9 @@ export function flowCatalog(doc: FlowDoc): Pick<QueueDataset, "supportAreas" | "
 }
 
 /** Every flow signal seen for one case, without strengths (strength belongs to each signal-circumstance link). */
-export function caseSignals(c: QueueCase, person: Person | null, data: Pick<QueueDataset, "asOf" | "evidenceFields">, doc: FlowDoc): Omit<CaseSignal, "strength">[] {
+export function caseSignals(
+  c: QueueCase, person: Person | null, data: Pick<QueueDataset, "asOf" | "evidenceFields">, doc: FlowDoc, weather: WeatherSignal[] = [],
+): Omit<CaseSignal, "strength">[] {
   const names = new Map(doc.signals.map((s) => [s.id, s.name]));
   const out: Omit<CaseSignal, "strength">[] = [];
   if (person?.account) {
@@ -119,14 +123,17 @@ export function caseSignals(c: QueueCase, person: Person | null, data: Pick<Queu
       }
     }
   }
-  // One entry per signal: account data first, then the survey, then account facts and transcripts.
+  for (const s of weather) if (names.has(s.id)) out.push({ id: s.id, name: names.get(s.id)!, source: "weather", evidence: s.evidence });
+  // One entry per signal: account data first, then the survey, then account facts, transcripts and weather.
   const seen = new Set<string>();
   return out.filter((s) => (seen.has(s.id) ? false : (seen.add(s.id), true)));
 }
 
 /** The flagged circumstances, support areas and solutions for one case. */
-export function evaluateCase(c: QueueCase, person: Person | null, data: Pick<QueueDataset, "asOf" | "evidenceFields">, doc: FlowDoc, catalog = flowCatalog(doc)) {
-  const seen = new Map(caseSignals(c, person, data, doc).map((s) => [s.id, s]));
+export function evaluateCase(
+  c: QueueCase, person: Person | null, data: Pick<QueueDataset, "asOf" | "evidenceFields">, doc: FlowDoc, catalog = flowCatalog(doc), weather: WeatherSignal[] = [],
+) {
+  const seen = new Map(caseSignals(c, person, data, doc, weather).map((s) => [s.id, s]));
   const circumstances: CaseCircumstance[] = [];
   for (const def of doc.circumstances) {
     if (!applies(def.utilities)) continue;

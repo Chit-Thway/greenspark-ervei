@@ -330,3 +330,11 @@ ol.suggest-list.solutions { list-style: none; padding-left: 0; }
 .needs-tip.above { transform: translateY(-100%); }
 .needs-tip-title { display: block; font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 4px; }
 .needs-tip ul { margin: 0; padding-left: 18px; display: grid; gap: 2px; }
+.signal-list li.signal-wx { border-left-color: #2f80c9; }
+.signal-list li.signal-wx .sim { margin-left: 8px; }
+.wx-modes { display: inline-flex; flex-wrap: wrap; border: 1px solid var(--border); border-radius: var(--r-control); overflow: hidden; margin: 4px 0 6px; }
+.wx-modes button { background: var(--surface); border: 0; padding: 6px 14px; font: inherit; font-size: 13px; color: var(--fg); cursor: pointer; }
+.wx-modes button + button { border-left: 1px solid var(--border); }
+.wx-modes button[aria-checked="true"] { background: var(--brand); color: var(--on-brand); }
+.wx-modes button:disabled { cursor: default; }
+.wx-modes button:disabled:not([aria-checked="true"]) { color: var(--muted); }

@@ -3,7 +3,7 @@
 //            Solutions to offer, in one call so the plan and the order agree;
 //   signals: what the account signals say together (Account signals).
 // Only circumstances, signals, solutions and contact settings are sent: never names or contact details.
-import { detectAccountSignals, type CircumstanceDefinition, type Person, type QueueCase, type RecommendationDefinition } from "@greenspark/shared";
+import { detectAccountSignals, type WeatherSignal, type CircumstanceDefinition, type Person, type QueueCase, type RecommendationDefinition } from "@greenspark/shared";
 import { ApiError } from "./errors";
 
 /**
@@ -77,9 +77,9 @@ const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "
 const readable = (t: string) => t.replace(ISO, (_m, y: string, mo: string, d: string) => `${Number(d)} ${MONTHS[Number(mo) - 1]} ${y}`);
 
 /** The facts for one kind of summary, as plain text; empty when there is nothing to summarise. */
-export function planFacts(kind: PlanKind, c: QueueCase, person: Person | null, cat: Catalog, asOf: string): string {
+export function planFacts(kind: PlanKind, c: QueueCase, person: Person | null, cat: Catalog, asOf: string, weather: WeatherSignal[] = []): string {
   if (kind === "signals") {
-    const signals = person?.account ? detectAccountSignals(person.account, asOf) : [];
+    const signals = [...(person?.account ? detectAccountSignals(person.account, asOf) : []), ...weather];
     return readable(signals.map((s) => `Signal: ${s.name} — ${s.evidence}`).join("\n"));
   }
   return readable(supportFacts(c, person, cat));

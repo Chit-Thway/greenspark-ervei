@@ -191,7 +191,7 @@ export interface CustomerAccount {
 export interface CaseSignal {
   id: string;
   name: string;
-  source: "account" | "self_report";
+  source: "account" | "self_report" | "weather";
   strength: "strong" | "supporting";
   evidence: string;
   evidenceFieldId?: string;

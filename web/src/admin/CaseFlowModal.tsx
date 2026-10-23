@@ -1,16 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { caseSignals, type FlowDoc, type Person, type QueueCase } from "@greenspark/shared";
+import { caseSignals, type FlowDoc, type Person, type QueueCase, type WeatherSignal } from "@greenspark/shared";
 import type { ApiClient, Catalog } from "../data/api";
 import { readableDates } from "../domain/format";
 import { FlowBoard } from "./FlowBoard";
 import { SOURCE_LABEL, buildIndex, nodeKey, trace as traceOf, type FlowIndex, type Ref, type Trace } from "./flowModel";
 import "./admin.css";
 
-interface Props { client: ApiClient; data: Catalog; c: QueueCase; person: Person | null; onClose: () => void }
+interface Props { client: ApiClient; data: Catalog; c: QueueCase; person: Person | null; weather: WeatherSignal[]; onClose: () => void }
 
 /** One case's path through the flowchart: the signals seen, the circumstances flagged and the solutions offered. */
-function casePath(c: QueueCase, person: Person | null, data: Catalog, doc: FlowDoc, index: FlowIndex) {
-  const seen = new Map(caseSignals(c, person, data, doc).map((s) => [s.id, s]));
+function casePath(c: QueueCase, person: Person | null, data: Catalog, doc: FlowDoc, index: FlowIndex, weather: WeatherSignal[]) {
+  const seen = new Map(caseSignals(c, person, data, doc, weather).map((s) => [s.id, s]));
   const flagged = new Map(c.circumstances.map((x) => [x.circumstanceId, x]));
   const offered = new Map(c.recommendations.map((r) => [r.recommendationId, r]));
   const nodes = new Set<string>();
@@ -122,7 +122,7 @@ function Panel({ refr, path, index, onSelect }: { refr: Ref | null; path: Path; 
   );
 }
 
-export function CaseFlowModal({ client, data, c, person, onClose }: Props) {
+export function CaseFlowModal({ client, data, c, person, weather, onClose }: Props) {
   const ref = useRef<HTMLDialogElement>(null);
   const [doc, setDoc] = useState<FlowDoc | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -136,7 +136,7 @@ export function CaseFlowModal({ client, data, c, person, onClose }: Props) {
   }, [client]);
 
   const index = useMemo(() => (doc ? buildIndex(doc) : null), [doc]);
-  const path = useMemo(() => (doc && index ? casePath(c, person, data, doc, index) : null), [c, person, data, doc, index]);
+  const path = useMemo(() => (doc && index ? casePath(c, person, data, doc, index, weather) : null), [c, person, data, doc, index, weather]);
   // Nothing is highlighted until a box is chosen; then its links within this case's path light up.
   const highlight = useMemo((): Trace | null => {
     if (!index || !path || !selected) return null;

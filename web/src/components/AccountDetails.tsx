@@ -24,9 +24,10 @@ function billStatus(b: Bill, asOf: string): { text: string; tone: "ok" | "late" 
   return b.dueAt < asOf ? { text: `Overdue · ${dollars(left)} owing`, tone: "overdue" } : { text: `Open · ${dollars(left)} owing`, tone: "ok" };
 }
 
-/** The account signals a utility account raises, with their evidence. */
-export function AccountSignals({ account, asOf, summary }: { account: CustomerAccount; asOf: string; summary?: ReactNode }) {
-  const signals = detectAccountSignals(account, asOf);
+/** The account signals a utility account raises, and weather signals for the customer's area, with their evidence. */
+export function AccountSignals({ account, asOf, summary, weather = [] }: { account: CustomerAccount; asOf: string; summary?: ReactNode; weather?: { id: string; name: string; evidence: string }[] }) {
+  const signals = [...detectAccountSignals(account, asOf), ...weather];
+  const isWeather = new Set(weather.map((s) => s.id));
   return (
     <section className="case-card" aria-labelledby="ov-signals">
       <h3 id="ov-signals">Account signals <span className="sim">from account data</span></h3>
@@ -34,7 +35,12 @@ export function AccountSignals({ account, asOf, summary }: { account: CustomerAc
       {signals.length ? summary : null}
       {signals.length === 0 ? <p className="muted">No account signals.</p> : (
         <ul className="signal-list">
-          {signals.map((s) => <li key={s.id}><strong>{s.name}</strong><span className="sub">{readableDates(s.evidence)}</span></li>)}
+          {signals.map((s) => (
+            <li key={s.id} className={isWeather.has(s.id) ? "signal-wx" : undefined}>
+              <strong>{s.name}{isWeather.has(s.id) ? <span className="sim">Bureau of Meteorology</span> : null}</strong>
+              <span className="sub">{readableDates(s.evidence)}</span>
+            </li>
+          ))}
         </ul>
       )}
     </section>

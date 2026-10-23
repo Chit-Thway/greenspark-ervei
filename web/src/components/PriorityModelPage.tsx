@@ -24,6 +24,9 @@ const WORSENING: [string, string][] = [
   ["acct_usage_drop", "Usage dropped sharply"],
   ["acct_prepay_low_credit", "Prepay credit low"],
   ["acct_disconnection_warning", "Disconnection warning issued"],
+  ["wx_extreme_heat", "Extreme heat forecast"],
+  ["wx_fire_danger", "Extreme fire danger forecast"],
+  ["wx_warning", "Weather warning for the area"],
 ];
 
 /** A worked example, scored with the live weights so it stays correct if they change. */

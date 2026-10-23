@@ -13,7 +13,7 @@ import type { Store } from "./store";
 import type { Clock } from "./clock";
 import { FlowFile } from "./flow";
 import { draftPlan, PLAN_KINDS, perthToday, planFacts, type ContactRules, type PlanKind, type SupportPlan } from "./plan";
-import { FlowError, evaluateCase, flowCatalog, parseOp, type FlowDoc } from "@greenspark/shared";
+import { FlowError, detectWeatherSignals, evaluateCase, flowCatalog, parseOp, type FlowDoc, type WeatherSignal, type WeatherSnapshot } from "@greenspark/shared";
 import { SyntheticModelAdapter, withAssessments, type ModelAdapter } from "./adapters";
 
 const STATUSES = ["new", "in_progress", "waiting", "resolved"] as const;
@@ -65,6 +65,8 @@ export interface AppOptions {
   basicAuth?: string | null;
   /** Google Gemini key and model for the AI support plan. No key turns the plan off. */
   gemini?: { apiKey: string | null; models: Record<PlanKind, string> };
+  /** Bureau of Meteorology forecasts and warnings for weather signals. Without it there are none. */
+  weather?: { current(): WeatherSnapshot | null; status(): unknown; setMode(mode: "live" | "demo" | "off"): Promise<void> };
 }
 
 /** A person as the case list needs them: everything but the utility account. */
@@ -88,16 +90,24 @@ export function createApp(store: Store, options: AppOptions = {}) {
   const catalogs = new WeakMap<FlowDoc, ReturnType<typeof flowCatalog>>();
   const catalogOf = (doc: FlowDoc) => { let c = catalogs.get(doc); if (!c) catalogs.set(doc, (c = flowCatalog(doc))); return c; };
   const currentFlow = currentFlowDoc;
-  // Each case's result is kept per flowchart version until the case changes (every change bumps its version).
-  // People never change once written, and a flowchart edit is a new FlowDoc, so nothing goes stale.
-  const evaluations = new WeakMap<FlowDoc, Map<string, { version: number; result: ReturnType<typeof evaluateCase> }>>();
+  /** The weather signals for a person's postcode, from the latest forecast, looking ahead from today in Perth. */
+  const weatherFor = (person: Person | null): WeatherSignal[] => {
+    const w = options.weather?.current() ?? null;
+    return person ? detectWeatherSignals(person.address?.postcode, person.account?.region.northOf26th ?? false, w, perthToday(clock())) : [];
+  };
+  const weatherKey = () => { const w = options.weather?.current(); return w ? `${w.fetchedAt}` : ""; };
+  // Each case's result is kept per flowchart version until the case changes (every change bumps its version)
+  // or a new forecast arrives (hourly). People never change once written, and a flowchart edit is a new FlowDoc.
+  const evaluations = new WeakMap<FlowDoc, Map<string, { version: number; wx: string; result: ReturnType<typeof evaluateCase> }>>();
   const evaluate = (c: QueueCase, doc: FlowDoc) => {
     let byCase = evaluations.get(doc);
     if (!byCase) evaluations.set(doc, (byCase = new Map()));
     const hit = byCase.get(c.id);
-    if (hit && hit.version === c.version) return hit.result;
-    const result = evaluateCase(c, store.getPerson(c.personId), store.catalog, doc, catalogOf(doc));
-    byCase.set(c.id, { version: c.version, result });
+    const wx = weatherKey();
+    if (hit && hit.version === c.version && hit.wx === wx) return hit.result;
+    const person = store.getPerson(c.personId);
+    const result = evaluateCase(c, person, store.catalog, doc, catalogOf(doc), weatherFor(person));
+    byCase.set(c.id, { version: c.version, wx, result });
     return result;
   };
   const withFlow = async (cases: QueueCase[]) => {
@@ -238,13 +248,24 @@ export function createApp(store: Store, options: AppOptions = {}) {
     const person = store.getPersonByAccount(String(req.params.accountNumber));
     const c = person && store.getCaseForPerson(person.id);
     if (!person || !c) throw new ApiError("not_found", "No case was found for that account number.");
-    res.json({ case: await enrichOne(c), person });
+    res.json({ case: await enrichOne(c), person, weatherSignals: weatherFor(person) });
   });
 
   app.get("/api/cases/:caseId/overview", async (req, res) => {
     const c = store.getCase(String(req.params.caseId));
     if (!c) throw new ApiError("not_found", "Case not found.");
-    res.json({ case: await enrichOne(c), person: store.getPerson(c.personId) });
+    const person = store.getPerson(c.personId);
+    res.json({ case: await enrichOne(c), person, weatherSignals: weatherFor(person) });
+  });
+
+  app.get("/api/weather", (_req, res) => { res.json(options.weather?.status() ?? { mode: "off", available: false }); });
+  // Managers switch the weather source for everyone: the sample heatwave, the Bureau's live data, or off.
+  app.post("/api/weather/mode", async (req, res) => {
+    if (actor(res).role !== "manager") throw new ApiError("forbidden", "Only managers can change the weather source.");
+    if (!options.weather) throw new ApiError("not_found", "Weather signals aren't set up on this server.");
+    const { mode } = parse(z.object({ mode: z.enum(["live", "demo", "off"]) }), req.body);
+    await options.weather.setMode(mode);
+    res.json(options.weather.status());
   });
 
   // Plans are kept per case version and flowchart version, so each case calls Gemini once until it changes.
@@ -257,13 +278,15 @@ export function createApp(store: Store, options: AppOptions = {}) {
     const byDoc = plans.get(doc ?? noFlow) ?? new Map<string, Promise<SupportPlan>>();
     plans.set(doc ?? noFlow, byDoc);
     const kind = (PLAN_KINDS.includes(req.query.kind as PlanKind) ? req.query.kind : "support") as PlanKind;
-    const key = `${kind}:${raw.id}@${raw.version}`;
+    // Weather signals change with the forecast, so they are part of the key: a new heat forecast drafts a new plan.
+    const wxSignals = weatherFor(store.getPerson(raw.personId));
+    const key = `${kind}:${raw.id}@${raw.version}:${wxSignals.map((s) => s.evidence).join("|")}`;
     let plan = byDoc.get(key);
     if (!plan) {
       const c = await enrichOne(raw);
       const cat = doc ? catalogOf(doc) : store.catalog;
       const person = store.getPerson(c.personId);
-      const facts = planFacts(kind, c, person, cat, store.catalog.asOf);
+      const facts = planFacts(kind, c, person, cat, store.catalog.asOf, wxSignals);
       const acct = person?.account;
       const contact: ContactRules | undefined = acct ? {
         preferred: acct.contactPreferences.preferredChannel, sms: acct.contactPreferences.smsOptIn, email: acct.contactPreferences.emailOptIn,

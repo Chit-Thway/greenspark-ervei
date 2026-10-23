@@ -1,4 +1,4 @@
-import type { FlowDoc, FlowOp } from "@greenspark/shared";
+import type { FlowDoc, FlowOp, WeatherSignal } from "@greenspark/shared";
 import type {
   AssessmentStatus, CaseStatus, CircumstanceDefinition, EvidenceFieldDefinition, Person, QueueCase,
   QueueQuery, RecommendationDefinition, ReviewStatus, StaffUser, SupportArea,
@@ -16,7 +16,8 @@ export interface Catalog {
   assignableUserIds: string[];
 }
 
-export interface CaseItem { case: QueueCase; person: Person | null }
+/** `weatherSignals`: the customer's weather signals from the latest forecast (case page only). */
+export interface CaseItem { case: QueueCase; person: Person | null; weatherSignals?: WeatherSignal[] }
 
 export interface Facets {
   view: Record<"all" | "mine" | "needs_review", number>;
@@ -49,6 +50,8 @@ export interface FlowSaved { hash: string; previousHash: string; changed: boolea
 export interface ApiClient {
   /** The utility hardship flow behind the Flowchart page (a JSON file on the server). */
   flow(): Promise<FlowSnapshot>;
+  weather?(): Promise<WeatherStatus>;
+  setWeatherMode?(mode: WeatherMode): Promise<WeatherStatus>;
   flowOps(ops: FlowOp[]): Promise<FlowSaved>;
   catalog(): Promise<Catalog>;
   list(q: QueueQuery): Promise<CaseListResponse>;
@@ -70,6 +73,9 @@ export type PlanKind = "support" | "signals";
 export type ContactMethod = "phone" | "sms" | "email" | "letter";
 export interface PlanStep { id: string; reason: string; due?: string; method?: ContactMethod }
 export interface SupportPlan { text: string; model: string; generatedAt: string; order?: PlanStep[]; interpreter?: boolean }
+
+export type WeatherMode = "live" | "demo" | "off";
+export interface WeatherStatus { mode: WeatherMode; fetchedAt: string | null; issuedAt: string | null; towns: number; warnings: string[]; error: string | null; available?: boolean }
 
 export interface VersionedId { caseId: string; expectedVersion: number }
 
@@ -114,6 +120,8 @@ export function createApiClient(getUser: () => string, base = ""): ApiClient {
   }
   return {
     flow: () => req("GET", "/api/admin/flow"),
+    weather: () => req("GET", "/api/weather"),
+    setWeatherMode: (mode) => req("POST", "/api/weather/mode", { mode }),
     flowOps: (ops) => req("POST", "/api/admin/flow/ops", { ops }),
     async catalog() {
       const [c, u] = await Promise.all([

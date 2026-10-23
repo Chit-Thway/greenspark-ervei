@@ -156,7 +156,7 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
         )}
       </section>
 
-      {acct ? <AccountSignals account={acct} asOf={data.asOf} summary={props.loadPlan ? <AiPlan kind="signals" caseId={c.id} version={c.version} load={props.loadPlan} /> : null} /> : null}
+      {acct ? <AccountSignals account={acct} asOf={data.asOf} weather={item.weatherSignals} summary={props.loadPlan ? <AiPlan kind="signals" caseId={c.id} version={c.version} load={props.loadPlan} /> : null} /> : null}
 
       <section className="case-card" aria-labelledby="ov-assist">
         <h3 id="ov-assist">Assistance already reported</h3>
@@ -393,7 +393,7 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
       {fromFlow && props.client ? (
         <button type="button" className="btn case-flow-btn" onClick={() => setFlowOpen(true)}>Flowchart for this case</button>
       ) : null}
-      {flowOpen && props.client ? <CaseFlowModal client={props.client} data={data} c={c} person={person ?? null} onClose={() => setFlowOpen(false)} /> : null}
+      {flowOpen && props.client ? <CaseFlowModal client={props.client} data={data} c={c} person={person ?? null} weather={item.weatherSignals ?? []} onClose={() => setFlowOpen(false)} /> : null}
       </div>
       </div>
       </div>

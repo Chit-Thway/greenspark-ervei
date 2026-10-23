@@ -127,7 +127,7 @@ export function CasePageGuide() {
         <ul className="plain history">
           <li><strong>Demo cases and people</strong> come from <code>data/synthetic/case-queue.v1.json</code>: 200 cases, 20 for each testing scenario, with fictional names, contact details and survey answers. The data's "today" is 16 Oct 2026.</li>
           <li><strong>Utility accounts</strong> come from <code>data/synthetic/utility-accounts.v1.json</code>, taken from the synthetic WA dataset (see Data sources), with dates moved forward 473 days.</li>
-          <li><strong>The flowchart</strong> is <code>data/admin/utility_hardship_mapping.json</code>: 107 signals (50 from account data, 57 asked of the customer), 99 circumstances and 49 solutions. Edits on the Flowchart page are written straight back to this file.</li>
+          <li><strong>The flowchart</strong> is <code>data/admin/utility_hardship_mapping.json</code>: 110 signals (50 from account data, 57 asked of the customer, 3 from weather forecasts), 99 circumstances and 49 solutions. Edits on the Flowchart page are written straight back to this file.</li>
           <li><strong>Workers' changes</strong> are kept in a SQLite database on the server's disk (on Fly, the <code>/data</code> volume). Tables: <code>cases</code> (status, assignee, review, version), <code>notes</code>, <code>note_edits</code> (every earlier version of an edited note), and <code>workflow_actions</code> with <code>workflow_action_items</code> (the before and after of each change, for undo). The demo files are copied in on first start and never edited.</li>
         </ul>
       </section>
@@ -148,7 +148,8 @@ export function CasePageGuide() {
           <li><strong>From survey answers (5 questions):</strong> couldn't afford other essentials, avoided heating or cooling, life support, health affects energy use, and holds a concession card. Only a "Yes" raises the signal.</li>
           <li><strong>From what the customer said (14 phrases):</strong> the customer's own words in contact transcripts from the last 12 months, such as "lost my job", "rent went up" or "sitting in the dark". The agent's words never count, and vaguer remarks are left out on purpose.</li>
           <li><strong>From account facts:</strong> the medical cooling subsidy counts as "health affects energy use".</li>
-          <li><strong>Each signal counts once,</strong> with the first evidence found: account data, then the survey, then account facts and transcripts (newest first).</li>
+          <li><strong>From weather forecasts (3 signals):</strong> the Bureau of Meteorology's forecasts for the customer's postcode, refreshed every hour. Extreme heat: a forecast maximum of 38°C or more in the next 7 days (42°C north of the 26th parallel, where 40°C is routine). Extreme fire danger: an Extreme or Catastrophic rating for the district (the free forecast usually rates tomorrow only). Weather warning: an active heatwave, severe weather, fire weather, cyclone or flood warning for the district. Each postcode is matched to its nearest of the Bureau's forecast towns, and that town's district.</li>
+          <li><strong>Each signal counts once,</strong> with the first evidence found: account data, then the survey, then account facts, transcripts (newest first) and weather.</li>
         </ul>
       </section>
 
@@ -156,6 +157,7 @@ export function CasePageGuide() {
         <h2 id="cp-flags">Behind the scenes: circumstances, solutions and priority</h2>
         <ul className="plain history">
           <li><strong>A circumstance is flagged</strong> when its linked signals include 1 strong signal or 2 supporting ones. Sensitive and safety circumstances need a strong one. Only circumstances that apply to electricity are checked.</li>
+          <li><strong>Weather is a risk, not an event.</strong> Extreme heat is a strong signal for "Heatwave or cold snap", and a supporting one for medical need for cooling, life support, rationing and prepay self-disconnection, so it adds weight where the customer is already vulnerable. Fire danger only supports "Bushfire, flood, cyclone or storm", so a forecast alone never claims a disaster happened.</li>
           <li><strong>Support areas</strong> are the flowchart categories with at least one flagged circumstance.</li>
           <li><strong>Solutions</strong> are every solution linked to a flagged circumstance, each listed once with the circumstances it is for. Their standard order is the order they appear in the flowchart file.</li>
           <li><strong>Priority</strong> adds points for each flagged circumstance and each distinct signal behind them, capped at 100 (see Priority model). The trend is rising when a worsening signal is present: arrears growing, usage dropping, low prepay credit or a disconnection warning.</li>
