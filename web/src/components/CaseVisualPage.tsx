@@ -146,7 +146,7 @@ export function CaseVisualPage({ client, data, accountNumber, navigate }: { clie
         {a?.usage.length ? (
           <section className="case-card vis-card vis-wide" aria-labelledby="vis-use">
             <h2 id="vis-use">Electricity use</h2>
-            <UsageChart usage={a.usage.slice(-12)} />
+            <UsageChart usage={a.usage.slice(0, -1)} />
           </section>
         ) : null}
       </div>

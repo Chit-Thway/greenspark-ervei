@@ -52,11 +52,10 @@ const SOURCES: Source[] = [
 const MODES: [WeatherMode, string, string][] = [
   ["demo", "Sample heatwave", "A built-in heatwave over the Perth, South West and Wheatbelt districts for the next few days, so the signals always show."],
   ["live", "Live Bureau data", "The Bureau's real forecasts and warnings, refreshed every hour. Usually quiet unless hot weather is coming."],
-  ["off", "Off", "No weather signals."],
 ];
 
-/** Shows which weather source the server is using, and lets managers switch it for everyone. */
-export function WeatherSource({ client, isManager }: { client: ApiClient; isManager: boolean }) {
+/** Shows which weather source the server is using, and lets anyone switch it for everyone. */
+export function WeatherSource({ client }: { client: ApiClient }) {
   const [status, setStatus] = useState<WeatherStatus | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -74,10 +73,10 @@ export function WeatherSource({ client, isManager }: { client: ApiClient; isMana
     <div className="wx-source">
       <div className="wx-modes" role="radiogroup" aria-label="Weather source">
         {MODES.map(([mode, label]) => (
-          <button key={mode} type="button" role="radio" aria-checked={status.mode === mode} disabled={!isManager || busy} onClick={() => void choose(mode)}>{label}</button>
+          <button key={mode} type="button" role="radio" aria-checked={status.mode === mode} disabled={busy} onClick={() => void choose(mode)}>{label}</button>
         ))}
       </div>
-      <p className="hint">{MODES.find((m) => m[0] === status.mode)?.[2]} {isManager ? "Switching applies to everyone, straight away." : "Only managers can switch it."}</p>
+      <p className="hint">{MODES.find((m) => m[0] === status.mode)?.[2]} Switching applies to everyone, straight away.</p>
       {status.mode !== "off" ? (
         <p className="hint">
           {busy ? "Loading the forecast…" : <>Forecast loaded {when(status.fetchedAt)}{status.mode === "live" && status.issuedAt ? `, issued by the Bureau ${when(status.issuedAt)}` : ""}. {status.towns} towns.
@@ -90,7 +89,7 @@ export function WeatherSource({ client, isManager }: { client: ApiClient; isMana
   );
 }
 
-export function DataSourcesPage({ client, isManager }: { client: ApiClient; isManager: boolean }) {
+export function DataSourcesPage({ client }: { client: ApiClient }) {
   useEffect(() => { document.title = "Data sources · ERVEI"; }, []);
   return (
     <main id="queue" className="bts-page" tabIndex={-1}>
@@ -158,7 +157,7 @@ export function DataSourcesPage({ client, isManager }: { client: ApiClient; isMa
         <h2 id="ds-weather">Live data: Bureau of Meteorology</h2>
         <p className="hint">Fetched by the server every hour, matched to each customer's postcode, and used for the three weather signals. Free anonymous products, under the Bureau's copyright terms.</p>
         <p className="block-label">Weather source</p>
-        <WeatherSource client={client} isManager={isManager} />
+        <WeatherSource client={client} />
         <div className="table-scroll">
           <table className="mini-table ds-table">
             <thead><tr><th scope="col">Product</th><th scope="col">What's in it</th><th scope="col">What is used</th></tr></thead>

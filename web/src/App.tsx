@@ -415,7 +415,7 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; o
       {props.page === "admin" ? (
         <AdminPage client={client} />
       ) : props.page === "data" ? (
-        <DataSourcesPage client={client} isManager={user.role === "manager"} />
+        <DataSourcesPage client={client} />
       ) : props.page === "priority" ? (
         <PriorityModelPage />
       ) : props.page === "casepage" ? (

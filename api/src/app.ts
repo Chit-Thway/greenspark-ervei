@@ -311,16 +311,15 @@ export function createApp(store: Store, options: AppOptions = {}) {
   });
 
   app.get("/api/weather", (_req, res) => { res.json(options.weather?.status() ?? { mode: "off", available: false }); });
-  // Managers switch the weather source for everyone: the sample heatwave, the Bureau's live data, or off.
+  // Anyone can switch the weather source for everyone: the sample heatwave, the Bureau's live data, or off.
   app.post("/api/weather/mode", async (req, res) => {
-    if (actor(res).role !== "manager") throw new ApiError("forbidden", "Only managers can change the weather source.");
     if (!options.weather) throw new ApiError("not_found", "Weather signals aren't set up on this server.");
-    const { mode } = parse(z.object({ mode: z.enum(["live", "demo", "off"]) }), req.body);
+    const { mode } = parse(z.object({ mode: z.enum(["live", "demo"]) }), req.body); // "off" is only for the WEATHER_MODE setting (tests)
     await options.weather.setMode(mode);
     res.json(options.weather.status());
   });
 
-  // The AI model in use; managers can switch it in the demo settings until the server restarts.
+  // The AI model in use; anyone can switch it in the demo settings until the server restarts.
   let ai: AiConfig | null = options.ai ?? null;
   const AI_MODELS: { provider: "claude" | "gemini"; model: string; label: string }[] = [
     { provider: "claude", model: "claude-haiku-5-5", label: "Claude Haiku 5.5 · fast, cheapest" },
@@ -335,7 +334,6 @@ export function createApp(store: Store, options: AppOptions = {}) {
   });
   app.get("/api/ai", (_req, res) => { res.json(aiStatus()); });
   app.post("/api/ai", (req, res) => {
-    if (actor(res).role !== "manager") throw new ApiError("forbidden", "Only managers can change the AI model.");
     const { model } = parse(z.object({ model: z.string() }), req.body);
     const choice = AI_MODELS.find((m) => m.model === model);
     if (!choice) throw new ApiError("validation_failed", "That model isn't one of the options.");

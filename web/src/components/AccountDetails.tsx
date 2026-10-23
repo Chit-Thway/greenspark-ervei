@@ -247,7 +247,8 @@ export function SupplyAndCollections({ account: a }: { account: CustomerAccount 
 export function AccountHistory({ account: a, asOf }: { account: CustomerAccount; asOf: string }) {
   const payments = a.payments.slice(-10).reverse();
   const recharges = (a.prepay?.recharges ?? []).slice(-10).reverse();
-  const recentUsage = a.usage.slice(-13, -1).reverse();
+  // Every complete month in the data (the latest month is still part-way through).
+  const recentUsage = a.usage.slice(0, -1).reverse();
   return (
     <section className="case-card" aria-labelledby="ov-bills">
       {a.prepay ? (
@@ -314,6 +315,8 @@ export function AccountHistory({ account: a, asOf }: { account: CustomerAccount;
 }
 
 /** Bars for each month's kWh, oldest on the left, with a line for the same month last year. */
+const MONTH_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
 export function UsageChart({ usage }: { usage: { month: string; kWh: number; kWhLastYear: number | null }[] }) {
   const months = [...usage].sort((a, b) => a.month.localeCompare(b.month));
   if (months.length < 2) return null;
@@ -328,7 +331,11 @@ export function UsageChart({ usage }: { usage: { month: string; kWh: number; kWh
         {months.map((m, i) => (
           <g key={m.month}>
             <rect x={i * step + (step - bar) / 2} y={y(m.kWh)} width={bar} height={H - bottom - y(m.kWh)} rx={2} className="usage-bar"><title>{`${m.month}: ${m.kWh} kWh${m.kWhLastYear !== null ? ` (last year ${m.kWhLastYear})` : ""}`}</title></rect>
-            <text x={i * step + step / 2} y={H - 4} textAnchor="middle" className="usage-axis">{m.month.slice(5)}</text>
+            {months.length <= 12 || i % 3 === 0 ? (
+              <text x={i * step + step / 2} y={H - 4} textAnchor="middle" className="usage-axis">
+                {MONTH_SHORT[Number(m.month.slice(5)) - 1]}{i === 0 || m.month.endsWith("-01") || (months.length > 12 && i % 12 === 0) ? ` ${m.month.slice(2, 4)}` : ""}
+              </text>
+            ) : null}
           </g>
         ))}
         {last.length > 1 ? <polyline points={last.join(" ")} className="usage-last" /> : null}

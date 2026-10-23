@@ -3,8 +3,8 @@ import type { AiStatus, ApiClient } from "../data/api";
 import type { StaffUser } from "../domain/types";
 import { WeatherSource } from "./DataSourcesPage";
 
-/** The AI model behind the case summaries; managers switch it for everyone until the server restarts. */
-function AiModel({ client, isManager }: { client: ApiClient; isManager: boolean }) {
+/** The AI model behind the case summaries; anyone can switch it, for everyone, until the server restarts. */
+function AiModel({ client }: { client: ApiClient }) {
   const [status, setStatus] = useState<AiStatus | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -18,11 +18,11 @@ function AiModel({ client, isManager }: { client: ApiClient; isManager: boolean 
   };
   return (
     <>
-      <select value={status.on ? status.model ?? "" : ""} disabled={!isManager || busy} onChange={(e) => void choose(e.target.value)} aria-label="AI model">
+      <select value={status.on ? status.model ?? "" : ""} disabled={busy} onChange={(e) => void choose(e.target.value)} aria-label="AI model">
         {status.on ? null : <option value="">Off: no API key on the server</option>}
         {status.options.map((o) => <option key={o.model} value={o.model} disabled={!o.available}>{o.label}{o.available ? "" : " (no key)"}</option>)}
       </select>
-      <p className="hint">Writes the Suggested plan, the signals summary and the order of solutions. {isManager ? "Switching applies to everyone and drafts fresh summaries." : "Only managers can switch it."}</p>
+      <p className="hint">Writes the Suggested plan, the signals summary and the order of solutions. Switching applies to everyone and drafts fresh summaries.</p>
       {error ? <p className="muted" role="alert">{error}</p> : null}
     </>
   );
@@ -33,7 +33,6 @@ export function DemoSettings({ client, users, user, onSwitchUser }: { client: Ap
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const button = useRef<HTMLButtonElement>(null);
-  const isManager = user.role === "manager";
   useEffect(() => {
     if (!open) return;
     const close = (e: MouseEvent | KeyboardEvent) => {
@@ -61,11 +60,11 @@ export function DemoSettings({ client, users, user, onSwitchUser }: { client: Ap
           </label>
           <div className="field">
             <span>AI model</span>
-            <AiModel client={client} isManager={isManager} />
+            <AiModel client={client} />
           </div>
           <div className="field">
             <span>Weather source</span>
-            <WeatherSource client={client} isManager={isManager} />
+            <WeatherSource client={client} />
           </div>
         </div>
       ) : null}
