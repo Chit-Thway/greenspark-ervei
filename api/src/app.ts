@@ -66,6 +66,8 @@ export interface AppOptions {
   basicAuth?: string | null;
   /** AI service (Claude or Gemini), key and models for the AI summaries. No key turns them off. */
   ai?: AiConfig | null;
+  /** Keys for each AI service, so managers can switch the model while the server runs (demo settings). */
+  aiKeys?: Partial<Record<"claude" | "gemini", string>>;
   /** Bureau of Meteorology forecasts and warnings for weather signals. Without it there are none. */
   weather?: { current(): WeatherSnapshot | null; status(): unknown; setMode(mode: "live" | "demo" | "off"): Promise<void> };
   /** The 90-day risk model's scores and model card. Without it there are no predictions. */
@@ -318,6 +320,31 @@ export function createApp(store: Store, options: AppOptions = {}) {
     res.json(options.weather.status());
   });
 
+  // The AI model in use; managers can switch it in the demo settings until the server restarts.
+  let ai: AiConfig | null = options.ai ?? null;
+  const AI_MODELS: { provider: "claude" | "gemini"; model: string; label: string }[] = [
+    { provider: "claude", model: "claude-haiku-5-5", label: "Claude Haiku 5.5 · fast, cheapest" },
+    { provider: "claude", model: "claude-sonnet-5-5", label: "Claude Sonnet 5.5 · stronger, costs more" },
+    { provider: "gemini", model: "gemini-flash-lite-latest", label: "Gemini Flash-Lite · free tier" },
+    { provider: "gemini", model: "gemini-flash-latest", label: "Gemini Flash · free tier, often busy" },
+  ];
+  const keyFor = (p: "claude" | "gemini") => options.aiKeys?.[p] ?? (ai?.provider === p ? ai.apiKey : null);
+  const aiStatus = () => ({
+    provider: ai?.provider ?? null, model: ai?.models.support ?? null, on: !!ai?.apiKey,
+    options: AI_MODELS.map((m) => ({ ...m, available: !!keyFor(m.provider) })),
+  });
+  app.get("/api/ai", (_req, res) => { res.json(aiStatus()); });
+  app.post("/api/ai", (req, res) => {
+    if (actor(res).role !== "manager") throw new ApiError("forbidden", "Only managers can change the AI model.");
+    const { model } = parse(z.object({ model: z.string() }), req.body);
+    const choice = AI_MODELS.find((m) => m.model === model);
+    if (!choice) throw new ApiError("validation_failed", "That model isn't one of the options.");
+    const apiKey = keyFor(choice.provider);
+    if (!apiKey) throw new ApiError("validation_failed", `No ${choice.provider === "claude" ? "Anthropic" : "Gemini"} API key is set on the server.`);
+    ai = { provider: choice.provider, apiKey, models: { support: model, signals: model } };
+    res.json(aiStatus());
+  });
+
   // Plans are kept per case version and flowchart version, so each case calls the AI once until it changes.
   const plans = new WeakMap<object, Map<string, Promise<SupportPlan>>>();
   const noFlow = {};
@@ -330,7 +357,8 @@ export function createApp(store: Store, options: AppOptions = {}) {
     const kind = (PLAN_KINDS.includes(req.query.kind as PlanKind) ? req.query.kind : "support") as PlanKind;
     // Weather signals change with the forecast, so they are part of the key: a new heat forecast drafts a new plan.
     const wxSignals = weatherFor(store.getPerson(raw.personId));
-    const key = `${kind}:${raw.id}@${raw.version}:${wxSignals.map((s) => s.evidence).join("|")}`;
+    // The model is part of the key too, so switching it drafts fresh summaries.
+    const key = `${kind}:${raw.id}@${raw.version}:${ai ? `${ai.provider}/${ai.models[kind]}` : "off"}:${wxSignals.map((s) => s.evidence).join("|")}`;
     let plan = byDoc.get(key);
     if (!plan) {
       const c = await enrichOne(raw);
@@ -343,7 +371,7 @@ export function createApp(store: Store, options: AppOptions = {}) {
         doNotCall: acct.contactPreferences.doNotCall, interpreter: acct.interpreterRequired,
       } : undefined;
       if (!facts) throw new ApiError("not_found", "Nothing to summarise for this case.");
-      plan = draftPlan(kind, facts, options.ai ?? null, c.recommendations.map((r) => r.recommendationId), contact, perthToday(clock()));
+      plan = draftPlan(kind, facts, ai, c.recommendations.map((r) => r.recommendationId), contact, perthToday(clock()));
       byDoc.set(key, plan);
       plan.catch(() => byDoc.delete(key)); // failures are retried on the next load
     }

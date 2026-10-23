@@ -72,6 +72,9 @@ export interface ApiClient {
   /** The utility hardship flow behind the Flowchart page (a JSON file on the server). */
   flow(): Promise<FlowSnapshot>;
   weather?(): Promise<WeatherStatus>;
+  /** The AI model behind the summaries, and switching it (managers). */
+  ai?(): Promise<AiStatus>;
+  setAi?(model: string): Promise<AiStatus>;
   setWeatherMode?(mode: WeatherMode): Promise<WeatherStatus>;
   flowOps(ops: FlowOp[]): Promise<FlowSaved>;
   catalog(): Promise<Catalog>;
@@ -99,6 +102,7 @@ export type ContactMethod = "phone" | "sms" | "email" | "letter";
 export interface PlanStep { id: string; reason: string; due?: string; method?: ContactMethod }
 export interface SupportPlan { text: string; model: string; generatedAt: string; order?: PlanStep[]; interpreter?: boolean }
 
+export interface AiStatus { provider: string | null; model: string | null; on: boolean; options: { provider: string; model: string; label: string; available: boolean }[] }
 export type WeatherMode = "live" | "demo" | "off";
 export interface WeatherStatus { mode: WeatherMode; fetchedAt: string | null; issuedAt: string | null; towns: number; warnings: string[]; error: string | null; available?: boolean }
 
@@ -152,6 +156,8 @@ export function createApiClient(getUser: () => string, base = ""): ApiClient {
   return {
     flow: () => req("GET", "/api/admin/flow"),
     weather: () => req("GET", "/api/weather"),
+    ai: () => req("GET", "/api/ai"),
+    setAi: (model) => req("POST", "/api/ai", { model }),
     setWeatherMode: (mode) => req("POST", "/api/weather/mode", { mode }),
     flowOps: (ops) => req("POST", "/api/admin/flow/ops", { ops }),
     async catalog() {

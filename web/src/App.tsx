@@ -17,6 +17,7 @@ import { CasePageGuide } from "./components/CasePageGuide";
 import { PredictionsPage } from "./components/PredictionsPage";
 import { RiskModelPage } from "./components/RiskModelPage";
 import { CaseVisualPage } from "./components/CaseVisualPage";
+import { DemoSettings } from "./components/DemoSettings";
 import { AdminPage } from "./admin/AdminPage";
 
 interface Notice {
@@ -408,12 +409,7 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; o
         <nav className="mainnav" aria-label="Main">
           <BtsMenu page={props.page} navigate={navigate} />
         </nav>
-        <label className="whoami">
-          <span className="whoami-label">Demo view</span>
-          <select value={user.id} onChange={(e) => props.onSwitchUser(e.target.value)} aria-label="Demo user (not real sign-in)">
-            {catalog.users.map((u) => <option key={u.id} value={u.id}>{u.displayName} · {u.role === "manager" ? "Manager" : "Support worker"}</option>)}
-          </select>
-        </label>
+        <DemoSettings client={client} users={catalog.users} user={user} onSwitchUser={props.onSwitchUser} />
       </header>
 
       {props.page === "admin" ? (

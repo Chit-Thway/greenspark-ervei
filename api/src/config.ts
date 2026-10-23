@@ -53,3 +53,9 @@ export const WEATHER_MODE = (["live", "demo", "off"].includes(process.env.WEATHE
 // The 90-day risk model and its scores, from scripts/train-risk-model.mts. Missing files turn predictions off.
 export const RISK_MODEL_PATH = process.env.GREENSPARK_RISK_MODEL ?? `${root}data/models/risk-model.v1.json`;
 export const PREDICTIONS_PATH = process.env.GREENSPARK_PREDICTIONS ?? `${root}data/synthetic/predictions.v1.json`;
+
+// Both services' keys, so the demo settings can switch the AI model while the server runs.
+export const AI_KEYS: Partial<Record<AiProvider, string>> = {
+  ...(process.env.ANTHROPIC_API_KEY ? { claude: process.env.ANTHROPIC_API_KEY } : {}),
+  ...(process.env.GEMINI_API_KEY ? { gemini: process.env.GEMINI_API_KEY } : {}),
+};

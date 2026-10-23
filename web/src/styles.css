@@ -311,8 +311,7 @@ ol.suggest-list.solutions { list-style: none; padding-left: 0; }
   .topbar .mainnav { margin-left: auto; }
   .bts-btn { padding: 6px 10px; }
   .bts-btn .sub-inline { display: none; }
-  .topbar .mainnav + .whoami { margin-left: 0; width: 100%; }
-  .whoami select { flex: 1; min-width: 0; }
+  .topbar .demo-settings { margin-left: 0; }
 }
 
 .timeline { margin: 4px 0 14px; padding-bottom: 14px; border-bottom: 1px solid var(--border); }
@@ -415,3 +414,15 @@ ol.suggest-list.solutions { list-style: none; padding-left: 0; }
 .vis-steps { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
 .vis-steps li { display: flex; align-items: flex-start; gap: 8px; font-size: 14px; }
 @media (max-width: 899px) { .vis-grid { grid-template-columns: minmax(0, 1fr); } }
+
+/* Demo settings: a gear at the right of the header, opening a small panel below it */
+.demo-settings { position: relative; margin-left: 4px; }
+.settings-btn { display: grid; place-items: center; width: 38px; height: 38px; color: var(--muted); }
+.settings-btn[aria-expanded="true"], .settings-btn:hover { color: var(--fg); background: var(--selected); }
+.settings-pop { position: absolute; right: 0; top: calc(100% + 8px); z-index: 60; width: min(360px, calc(100vw - 24px)); background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-panel); box-shadow: 0 16px 40px rgba(9, 30, 66, .22); padding: 16px; display: grid; gap: 14px; }
+.settings-pop h2 { margin: 0; font-size: 16px; }
+.settings-pop .field { display: grid; gap: 6px; }
+.settings-pop .field > span:first-child { font-size: 13px; font-weight: 600; }
+.settings-pop .hint { margin: 0; font-size: 12px; }
+.settings-pop .wx-modes { margin: 0; }
+.settings-pop .wx-source .hint + .hint { margin-top: 4px; }

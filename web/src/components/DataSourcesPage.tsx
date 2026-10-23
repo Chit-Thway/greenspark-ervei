@@ -56,7 +56,7 @@ const MODES: [WeatherMode, string, string][] = [
 ];
 
 /** Shows which weather source the server is using, and lets managers switch it for everyone. */
-function WeatherSource({ client, isManager }: { client: ApiClient; isManager: boolean }) {
+export function WeatherSource({ client, isManager }: { client: ApiClient; isManager: boolean }) {
   const [status, setStatus] = useState<WeatherStatus | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
