@@ -1,5 +1,6 @@
 import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
+import type { AiConfig, AiProvider } from "./plan";
 
 const root = fileURLToPath(new URL("../../", import.meta.url));
 
@@ -17,13 +18,23 @@ export const WEB_DIST = existsSync(`${webDist}/index.html`) ? webDist : null;
 // Optional "user:password" gate for shared demo hosting. Unset locally.
 export const BASIC_AUTH = process.env.GREENSPARK_BASIC_AUTH || null;
 
-// Google Gemini, for the AI support plan on each case. Unset key: the plan is switched off.
-export const GEMINI_API_KEY = process.env.GEMINI_API_KEY || null;
-// Flash-Lite for both: it is far less often overloaded than Flash. Set GEMINI_MODEL to use another model for the plan.
-export const GEMINI_MODELS = {
-  support: process.env.GEMINI_MODEL || "gemini-flash-lite-latest",
-  signals: process.env.GEMINI_SIGNALS_MODEL || "gemini-flash-lite-latest",
-};
+// The AI summaries on each case: Claude (Anthropic) or Gemini (Google). AI_PROVIDER picks one; unset, Claude is used
+// when ANTHROPIC_API_KEY is set, otherwise Gemini. The chosen service's key unset: the summaries are switched off.
+const provider: AiProvider = process.env.AI_PROVIDER === "gemini" || (process.env.AI_PROVIDER !== "claude" && !process.env.ANTHROPIC_API_KEY)
+  ? "gemini" : "claude";
+export const AI: AiConfig = provider === "claude"
+  ? {
+    provider,
+    apiKey: process.env.ANTHROPIC_API_KEY || null,
+    // Haiku: fast and the cheapest Claude model, plenty for one-paragraph summaries. CLAUDE_MODEL / CLAUDE_SIGNALS_MODEL override it.
+    models: { support: process.env.CLAUDE_MODEL || "claude-haiku-5-5", signals: process.env.CLAUDE_SIGNALS_MODEL || "claude-haiku-5-5" },
+  }
+  : {
+    provider,
+    apiKey: process.env.GEMINI_API_KEY || null,
+    // Flash-Lite for both: it is far less often overloaded than Flash. GEMINI_MODEL / GEMINI_SIGNALS_MODEL override it.
+    models: { support: process.env.GEMINI_MODEL || "gemini-flash-lite-latest", signals: process.env.GEMINI_SIGNALS_MODEL || "gemini-flash-lite-latest" },
+  };
 
 // Weather signals: "demo" (the default) uses a built-in sample heatwave, "live" fetches Bureau of Meteorology
 // forecasts hourly, "off" turns them off. This is the mode at start-up; it can be switched on the Data sources page.

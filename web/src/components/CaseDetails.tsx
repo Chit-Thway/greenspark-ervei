@@ -401,7 +401,7 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
   );
 }
 
-/** The Gemini-drafted plan, fetched when the case opens and again whenever the case changes. */
+/** The AI-drafted plan (Claude or Gemini), fetched when the case opens and again whenever the case changes. */
 const AI_TITLE: Record<PlanKind, string> = { support: "Suggested plan", signals: "What the signals say" };
 const METHOD_LABEL: Record<ContactMethod, string> = { phone: "Phone call", sms: "SMS", email: "Email", letter: "Letter" };
 const dueDate = (iso: string) => new Date(`${iso}T00:00:00Z`).toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });

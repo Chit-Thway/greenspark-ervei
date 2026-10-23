@@ -12,7 +12,7 @@ import { MAX_BULK_ITEMS, WorkflowService, type MutationResult } from "./service"
 import type { Store } from "./store";
 import type { Clock } from "./clock";
 import { FlowFile } from "./flow";
-import { draftPlan, PLAN_KINDS, perthToday, planFacts, type ContactRules, type PlanKind, type SupportPlan } from "./plan";
+import { draftPlan, PLAN_KINDS, perthToday, planFacts, type AiConfig, type ContactRules, type PlanKind, type SupportPlan } from "./plan";
 import { FlowError, detectWeatherSignals, evaluateCase, flowCatalog, parseOp, type FlowDoc, type WeatherSignal, type WeatherSnapshot } from "@greenspark/shared";
 import { SyntheticModelAdapter, withAssessments, type ModelAdapter } from "./adapters";
 
@@ -63,8 +63,8 @@ export interface AppOptions {
   staticDir?: string | null;
   /** Optional "user:password" for HTTP Basic auth in front of everything except /api/health. For shared demo hosting. */
   basicAuth?: string | null;
-  /** Google Gemini key and model for the AI support plan. No key turns the plan off. */
-  gemini?: { apiKey: string | null; models: Record<PlanKind, string> };
+  /** AI service (Claude or Gemini), key and models for the AI summaries. No key turns them off. */
+  ai?: AiConfig | null;
   /** Bureau of Meteorology forecasts and warnings for weather signals. Without it there are none. */
   weather?: { current(): WeatherSnapshot | null; status(): unknown; setMode(mode: "live" | "demo" | "off"): Promise<void> };
 }
@@ -268,7 +268,7 @@ export function createApp(store: Store, options: AppOptions = {}) {
     res.json(options.weather.status());
   });
 
-  // Plans are kept per case version and flowchart version, so each case calls Gemini once until it changes.
+  // Plans are kept per case version and flowchart version, so each case calls the AI once until it changes.
   const plans = new WeakMap<object, Map<string, Promise<SupportPlan>>>();
   const noFlow = {};
   app.get("/api/cases/:caseId/plan", async (req, res) => {
@@ -293,7 +293,7 @@ export function createApp(store: Store, options: AppOptions = {}) {
         doNotCall: acct.contactPreferences.doNotCall, interpreter: acct.interpreterRequired,
       } : undefined;
       if (!facts) throw new ApiError("not_found", "Nothing to summarise for this case.");
-      plan = draftPlan(kind, facts, options.gemini?.apiKey ?? null, options.gemini?.models[kind] ?? "gemini-flash-lite-latest", c.recommendations.map((r) => r.recommendationId), contact, perthToday(clock()));
+      plan = draftPlan(kind, facts, options.ai ?? null, c.recommendations.map((r) => r.recommendationId), contact, perthToday(clock()));
       byDoc.set(key, plan);
       plan.catch(() => byDoc.delete(key)); // failures are retried on the next load
     }

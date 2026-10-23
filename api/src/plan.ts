@@ -1,14 +1,15 @@
-// One-paragraph AI summaries drafted by Google Gemini for two parts of a case:
+// One-paragraph AI summaries drafted by Claude or Google Gemini (see AiConfig) for two parts of a case:
 //   support: the plan from the flagged circumstances (Support areas and why), plus the order of the
 //            Solutions to offer, in one call so the plan and the order agree;
 //   signals: what the account signals say together (Account signals).
 // Only circumstances, signals, solutions and contact settings are sent: never names or contact details.
 import { detectAccountSignals, type WeatherSignal, type CircumstanceDefinition, type Person, type QueueCase, type RecommendationDefinition } from "@greenspark/shared";
+import Anthropic from "@anthropic-ai/sdk";
 import { ApiError } from "./errors";
 
 /**
  * `order` (support only): every solution id, most important first, each with a short reason, the date to act by
- * (worked out here from Gemini's number of working days) and how to contact the customer about it.
+ * (worked out here from the AI's number of working days) and how to contact the customer about it.
  */
 export interface PlanStep { id: string; reason: string; due: string; method: Method }
 export interface SupportPlan { text: string; model: string; generatedAt: string; order?: PlanStep[]; interpreter?: boolean }
@@ -23,7 +24,7 @@ const OPEN: ContactRules = { preferred: "phone", sms: true, email: true, doNotCa
 export const allowedMethods = (r: ContactRules): Method[] =>
   METHODS.filter((m) => (m === "phone" ? !r.doNotCall : m === "sms" ? r.sms : m === "email" ? r.email : true));
 
-/** Gemini's method if the settings allow it; otherwise the preferred channel, or a letter. */
+/** The AI's method if the settings allow it; otherwise the preferred channel, or a letter. */
 export function checkMethod(m: string, r: ContactRules): Method {
   const allowed = allowedMethods(r);
   if (allowed.includes(m as Method)) return m as Method;
@@ -111,6 +112,7 @@ function supportFacts(c: QueueCase, person: Person | null, cat: Catalog): string
   return lines.join("\n");
 }
 
+// The same answer shape twice: Gemini uses its own schema dialect, Claude standard JSON Schema.
 const ORDER_SCHEMA = {
   type: "OBJECT",
   properties: {
@@ -127,27 +129,95 @@ const ORDER_SCHEMA = {
   required: ["summary", "order"],
 };
 
+const CLAUDE_ORDER_SCHEMA = {
+  type: "object",
+  properties: {
+    summary: { type: "string" },
+    order: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: { id: { type: "string" }, reason: { type: "string" }, dueInWorkingDays: { type: "integer" }, method: { type: "string", enum: METHODS } },
+        required: ["id", "reason", "dueInWorkingDays", "method"],
+        additionalProperties: false,
+      },
+    },
+  },
+  required: ["summary", "order"],
+  additionalProperties: false,
+};
+
+/** Which AI service drafts the summaries, its key and the model for each kind. No key turns the summaries off. */
+export interface AiConfig { provider: AiProvider; apiKey: string | null; models: Record<PlanKind, string> }
+export type AiProvider = "claude" | "gemini";
+const NAMES: Record<AiProvider, string> = { claude: "Claude", gemini: "Gemini" };
+
 /**
- * Calls the Gemini API. Throws an ApiError the page can show when the key is missing or the call fails.
+ * Asks the configured AI service. Throws an ApiError the page can show when the key is missing or the call fails.
  * For the support plan, `ids` are the case's solutions: the order is kept only if it has exactly those, each once.
  * Dates count from `today` (Perth), and each method is checked against the customer's contact settings.
  */
 export async function draftPlan(
-  kind: PlanKind, facts: string, apiKey: string | null, model: string,
+  kind: PlanKind, facts: string, ai: AiConfig | null,
   ids: string[] = [], contact: ContactRules = OPEN, today = perthToday(new Date()),
 ): Promise<SupportPlan> {
-  if (!apiKey) throw new ApiError("unavailable", "AI plans are switched off: no Gemini API key is set on the server.");
+  if (!ai?.apiKey) throw new ApiError("unavailable", "AI plans are switched off: no AI API key is set on the server.");
+  const name = NAMES[ai.provider];
+  const model = ai.models[kind];
+  const system = `${COMMON} ${TASK[kind]}`;
+  const prompt = kind === "support" ? `${facts}\nAllowed methods: ${allowedMethods(contact).join(", ")}.` : facts;
+  const text = await (ai.provider === "claude" ? askClaude : askGemini)(kind, system, prompt, ai.apiKey, model);
+  if (!text) throw new ApiError("unavailable", `${name} returned no text.`);
+  const generatedAt = new Date().toISOString();
+  if (kind !== "support") return { text, model, generatedAt };
+  let parsed: { summary?: unknown; order?: { id?: unknown; reason?: unknown; dueInWorkingDays?: unknown; method?: unknown }[] };
+  try { parsed = JSON.parse(text); } catch { throw new ApiError("unavailable", `${name}'s answer could not be read.`); }
+  if (typeof parsed.summary !== "string" || !parsed.summary.trim()) throw new ApiError("unavailable", `${name} returned no summary.`);
+  const order: PlanStep[] = (Array.isArray(parsed.order) ? parsed.order : []).map((o) => ({
+    id: String(o.id ?? ""), reason: String(o.reason ?? "").trim(),
+    due: addWorkingDays(today, Number(o.dueInWorkingDays) || 0),
+    // Same-day (urgent) steps are a phone call whenever calling is allowed, whatever the preferred channel.
+    method: (Number(o.dueInWorkingDays) || 0) <= 0 && !contact.doNotCall ? "phone" : checkMethod(String(o.method ?? ""), contact),
+  }));
+  const valid = order.length === ids.length && new Set(order.map((o) => o.id)).size === ids.length && order.every((o) => ids.includes(o.id));
+  return { text: parsed.summary.trim(), model, generatedAt, interpreter: contact.interpreter, ...(valid ? { order } : {}) };
+}
+
+type Ask = (kind: PlanKind, system: string, prompt: string, apiKey: string, model: string) => Promise<string | undefined>;
+
+/** Anthropic's Claude. The SDK retries a busy (429) or server error (5xx) once by itself. */
+const askClaude: Ask = async (kind, system, prompt, apiKey, model) => {
+  const client = new Anthropic({ apiKey, timeout: 30_000, maxRetries: 1 });
+  let msg: Anthropic.Message;
+  try {
+    msg = await client.messages.create({
+      model, max_tokens: 4000, system, messages: [{ role: "user", content: prompt }],
+      // Low effort: short summaries need little thinking, and it keeps answers quick and cheap.
+      output_config: { effort: "low", ...(kind === "support" ? { format: { type: "json_schema", schema: CLAUDE_ORDER_SCHEMA } } : {}) },
+    });
+  } catch (e) {
+    if (e instanceof Anthropic.RateLimitError) throw new ApiError("unavailable", "Claude's rate limit was reached. Try again in a minute.");
+    if (e instanceof Anthropic.APIConnectionError) throw new ApiError("unavailable", "Could not reach Claude. Try again in a moment.");
+    if (e instanceof Anthropic.APIError) throw new ApiError("unavailable", `Claude returned an error (${e.status ?? "no status"}): ${e.message}.`);
+    throw e;
+  }
+  if (msg.stop_reason === "refusal") throw new ApiError("unavailable", "Claude declined to write this summary.");
+  if (msg.stop_reason === "max_tokens") throw new ApiError("unavailable", "Claude's answer was cut off. Try again in a moment.");
+  return msg.content.map((b) => (b.type === "text" ? b.text : "")).join("").trim();
+};
+
+/** Google's Gemini. Its busy (503) and server errors are usually brief: try once more after a short wait. */
+const askGemini: Ask = async (kind, system, prompt, apiKey, model) => {
   const call = () => fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
       method: "POST",
       headers: { "content-type": "application/json", "x-goog-api-key": apiKey },
       body: JSON.stringify({
-        systemInstruction: { parts: [{ text: `${COMMON} ${TASK[kind]}` }] },
-        contents: [{ role: "user", parts: [{ text: kind === "support" ? `${facts}\nAllowed methods: ${allowedMethods(contact).join(", ")}.` : facts }] }],
+        systemInstruction: { parts: [{ text: system }] },
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
         generationConfig: { temperature: 0.3, ...(kind === "support" ? { responseMimeType: "application/json", responseSchema: ORDER_SCHEMA } : {}) },
       }),
       signal: AbortSignal.timeout(30_000),
     });
-  // Gemini's busy (503) and server errors are usually brief: try once more after a short wait.
   let res: Response | null = null;
   for (let attempt = 0; attempt < 2; attempt++) {
     if (attempt) await new Promise((r) => setTimeout(r, 3000));
@@ -158,19 +228,5 @@ export async function draftPlan(
   if (res.status === 429) throw new ApiError("unavailable", "Gemini's free limit was reached. Try again in a minute.");
   const json = (await res.json().catch(() => null)) as { candidates?: { content?: { parts?: { text?: string }[] } }[]; error?: { message?: string } } | null;
   if (!res.ok) throw new ApiError("unavailable", `Gemini returned an error (${res.status})${json?.error?.message ? `: ${json.error.message}` : ""}.`);
-  const text = json?.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("").trim();
-  if (!text) throw new ApiError("unavailable", "Gemini returned no text.");
-  const generatedAt = new Date().toISOString();
-  if (kind !== "support") return { text, model, generatedAt };
-  let parsed: { summary?: unknown; order?: { id?: unknown; reason?: unknown; dueInWorkingDays?: unknown; method?: unknown }[] };
-  try { parsed = JSON.parse(text); } catch { throw new ApiError("unavailable", "Gemini's answer could not be read."); }
-  if (typeof parsed.summary !== "string" || !parsed.summary.trim()) throw new ApiError("unavailable", "Gemini returned no summary.");
-  const order: PlanStep[] = (Array.isArray(parsed.order) ? parsed.order : []).map((o) => ({
-    id: String(o.id ?? ""), reason: String(o.reason ?? "").trim(),
-    due: addWorkingDays(today, Number(o.dueInWorkingDays) || 0),
-    // Same-day (urgent) steps are a phone call whenever calling is allowed, whatever the preferred channel.
-    method: (Number(o.dueInWorkingDays) || 0) <= 0 && !contact.doNotCall ? "phone" : checkMethod(String(o.method ?? ""), contact),
-  }));
-  const valid = order.length === ids.length && new Set(order.map((o) => o.id)).size === ids.length && order.every((o) => ids.includes(o.id));
-  return { text: parsed.summary.trim(), model, generatedAt, interpreter: contact.interpreter, ...(valid ? { order } : {}) };
-}
+  return json?.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("").trim();
+};

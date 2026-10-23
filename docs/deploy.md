@@ -9,6 +9,7 @@ The API can also serve the built web app, so the whole demo runs as **one Node w
 | Start command | `npm run start -w api` |
 | Health check path | `/api/health` |
 | `GREENSPARK_BASIC_AUTH` | `user:password`. Optional but recommended: the demo has no real sign-in, so without it anyone with the link can act as the manager. Health checks are exempt. Remove the variable to open the site up. |
+| `ANTHROPIC_API_KEY` or `GEMINI_API_KEY` | Optional. Turns on the AI summaries on each case. With an Anthropic key the app uses Claude (Haiku 5.5, paid per use); otherwise Gemini (Flash-Lite, free tier). Set `AI_PROVIDER=claude` or `gemini` to choose when both keys are set. `CLAUDE_MODEL` / `GEMINI_MODEL` change the model. |
 
 Render supplies `PORT`; the server listens on it.
 
@@ -26,4 +27,4 @@ The repo's `Dockerfile` builds one container. In Coolify: **New resource → Pub
 
 ## Fly.io (live at https://greenspark-ervei.fly.dev)
 
-`fly.toml` deploys the same `Dockerfile` as one machine (shared-cpu-1x, 256 MB, with 256 MB swap) in US East (`iad`) with a 1 GB volume, `greenspark_data`, mounted at `/data`. As on Coolify, the case database and flowchart JSON live there and survive deploys and restarts. Redeploy with `fly deploy`. Keep it to one machine and one volume (SQLite). The machine stops when idle and starts on the next request. No `GREENSPARK_BASIC_AUTH` is set, so the site is open. Add one with `fly secrets set GREENSPARK_BASIC_AUTH=user:password`.
+`fly.toml` deploys the same `Dockerfile` as one machine (shared-cpu-1x, 256 MB, with 256 MB swap) in US East (`iad`) with a 1 GB volume, `greenspark_data`, mounted at `/data`. As on Coolify, the case database and flowchart JSON live there and survive deploys and restarts. Redeploy with `fly deploy`. Keep it to one machine and one volume (SQLite). The machine stops when idle and starts on the next request. No `GREENSPARK_BASIC_AUTH` is set, so the site is open. Add one with `fly secrets set GREENSPARK_BASIC_AUTH=user:password`. To use Claude for the AI summaries, run `fly secrets set ANTHROPIC_API_KEY=...`; with both keys set, Claude is used unless `AI_PROVIDER=gemini` is set.
