@@ -48,7 +48,12 @@
 .flow-layout { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 16px; align-items: start; }
 .swipe { display: none; font-size: 12px; color: var(--muted); margin-bottom: 6px; }
 .board-scroll { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-panel); overflow-x: auto; }
-.fboard { position: relative; display: grid; grid-template-columns: minmax(200px, 1fr) 36px minmax(220px, 1.15fr) 36px minmax(220px, 1.15fr); grid-template-rows: auto 1fr; column-gap: 0; padding: 12px 14px 20px; min-width: 860px; }
+/* columns and min-width are set inline from the shown columns */
+.fboard { position: relative; display: grid; grid-template-rows: auto 1fr; column-gap: 0; padding: 12px 14px 20px; }
+.lk.ds { stroke: #2f80c9; }
+.fnode.src { border-left: 3px solid #2f80c9; }
+.fnode.src .sub { display: block; font-size: 11px; color: var(--muted); }
+.db { display: inline-block; width: 10px; height: 12px; border-radius: 5px / 3px; background: #2f80c9; }
 .flinks { position: absolute; left: 0; top: 0; pointer-events: none; overflow: visible; }
 .lk { fill: none; stroke: var(--moderate); stroke-width: 1.2; opacity: .22; transition: opacity .15s; }
 .lk.cs { stroke: var(--brand); }
@@ -235,3 +240,8 @@
 .mini-table.pm-table { width: auto; }
 .mini-table.pm-table th, .mini-table.pm-table td { padding-right: 32px; }
 .mini-table.pm-table tbody th { font-weight: 400; }
+
+.col-toggles { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 14px; border: 0; padding: 0; margin: 0; min-width: 0; font-size: 13px; }
+.col-toggles label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+.col-toggles input { accent-color: var(--brand); width: 16px; height: 16px; }
+.col-toggles .seg-label { font-size: 12px; color: var(--muted); font-weight: 600; }

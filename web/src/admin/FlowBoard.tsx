@@ -1,6 +1,7 @@
-import { memo, useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { signalHasData, type FlowCircumstance, type FlowDoc, type FlowKind, type FlowSignal, type FlowSolution } from "@greenspark/shared";
-import { UTILITY_LETTER, groupCircumstances, groupSignals, groupSolutions, nodeKey, type FlowIndex, type Group, type Ref, type Trace } from "./flowModel";
+import { UTILITY_LETTER, groupCircumstances, groupSignals, groupSolutions, nodeKey, trace as traceOf, type FlowIndex, type Group, type Ref, type Trace } from "./flowModel";
+import { sourceKey, sourceLinkKey, type DataSourceGroup } from "./dataSources";
 
 interface Props {
   doc: FlowDoc;
@@ -18,9 +19,23 @@ interface Props {
   only?: Set<string> | null;
   /** Hides the + Add buttons (read-only views). */
   hideAdd?: boolean;
+  /** When set, a Data sources column comes first, linked to the signals each source feeds. */
+  sources?: DataSourceGroup[] | null;
+  /** Called when a data source is chosen, so the page can clear its own selection. */
+  onSourceSelect?: () => void;
+  /** Columns to leave out. Links are only drawn between columns that are both shown. */
+  hidden?: ReadonlySet<FlowColumn>;
 }
 
-interface Path { key: string; d: string; supporting: boolean; kind: "signal-circumstance" | "circumstance-solution" }
+export type FlowColumn = "sources" | "signals" | "circumstances" | "solutions";
+export const FLOW_COLUMNS: { id: FlowColumn; label: string }[] = [
+  { id: "sources", label: "Data sources" }, { id: "signals", label: "Signals" }, { id: "circumstances", label: "Circumstances" }, { id: "solutions", label: "Solutions" },
+];
+const COLUMN_WIDTH: Record<FlowColumn, [min: number, track: string]> = {
+  sources: [170, "minmax(170px, .85fr)"], signals: [200, "minmax(200px, 1fr)"], circumstances: [220, "minmax(220px, 1.15fr)"], solutions: [220, "minmax(220px, 1.15fr)"],
+};
+
+interface Path { key: string; d: string; supporting: boolean; kind: "source-signal" | "signal-circumstance" | "circumstance-solution" }
 
 function Utilities({ utilities, all }: { utilities: string[]; all: string[] }) {
   return (
@@ -64,7 +79,6 @@ export function FlowBoard(props: Props) {
   const boardRef = useRef<HTMLDivElement>(null);
   const [paths, setPaths] = useState<Path[]>([]);
   const [size, setSize] = useState({ w: 0, h: 0 });
-  const focus = trace !== null;
 
   const { only } = props;
   const keep = useCallback(<T extends { id: string }>(kind: FlowKind, groups: Group<T>[]) =>
@@ -73,15 +87,61 @@ export function FlowBoard(props: Props) {
   const circGroups = useMemo(() => keep("circumstance", groupCircumstances(doc, utility)), [doc, utility, keep]);
   const solGroups = useMemo(() => keep("solution", groupSolutions(doc, utility)), [doc, utility, keep]);
 
+  // Data sources show only the signals on the board, and only if they feed at least one of them.
+  const shownSignals = useMemo(() => new Set(signalGroups.flatMap((g) => g.items.map((s) => s.id))), [signalGroups]);
+  const sourceGroups = useMemo(() => (props.sources ?? [])
+    .map((g) => ({ ...g, items: g.items.map((d) => ({ ...d, signals: d.signals.filter((id) => shownSignals.has(id)) })).filter((d) => d.signals.length > 0) }))
+    .filter((g) => g.items.length > 0), [props.sources, shownSignals]);
+  const withSources = !!props.sources;
+  // The shown columns, left to right, each followed by an arrow column (except the last).
+  const columns = FLOW_COLUMNS.map((c) => c.id).filter((c) => (c !== "sources" || withSources) && !props.hidden?.has(c));
+  const shows = (c: FlowColumn) => columns.includes(c);
+  const at = (c: FlowColumn) => columns.indexOf(c) * 2 + 1;
+  const grid = {
+    gridTemplateColumns: columns.map((c) => COLUMN_WIDTH[c][1]).join(" 36px "),
+    minWidth: columns.reduce((w, c) => w + COLUMN_WIDTH[c][0], 0) + (columns.length - 1) * 36 + 28,
+  };
+
+  // A chosen data source lights up its signals and everything downstream of them.
+  const [source, setSource] = useState<string | null>(null);
+  useEffect(() => { if (selected) setSource(null); }, [selected]);
+  const sourceTrace = useMemo((): Trace | null => {
+    const d = source ? sourceGroups.flatMap((g) => g.items).find((x) => x.id === source) : undefined;
+    if (!d) return null;
+    const nodes = new Set([sourceKey(d.id)]), links = new Set<string>();
+    for (const id of d.signals) {
+      const t = traceOf(index, { kind: "signal", id });
+      t.nodes.forEach((n) => nodes.add(n));
+      t.links.forEach((l) => links.add(l));
+      links.add(sourceLinkKey(d.id, id));
+    }
+    return { nodes, links };
+  }, [source, sourceGroups, index]);
+  // With a box chosen, its signals' data sources light up too.
+  const active = useMemo((): Trace | null => {
+    if (sourceTrace) return sourceTrace;
+    if (!trace || !withSources) return trace;
+    const nodes = new Set(trace.nodes), links = new Set(trace.links);
+    for (const d of sourceGroups.flatMap((g) => g.items)) {
+      for (const id of d.signals) if (trace.nodes.has(nodeKey("signal", id))) { nodes.add(sourceKey(d.id)); links.add(sourceLinkKey(d.id, id)); }
+    }
+    return { nodes, links };
+  }, [sourceTrace, trace, withSources, sourceGroups]);
+  const focus = active !== null;
+
   const visibleLinks = useMemo(() => {
     const shown = new Set<string>();
     for (const g of [...signalGroups, ...circGroups, ...solGroups]) for (const item of g.items as { id: string }[]) shown.add(item.id);
-    return index.links.filter((l) => {
+    const flow = index.links.filter((l) => {
       if (strongOnly && l.strength === "supporting") return false;
       const a = l.from.slice(l.from.indexOf(":") + 1), b = l.to.slice(l.to.indexOf(":") + 1);
       return shown.has(a) && shown.has(b);
     });
-  }, [index, signalGroups, circGroups, solGroups, strongOnly]);
+    const fromSources = sourceGroups.flatMap((g) => g.items.flatMap((d) => d.signals.map((id) => ({
+      key: sourceLinkKey(d.id, id), from: sourceKey(d.id), to: nodeKey("signal", id), strength: null, kind: "source-signal" as const,
+    }))));
+    return [...fromSources, ...flow];
+  }, [index, signalGroups, circGroups, solGroups, strongOnly, sourceGroups]);
 
   const measure = useCallback(() => {
     const board = boardRef.current;
@@ -110,38 +170,64 @@ export function FlowBoard(props: Props) {
     const observer = new ResizeObserver(() => { cancelAnimationFrame(frame); frame = requestAnimationFrame(measure); });
     observer.observe(board);
     return () => { cancelAnimationFrame(frame); observer.disconnect(); };
-  }, [measure, doc, only]);
+  }, [measure, doc, only, withSources, columns.join()]);
 
-  const isOn = (kind: FlowKind, id: string) => !!trace?.nodes.has(nodeKey(kind, id));
+  const isOn = (kind: FlowKind, id: string) => !!active?.nodes.has(nodeKey(kind, id));
   const isSel = (kind: FlowKind, id: string) => selected?.kind === kind && selected.id === id;
   const isMatch = (kind: FlowKind, id: string) => props.matches.has(nodeKey(kind, id));
   const count = (groups: Group<{ id: string }>[]) => groups.reduce((n, g) => n + g.items.length, 0);
   const utilities = doc.meta.utilities;
 
   return (
-    <div ref={boardRef} className={`fboard${focus ? " focus" : ""}${!showAllLinks && !focus ? " quiet" : ""}`} id="flow-board">
+    <div ref={boardRef} className={`fboard${focus ? " focus" : ""}${!showAllLinks && !focus ? " quiet" : ""}`} id="flow-board" style={grid}>
       <svg className="flinks" width={size.w} height={size.h} aria-hidden="true" focusable="false">
         {paths.map((p) => (
-          <path key={p.key} d={p.d} className={`lk ${p.supporting ? "sup " : ""}${p.kind === "signal-circumstance" ? "sc" : "cs"}${trace?.links.has(p.key) ? " on" : ""}`} />
+          <path key={p.key} d={p.d} className={`lk ${p.supporting ? "sup " : ""}${p.kind === "source-signal" ? "ds" : p.kind === "signal-circumstance" ? "sc" : "cs"}${active?.links.has(p.key) ? " on" : ""}`} />
         ))}
       </svg>
 
-      <div className="fhead" style={{ gridColumn: 1 }}>
+      {columns.slice(1).map((c) => <div key={c} className="fhead arrow" style={{ gridColumn: at(c) - 1 }} aria-hidden="true">→</div>)}
+      {shows("sources") ? (
+        <div className="fhead" style={{ gridColumn: at("sources") }}>
+          <i className="db" aria-hidden="true" /><h2>Data sources</h2><span className="n" data-testid="count-sources">{count(sourceGroups)}</span>
+        </div>
+      ) : null}
+      {shows("signals") ? <div className="fhead" style={{ gridColumn: at("signals") }}>
         <i className="mk acct" aria-hidden="true" /><h2>Signals</h2><span className="n" data-testid="count-signals">{count(signalGroups)}</span>
         {props.hideAdd ? null : <button type="button" className="add-btn" disabled={props.readOnly} onClick={() => props.onAdd("signal")} aria-label="Add a signal">+ Add</button>}
-      </div>
-      <div className="fhead arrow" style={{ gridColumn: 2 }} aria-hidden="true">→</div>
-      <div className="fhead" style={{ gridColumn: 3 }}>
+      </div> : null}
+      {shows("circumstances") ? <div className="fhead" style={{ gridColumn: at("circumstances") }}>
         <i className="dot ink" aria-hidden="true" /><h2>Circumstances</h2><span className="n" data-testid="count-circumstances">{count(circGroups)}</span>
         {props.hideAdd ? null : <button type="button" className="add-btn" disabled={props.readOnly} onClick={() => props.onAdd("circumstance")} aria-label="Add a circumstance">+ Add</button>}
-      </div>
-      <div className="fhead arrow" style={{ gridColumn: 4 }} aria-hidden="true">→</div>
-      <div className="fhead" style={{ gridColumn: 5 }}>
+      </div> : null}
+      {shows("solutions") ? <div className="fhead" style={{ gridColumn: at("solutions") }}>
         <i className="sq" aria-hidden="true" /><h2>Solutions</h2><span className="n" data-testid="count-solutions">{count(solGroups)}</span>
         {props.hideAdd ? null : <button type="button" className="add-btn" disabled={props.readOnly} onClick={() => props.onAdd("solution")} aria-label="Add a solution">+ Add</button>}
-      </div>
+      </div> : null}
 
-      <div className="flane" style={{ gridColumn: 1 }}>
+      {shows("sources") ? (
+        <div className="flane" style={{ gridColumn: at("sources") }}>
+          {sourceGroups.map((g) => (
+            <section key={g.id} className="fgroup" aria-label={g.label}>
+              <h3 className="glabel"><span>{g.label}</span><span className="gc">{g.items.length}</span></h3>
+              <div className="gnodes">
+                {g.items.map((d) => (
+                  <button
+                    key={d.id} type="button" className={`fnode src${active?.nodes.has(sourceKey(d.id)) ? " on" : ""}${source === d.id ? " is-sel" : ""}`}
+                    data-node={sourceKey(d.id)} data-testid={`node-source-${d.id}`} aria-pressed={source === d.id}
+                    onClick={() => { props.onSourceSelect?.(); setSource(source === d.id ? null : d.id); }}
+                  >
+                    <span className="nl">{d.name}</span>
+                    <span className="sub">{d.detail}</span>
+                    <span className="sr-only">Data source: {d.name}, feeds {d.signals.length} signal{d.signals.length === 1 ? "" : "s"}</span>
+                  </button>
+                ))}
+              </div>
+            </section>
+          ))}
+        </div>
+      ) : null}
+      {shows("signals") ? <div className="flane" style={{ gridColumn: at("signals") }}>
         <Lane
           groups={signalGroups}
           render={(s: FlowSignal) => (
@@ -153,8 +239,8 @@ export function FlowBoard(props: Props) {
             </Node>
           )}
         />
-      </div>
-      <div className="flane" style={{ gridColumn: 3 }}>
+      </div> : null}
+      {shows("circumstances") ? <div className="flane" style={{ gridColumn: at("circumstances") }}>
         <Lane
           groups={circGroups}
           render={(c: FlowCircumstance) => (
@@ -165,8 +251,8 @@ export function FlowBoard(props: Props) {
             </Node>
           )}
         />
-      </div>
-      <div className="flane" style={{ gridColumn: 5 }}>
+      </div> : null}
+      {shows("solutions") ? <div className="flane" style={{ gridColumn: at("solutions") }}>
         <Lane
           groups={solGroups}
           render={(s: FlowSolution) => (
@@ -176,7 +262,7 @@ export function FlowBoard(props: Props) {
             </Node>
           )}
         />
-      </div>
+      </div> : null}
     </div>
   );
 }
