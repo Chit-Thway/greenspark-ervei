@@ -66,67 +66,22 @@ test.describe.serial("manager to worker workflow", () => {
     expect(await total(page)).toBeGreaterThanOrEqual(2);
     for (const id of assigned) await expect(page.locator(`tr[data-case-id="${id}"]`)).toBeVisible(); // the two cases the manager assigned
     const first = page.locator("tbody tr").first();
-    const caseId = (await first.getAttribute("data-case-id"))!; // internal key, for API calls
+    const startStatus = (await first.locator(".status").innerText()).trim();
+
+    // Workers update their own cases from the queue; the case page only shows who has it and its status.
+    await first.locator(".col-check input").check();
+    const status = startStatus === "Waiting" ? "in_progress" : "waiting";
+    await page.getByLabel("Set status of selected cases to").selectOption(status);
+    await page.getByRole("button", { name: "Update status" }).click();
+    await expect(page.locator(".notice-success")).toContainText(/^Set 1 case to /);
+
     const account = (await first.locator(".name-link").getAttribute("data-account-link"))!;
-    const startStatus = (await first.locator(".status").innerText()).trim(); // read before leaving the queue
     await first.locator(".name-link").click();
     await expect(page).toHaveURL(new RegExp(`/accounts/${account}$`));
     const panel = page.locator(".case-page");
-    await expect(panel).toBeVisible();
-    await expect(panel.getByLabel("Assigned worker")).toBeDisabled();
-    await expect(panel).toContainText("Only managers can assign cases");
-
-    await panel.getByLabel("Add a case note").fill("Called and left a message.");
-    await panel.getByRole("button", { name: "Add note" }).click();
-    await expect(page.locator(".notice-success")).toContainText("Note added");
-    await expect(panel.locator(".notes")).toContainText("Called and left a message.");
-    await expect(panel.locator(".notes li").last().locator(".sub")).toContainText(/\d{1,2} \w{3} 20\d\d · \d{1,2}:\d{2} (am|pm)/); // year and the full time
-    // Who and when come first, with the note text underneath.
-    const noteLine = panel.locator(".notes li").last();
-    const [whoY, textY] = [(await noteLine.locator(".sub").boundingBox())!.y, (await noteLine.locator("p").boundingBox())!.y];
-    expect(whoY).toBeLessThan(textY);
-
-    // The author can correct their note; it is marked as edited and keeps its place.
-    await panel.getByRole("button", { name: /^Edit note from/ }).last().click();
-    await panel.getByLabel("Edit note").fill("Called and spoke to the customer.");
-    await panel.getByRole("button", { name: "Save note" }).click();
-    await expect(page.locator(".notice-success")).toContainText("Note updated");
-    const edited = panel.locator(".notes li").last();
-    await expect(edited).toContainText("Called and spoke to the customer.");
-    await expect(edited).not.toContainText("left a message");
-    await expect(edited.locator(".sub")).toContainText(/edited \d{1,2} \w{3} 20\d\d/);
-    await panel.getByRole("button", { name: /^Edit note from/ }).last().click();
-    await panel.getByRole("button", { name: "Cancel" }).click(); // cancelling changes nothing
-    await expect(edited).toContainText("Called and spoke to the customer.");
-
-    // The note box is tall, and there is no length limit: a 700-character note is saved whole.
-    const box = panel.getByLabel("Add a case note");
-    expect((await box.boundingBox())!.height).toBeGreaterThanOrEqual(160);
-    expect(await box.getAttribute("maxlength")).toBeNull();
-    await expect(panel).not.toContainText("/500");
-    const longNote = `Line one.\nLine two. ${"More detail. ".repeat(50)}`.trim();
-    await box.fill(longNote);
-    await panel.getByRole("button", { name: "Add note" }).click();
-    await expect(page.locator(".notice-success")).toContainText("Note added");
-    await expect(panel.locator(".notes li").last().locator("p")).toContainText("More detail. More detail.");
-    expect((await panel.locator(".notes li").last().locator("p").innerText()).length).toBeGreaterThan(600);
-
-    const status = startStatus === "Waiting" ? "in_progress" : "waiting";
-    await panel.getByLabel("Case status").selectOption(status);
-    await panel.getByRole("button", { name: "Save status" }).click();
-    await expect(page.locator(".notice-success")).toContainText("Status set to");
-
-    const review = panel.getByRole("button", { name: /Mark/ });
-    await review.click();
-    await expect(page.locator(".notice-success")).toContainText("Marked as");
-
-    // A stale edit: the manager adds a note behind the worker's back.
-    const cur = (await api(page, MANAGER, "GET", `/api/cases/${caseId}/overview`)).body.case;
-    await api(page, MANAGER, "POST", `/api/cases/${caseId}/notes`, { text: "Manager edit", expectedVersion: cur.version });
-    await panel.getByLabel("Case status").selectOption(status === "waiting" ? "new" : "waiting");
-    await panel.getByRole("button", { name: "Save status" }).click();
-    await expect(page.locator(".notice-error")).toContainText("changed by someone else");
-    await expect(panel.locator(".notes")).toContainText("Manager edit");
+    await expect(panel.locator("dt", { hasText: "Assigned worker" })).toBeVisible();
+    await expect(panel.getByRole("heading", { name: "Case notes" })).toHaveCount(0);
+    await expect(panel.getByRole("button", { name: "Save status" })).toHaveCount(0);
   });
 
   test("a worker's bulk update on other people's cases is refused as a whole", async ({ page }) => {

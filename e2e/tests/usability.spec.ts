@@ -39,9 +39,6 @@ test.describe("states and content rules", () => {
     const panel = page.locator(".case-page");
     await expect(panel).toContainText("Support areas and why");
     await expect(panel.getByRole("heading", { name: /Customer details/ })).toBeVisible();
-    // The notes card is in the right-hand column, below Case progress.
-    const y = async (name: RegExp) => (await panel.getByRole("heading", { name }).boundingBox())!.y;
-    expect(await y(/Case progress/)).toBeLessThan(await y(/Case notes/));
     for (const label of ["Preferred name", "Gender", "Address", "Mobile", "Phone", "Email"]) await expect(panel.locator("dt", { hasText: new RegExp(`^${label}$`) })).toBeVisible();
     await expect(panel.locator("address")).toContainText(/\b\d{4}\b/); // the postcode is shown
     await expect(panel).toContainText(/@example\.com|Not recorded/);

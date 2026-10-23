@@ -115,6 +115,9 @@ export function OutlookPage({ client, navigate }: { client: Pick<ApiClient, "out
             <span><i style={{ background: "#ae2e24" }} />Severe</span><span><i style={{ background: "#e2683c" }} />Dangerous</span>
             <span><i style={{ background: "#e0a030" }} />Hot day</span><span><i style={{ background: "#7a9cc6" }} />No hazard</span>
           </span>
+          <span className="map-legend" aria-label="Symbols show the kinds of weather forecast">
+            {(Object.keys(HAZARD_ICON) as HazardKind[]).map((k) => <span key={k}><span aria-hidden="true">{HAZARD_ICON[k]}</span>{HAZARD_LABEL[k]}</span>)}
+          </span>
         </div>
         <div className="outlook-places-body">
           <Suspense fallback={<div className="outlook-map" role="status">Loading the map…</div>}>

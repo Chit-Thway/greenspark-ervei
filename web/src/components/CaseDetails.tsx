@@ -4,7 +4,7 @@ import type { ApiClient, CaseItem, Catalog, ContactMethod, PlanKind, PlanStep, S
 import { CaseFlowModal } from "../admin/CaseFlowModal";
 import { RiskCard } from "./PredictionsPage";
 import { accountHref, isModifiedClick } from "../route";
-import { describeFollowUp, formatDateTime, PERIOD_TEXT, readableDates, STATUS_LABELS } from "../domain/format";
+import { describeFollowUp, PERIOD_TEXT, readableDates, STATUS_LABELS } from "../domain/format";
 import { isResolved } from "../domain/query";
 import { PriorityBadge } from "./Primitives";
 import { ageOn, PRIORITY_PROVIDER } from "../domain/types";
@@ -34,30 +34,12 @@ export interface CaseActions {
 }
 
 export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffUser; busy: boolean; actions: CaseActions; loadPlan?: (caseId: string, kind?: PlanKind) => Promise<SupportPlan>; client?: ApiClient; navigate?: (to: string) => void }) {
-  const { data, item, user } = props;
+  const { data, item } = props;
   const c = item.case;
   const person = item.person ?? undefined;
-  const isManager = user.role === "manager";
-  const canEdit = isManager || c.workflow.assignedToUserId === user.id;
-  // Workers cannot assign, but their read-only select must contain the actual owner.
-  const workers = data.users.filter((u) => data.assignableUserIds.includes(u.id) || u.id === c.workflow.assignedToUserId);
-  const [assignee, setAssignee] = useState(c.workflow.assignedToUserId ?? "");
-  const [status, setStatus] = useState<CaseStatus>(c.workflow.status);
-  const [note, setNote] = useState("");
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editText, setEditText] = useState("");
-  const previousWorkflow = useRef(c.workflow);
-  // Refresh server values without discarding a deliberate, unsaved choice on conflict.
-  useEffect(() => {
-    const previous = previousWorkflow.current;
-    setAssignee((draft) => draft === (previous.assignedToUserId ?? "") ? c.workflow.assignedToUserId ?? "" : draft);
-    setStatus((draft) => draft === previous.status ? c.workflow.status : draft);
-    previousWorkflow.current = c.workflow;
-  }, [c.version]); // eslint-disable-line react-hooks/exhaustive-deps
   const heading = useRef<HTMLHeadingElement>(null);
   const field = (id: string) => data.evidenceFields.find((f) => f.id === id);
   const assignedUser = data.users.find((u) => u.id === c.workflow.assignedToUserId);
-  const userName = (id: string) => data.users.find((u) => u.id === id)?.displayName ?? id;
   const fu = describeFollowUp(c.workflow.followUpAt, isResolved(c), data.asOf);
   const a = c.modelAssessment;
   const fromFlow = data.circumstanceSource === "flow";
@@ -90,9 +72,6 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
       { id: "ov-support-history", label: "Support history" },
       { id: "ov-supply", label: "Collections and supply" },
     ] : []),
-    { id: "ov-review", label: "Worker review" },
-    { id: "ov-progress", label: "Case progress" },
-    { id: "ov-notes", label: "Case notes" },
     ...(acct ? [{ id: "ov-contacts", label: "Contact history" }] : []),
   ];
   return (
@@ -288,114 +267,6 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
 
       </div>
       <div className="case-col">
-      <section className="case-card" aria-labelledby="ov-review">
-        <h3 id="ov-review">Worker review</h3>
-        <p>{c.workflow.reviewStatus === "reviewed" ? "Suggestions reviewed by staff." : "Suggestions awaiting worker review."}</p>
-        <div className="actions">
-          <button
-            type="button" className="btn" disabled={!canEdit || props.busy}
-            onClick={() => props.actions.onReview(c.workflow.reviewStatus === "reviewed" ? "needs_review" : "reviewed")}
-          >
-            {c.workflow.reviewStatus === "reviewed" ? "Mark as needs review" : "Mark reviewed"}
-          </button>
-        </div>
-        {!canEdit ? <p className="hint">Only the assigned worker or a manager can change this case.</p> : null}
-      </section>
-
-      <section className="case-card" aria-labelledby="ov-progress">
-        <h3 id="ov-progress">Case progress</h3>
-        <label className="field">
-          <span>Assigned worker</span>
-          <select value={assignee} disabled={!isManager || props.busy} onChange={(e) => setAssignee(e.target.value)}>
-            {workers.map((w) => <option key={w.id} value={w.id}>{w.displayName}</option>)}
-          </select>
-        </label>
-        {isManager ? (
-          <div className="actions">
-            <button type="button" className="btn" disabled={props.busy || !assignee || assignee === (c.workflow.assignedToUserId ?? "")} onClick={() => props.actions.onAssign(assignee)}>
-              Save assignment
-            </button>
-          </div>
-        ) : <p className="hint">Only managers can assign cases.</p>}
-        <label className="field">
-          <span>Case status</span>
-          <select value={status} disabled={!canEdit || props.busy} onChange={(e) => setStatus(e.target.value as CaseStatus)}>
-            {Object.entries(STATUS_LABELS).map(([id, l]) => <option key={id} value={id}>{l}</option>)}
-          </select>
-        </label>
-        <div className="actions">
-          <button type="button" className="btn" disabled={!canEdit || props.busy || status === c.workflow.status} onClick={() => props.actions.onStatus(status)}>
-            Save status
-          </button>
-        </div>
-      </section>
-
-      <section className="case-card" aria-labelledby="ov-notes">
-        <h3 id="ov-notes">Case notes</h3>
-        {c.workflow.notes.length === 0 ? <p className="muted">No notes added yet.</p> : (
-          <ul className="notes">
-            {c.workflow.notes.map((n) => {
-              const mayEdit = canEdit && (isManager || n.authorUserId === user.id);
-              return (
-                <li key={n.id}>
-                  {editingId === n.id ? (
-                    <form
-                      onSubmit={async (e) => {
-                        e.preventDefault();
-                        if (!editText.trim() || editText.trim() === n.text) return;
-                        if (await props.actions.onEditNote(n.id, editText.trim())) setEditingId(null);
-                      }}
-                    >
-                      <label className="field">
-                        <span>Edit note</span>
-                        <textarea className="note-input" rows={8} value={editText} disabled={props.busy} autoFocus onChange={(e) => setEditText(e.target.value)} />
-                      </label>
-                      <div className="actions">
-                        <button type="submit" className="btn btn-primary btn-small" disabled={props.busy || !editText.trim() || editText.trim() === n.text}>Save note</button>
-                        <button type="button" className="btn btn-small" disabled={props.busy} onClick={() => setEditingId(null)}>Cancel</button>
-                      </div>
-                    </form>
-                  ) : (
-                    <>
-                      <span className="sub">
-                        {userName(n.authorUserId)} · {formatDateTime(n.createdAt)}
-                        {n.editedAt ? ` · edited${n.editedByUserId && n.editedByUserId !== n.authorUserId ? ` by ${userName(n.editedByUserId)}` : ""} ${formatDateTime(n.editedAt)}` : ""}
-                      </span>
-                      <p>{n.text}</p>
-                      {mayEdit ? (
-                        <button
-                          type="button"
-                          className="link-btn note-edit"
-                          disabled={props.busy}
-                          aria-label={`Edit note from ${formatDateTime(n.createdAt)}`}
-                          onClick={() => { setEditingId(n.id); setEditText(n.text); }}
-                        >
-                          Edit
-                        </button>
-                      ) : null}
-                    </>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-        )}
-        <form
-          onSubmit={async (e) => {
-            e.preventDefault();
-            if (!note.trim()) return;
-            if (await props.actions.onNote(note.trim())) setNote("");
-          }}
-        >
-          <label className="field">
-            <span>Add a case note</span>
-            <textarea className="note-input" rows={8} value={note} disabled={!canEdit || props.busy} onChange={(e) => setNote(e.target.value)} placeholder="Record a check-in, referral or next step…" />
-          </label>
-          <div className="actions">
-            <button type="submit" className="btn btn-primary" disabled={!canEdit || props.busy || !note.trim()}>Add note</button>
-          </div>
-        </form>
-      </section>
       {acct ? <ContactHistory account={acct} /> : null}
       {fromFlow && props.client ? (
         <button type="button" className="btn case-flow-btn" onClick={() => setFlowOpen(true)}>Flowchart for this case</button>
