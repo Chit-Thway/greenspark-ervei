@@ -56,6 +56,8 @@ export interface ApiClient {
   catalog(): Promise<Catalog>;
   list(q: QueueQuery): Promise<CaseListResponse>;
   matchingIds(q: QueueQuery): Promise<string[]>;
+  /** Every matching case grouped by postcode, for the map view. Optional so test clients can leave it out. */
+  mapSummary?(q: QueueQuery): Promise<MapSummary>;
   overview(caseId: string): Promise<CaseItem>;
   /** The case for an account number (each account has one case). */
   account(accountNumber: string): Promise<CaseItem>;
@@ -76,6 +78,12 @@ export interface SupportPlan { text: string; model: string; generatedAt: string;
 
 export type WeatherMode = "live" | "demo" | "off";
 export interface WeatherStatus { mode: WeatherMode; fetchedAt: string | null; issuedAt: string | null; towns: number; warnings: string[]; error: string | null; available?: boolean }
+
+export interface MapPlace {
+  postcode: string; suburb: string; lat: number; lng: number; count: number; labels: Record<string, number>;
+  cases: { accountNumber: string | null; displayName: string; score: number | null; label: string | null; status: string }[];
+}
+export interface MapSummary { total: number; unplaced: number; places: MapPlace[] }
 
 export interface VersionedId { caseId: string; expectedVersion: number }
 
@@ -131,6 +139,7 @@ export function createApiClient(getUser: () => string, base = ""): ApiClient {
       return { ...c, users: u.users, assignableUserIds: u.assignableUserIds };
     },
     list: (q) => req("GET", `/api/cases?${queryString(q)}`),
+    mapSummary: (q) => req("GET", `/api/cases/map?${queryString(q, false)}`),
     matchingIds: async (q) => (await req<{ ids: string[] }>("GET", `/api/cases/ids?${queryString(q, false)}`)).ids,
     overview: (id) => req("GET", `/api/cases/${encodeURIComponent(id)}/overview`),
     account: (accountNumber) => req("GET", `/api/accounts/${encodeURIComponent(accountNumber)}`),

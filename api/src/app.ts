@@ -13,7 +13,7 @@ import type { Store } from "./store";
 import type { Clock } from "./clock";
 import { FlowFile } from "./flow";
 import { draftPlan, PLAN_KINDS, perthToday, planFacts, type AiConfig, type ContactRules, type PlanKind, type SupportPlan } from "./plan";
-import { FlowError, detectWeatherSignals, evaluateCase, flowCatalog, parseOp, type FlowDoc, type WeatherSignal, type WeatherSnapshot } from "@greenspark/shared";
+import { FlowError, POSTCODE_LOCATION, detectWeatherSignals, evaluateCase, flowCatalog, parseOp, type FlowDoc, type WeatherSignal, type WeatherSnapshot } from "@greenspark/shared";
 import { SyntheticModelAdapter, withAssessments, type ModelAdapter } from "./adapters";
 
 const STATUSES = ["new", "in_progress", "waiting", "resolved"] as const;
@@ -213,6 +213,29 @@ export function createApp(store: Store, options: AppOptions = {}) {
       throw e;
     }
     res.json(await flow.apply(ops));
+  });
+
+  // The map view: every case matching the filters, grouped by postcode, most urgent first in each.
+  app.get("/api/cases/map", async (req, res) => {
+    const data = await dataset();
+    const matches = sortCases(applyFilters(data, queryOf(req), actor(res).id), data.people, "priority_desc");
+    const people = new Map(data.people.map((p) => [p.id, p]));
+    const places = new Map<string, { postcode: string; suburb: string; lat: number; lng: number; count: number; labels: Record<string, number>; cases: { accountNumber: string | null; displayName: string; score: number | null; label: string | null; status: string }[] }>();
+    let unplaced = 0;
+    for (const c of matches) {
+      const p = people.get(c.personId);
+      const postcode = p?.address?.postcode ?? "";
+      const at = POSTCODE_LOCATION[postcode];
+      if (!p || !at) { unplaced++; continue; }
+      let place = places.get(postcode);
+      if (!place) places.set(postcode, (place = { postcode, suburb: p.suburb, lat: at[0], lng: at[1], count: 0, labels: {}, cases: [] }));
+      place.count++;
+      const label = c.modelAssessment.priority?.label ?? "none";
+      place.labels[label] = (place.labels[label] ?? 0) + 1;
+      // Enough to list in the panel; the rest are counted.
+      if (place.cases.length < 50) place.cases.push({ accountNumber: p.accountNumber ?? null, displayName: p.displayName, score: c.modelAssessment.priority?.score ?? null, label: c.modelAssessment.priority?.label ?? null, status: c.workflow.status });
+    }
+    res.json({ total: matches.length, unplaced, places: [...places.values()] });
   });
 
   app.get("/api/cases/ids", async (req, res) => {

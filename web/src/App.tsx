@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, lazy, Suspense } from "react";
 import type { CaseStatus, QueueQuery, ReviewStatus, StaffUser } from "./domain/types";
 import { ApiClientError, createApiClient, type Catalog, type CaseItem, type CaseListResponse, type ErrorDetail, type MutationResult } from "./data/api";
 import { ASSISTANCE_OPTIONS, DEFAULT_QUERY, MAX_BULK_ITEMS, activeFilterCount } from "./domain/query";
@@ -6,6 +6,9 @@ import { addSelection } from "./domain/selection";
 import { PRIORITY_TEXT, STATUS_LABELS } from "./domain/format";
 import { FilterSidebar } from "./components/FilterSidebar";
 import { CaseTable } from "./components/CaseTable";
+import type { MapSummary } from "./data/api";
+// Leaflet only loads when the map view is first opened.
+const CaseMap = lazy(() => import("./components/CaseMap").then((m) => ({ default: m.CaseMap })));
 import { CaseDetails } from "./components/CaseDetails";
 import { accountHref, DATA_SOURCES_PATH, FLOWCHART_PATH, PRIORITY_MODEL_PATH, CASE_PAGE_PATH, isModifiedClick, useRoute, type Page } from "./route";
 import { DataSourcesPage } from "./components/DataSourcesPage";
@@ -68,6 +71,10 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; o
   const accountOf = (i: CaseItem | null | undefined) => i?.person?.accountNumber ?? null;
   const [query, setQuery] = useState<QueueQuery>(DEFAULT_QUERY);
   const [searchText, setSearchText] = useState("");
+  const [view, setView] = useState<"list" | "map">(() => { try { return localStorage.getItem("queue-view") === "map" ? "map" : "list"; } catch { return "list"; } });
+  const chooseView = (v: "list" | "map") => { setView(v); try { localStorage.setItem("queue-view", v); } catch { /* per-browser preference only */ } };
+  const [mapSummary, setMapSummary] = useState<MapSummary | null>(null);
+  const [mapError, setMapError] = useState<string | null>(null);
   const [list, setList] = useState<CaseListResponse | null>(null);
   const [listError, setListError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -181,6 +188,20 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; o
     );
     return () => { current = false; };
   }, [client, query, refreshTick]);
+
+  // The map shows every matching case, so it ignores the page and sort; it loads only while the map is shown.
+  const { page: _page, sort: _sort, ...mapQuery } = query;
+  const mapKey = JSON.stringify(mapQuery);
+  useEffect(() => {
+    if (view !== "map" || !client.mapSummary) return;
+    let current = true;
+    client.mapSummary(query).then(
+      (m) => { if (current) { setMapSummary(m); setMapError(null); } },
+      (e: unknown) => { if (current) setMapError(e instanceof Error ? e.message : "Could not load the map."); },
+    );
+    return () => { current = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reload on filter changes only, not paging or sorting
+  }, [client, view, mapKey, refreshTick]);
 
   // Filter changes (and data changes) drop selected IDs that no longer match.
   useEffect(() => {
@@ -450,6 +471,10 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; o
             <div className="panel-head">
               <h2 id="list-title">{({ all: "All cases", mine: "Assigned to me", needs_review: "Needs review" })[query.view]} <span className="pill">{list?.total ?? "–"}</span></h2>
               <span className="sim">{catalog.circumstanceSource === "flow" ? "Fictional demo data" : "Model suggestions · simulated data"}</span>
+              <span className="view-switch" role="group" aria-label="Show cases as">
+                <button type="button" aria-pressed={view === "list"} onClick={() => chooseView("list")}>List</button>
+                <button type="button" aria-pressed={view === "map"} onClick={() => chooseView("map")}>Map</button>
+              </span>
             </div>
 
             <div className="toolbar">
@@ -457,7 +482,7 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; o
                 <span className="sr-only">Search by name, account number or suburb</span>
                 <input type="search" placeholder="Search name, account number or suburb…" value={searchText} onChange={(e) => setSearchText(e.target.value)} />
               </label>
-              <label className="sort">
+              <label className="sort" hidden={view === "map"}>
                 <span className="sr-only">Sort cases</span>
                 <select value={query.sort} onChange={(e) => change({ sort: e.target.value as QueueQuery["sort"] })}>
                   <option value="priority_desc">Priority: highest first</option>
@@ -479,7 +504,19 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; o
               {query.assignedToUserId ? <Chip label={`Worker: ${catalog.users.find((u) => u.id === query.assignedToUserId)?.displayName ?? query.assignedToUserId}`} onRemove={() => change({ assignedToUserId: "" })} /> : null}
             </div>
 
-            {selected.size > 0 ? (
+            {view === "map" ? (
+              mapError && !mapSummary ? (
+                <div className="empty" role="alert"><h3>We couldn’t load the map</h3><p>{mapError}</p><button type="button" className="btn" onClick={refresh}>Try again</button></div>
+              ) : !mapSummary ? (
+                <div className="empty" role="status"><p>Loading the map…</p></div>
+              ) : (
+                <Suspense fallback={<div className="empty" role="status"><p>Loading the map…</p></div>}>
+                  <CaseMap summary={mapSummary} onOpen={open} />
+                </Suspense>
+              )
+            ) : null}
+
+            {view === "list" && selected.size > 0 ? (
               <div className="bulkbar" role="region" aria-label="Selected cases">
                 <strong>{selected.size} selected</strong>
                 <span className="hint">Maximum {MAX_BULK_ITEMS} cases per action.</span>
@@ -505,7 +542,7 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; o
               </div>
             ) : null}
 
-            {listError && !list ? (
+            {view === "map" ? null : listError && !list ? (
               <div className="empty" role="alert"><h3>We couldn’t load cases</h3><p>{listError}</p><button type="button" className="btn" onClick={refresh}>Try again</button></div>
             ) : !list ? (
               <div className="empty" role="status"><p>Loading cases…</p></div>
@@ -520,7 +557,7 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; o
             )}
             {listError && list ? <p className="list-error" role="alert">Couldn’t refresh: {listError} <button type="button" className="link-btn" onClick={refresh}>Retry</button></p> : null}
 
-            <div className="pager">
+            <div className="pager" hidden={view === "map"}>
               <span aria-live="polite">{list ? `Showing ${list.from}–${list.to} of ${list.total} cases` : ""}</span>
               <nav aria-label="Pagination">
                 <button type="button" className="btn btn-small" disabled={!list || list.page <= 1} onClick={() => change({ page: query.page - 1 })}>Previous</button>

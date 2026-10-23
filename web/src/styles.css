@@ -338,3 +338,29 @@ ol.suggest-list.solutions { list-style: none; padding-left: 0; }
 .wx-modes button[aria-checked="true"] { background: var(--brand); color: var(--on-brand); }
 .wx-modes button:disabled { cursor: default; }
 .wx-modes button:disabled:not([aria-checked="true"]) { color: var(--muted); }
+
+/* List / Map switch and the map view of the queue */
+.view-switch { display: inline-flex; border: 1px solid var(--border); border-radius: var(--r-control); overflow: hidden; }
+.view-switch button { background: var(--surface); border: 0; padding: 4px 14px; font: inherit; font-size: 13px; color: var(--fg); cursor: pointer; }
+.view-switch button + button { border-left: 1px solid var(--border); }
+.view-switch button[aria-pressed="true"] { background: var(--brand); color: var(--on-brand); }
+.case-map { border-top: 1px solid var(--border); }
+.map-bar { display: flex; align-items: center; justify-content: space-between; gap: 8px 16px; flex-wrap: wrap; padding: 8px 16px; }
+.map-bar .hint { margin: 0; }
+.map-legend { display: flex; gap: 12px; flex-wrap: wrap; font-size: 12px; color: var(--muted); }
+.map-legend span { display: inline-flex; align-items: center; gap: 4px; }
+.map-legend i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.map-zoom { display: inline-flex; gap: 12px; font-size: 13px; }
+.map-body { display: grid; grid-template-columns: minmax(0, 1fr) 320px; min-height: 520px; }
+.map-canvas { min-height: 520px; z-index: 0; }
+.map-panel { border-left: 1px solid var(--border); padding: 12px 16px; overflow-y: auto; max-height: 560px; }
+.map-panel h3 { margin: 0 0 4px; font-size: 16px; }
+.map-cases { list-style: none; padding: 0; margin: 8px 0 0; display: grid; gap: 8px; }
+.map-cases li { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; font-size: 13px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+.map-cases li .sub { grid-column: 1 / -1; color: var(--muted); font-size: 12px; }
+@media (max-width: 899px) {
+  .map-body { grid-template-columns: minmax(0, 1fr); }
+  .map-canvas { min-height: 380px; }
+  .map-panel { border-left: 0; border-top: 1px solid var(--border); max-height: none; }
+}
+.panel-head .sim { margin-left: auto; }
