@@ -6,8 +6,8 @@ type Ready = Extract<Outlook, { available: true }>;
 /** Each stage of the funnel, from every customer down to the ones to call first. */
 function stages(t: Ready["totals"]) {
   return [
-    { id: "all", label: "All customers", count: t.covered + t.uncovered, note: "Every open account in the dataset" },
-    { id: "covered", label: "Near a forecast town", count: t.covered, note: "Their postcode maps to a Bureau forecast town" },
+    // Customers in postcodes without a forecast town are left out, so "all" is everyone the forecast covers.
+    { id: "all", label: "All customers", count: t.covered, note: "Every customer with a Bureau forecast for their area" },
     { id: "exposed", label: "Hot or dangerous weather", count: t.exposed, note: "A hot day, extreme heat, extreme fire danger or a warning this week" },
     { id: "vulnerable", label: "…and a reason it could hurt them", count: t.vulnerable, note: "A health, supply, cost or isolation need, or a high predicted risk" },
     { id: "listed", label: "On the outlook", count: t.act + t.watch, note: "Act now or watch: needs that add up for the weather coming" },
@@ -15,7 +15,7 @@ function stages(t: Ready["totals"]) {
   ];
 }
 
-const COLORS = ["#7a9cc6", "#6f8fb8", "#e0a030", "#e2833c", "#d9622f", "#ae2e24"];
+const COLORS = ["#7a9cc6", "#e0a030", "#e2833c", "#d9622f", "#ae2e24"];
 const pct = (n: number, of: number) => (of ? `${Math.round((n / of) * 1000) / 10}%` : "–");
 
 /** A funnel from every customer to the ones this week's forecast says to contact first. */
