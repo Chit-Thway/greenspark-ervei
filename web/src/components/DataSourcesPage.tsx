@@ -117,14 +117,14 @@ export function DataSourcesPage({ client }: { client: ApiClient }) {
 
       <section className="case-card" aria-labelledby="ds-ai">
         <h2 id="ds-ai">Written by AI</h2>
-        <p className="hint">Drafted by Claude or Gemini (whichever the server is set to) when a case is opened, from the case's facts only. Each is labelled "AI draft · check before acting" on the page.</p>
+        <p className="hint">Drafted by Claude or Gemini (whichever the server is set to) when a case or its section is opened, from the case's facts only. Each is labelled "AI draft · check before acting" on the page.</p>
         <div className="table-scroll">
           <table className="mini-table ds-table">
             <thead><tr><th scope="col">What</th><th scope="col">Where it appears</th><th scope="col">Made from</th></tr></thead>
             <tbody>
-              <tr><th scope="row">Suggested plan</th><td>Case page, top of Support areas and why</td><td>Priority, flagged circumstances and their signals, solutions, contact settings</td></tr>
-              <tr><th scope="row">What the signals say</th><td>Case page, Account signals</td><td>The account and weather signals and their evidence</td></tr>
-              <tr><th scope="row">Order of Solutions to offer, and each reason</th><td>Case page, Solutions to offer</td><td>The same call as the Suggested plan</td></tr>
+              <tr><th scope="row">Suggested plan</th><td>Case page, What to do first; top of Support areas and why</td><td>Priority, flagged circumstances and their signals, solutions, contact settings</td></tr>
+              <tr><th scope="row">What the signals say</th><td>Case page, Account signals section</td><td>The account and weather signals and their evidence</td></tr>
+              <tr><th scope="row">Order of Solutions to offer, and each reason</th><td>Case page, What to do first (the top three) and the Solutions to offer section</td><td>The same call as the Suggested plan</td></tr>
               <tr><th scope="row">Date to act by and contact method</th><td>Solutions to offer and its Timeline</td><td>The AI picks working days and a method; the server turns them into dates and checks the method against the contact settings</td></tr>
             </tbody>
           </table>
@@ -146,8 +146,9 @@ export function DataSourcesPage({ client }: { client: ApiClient }) {
               <tr><th scope="row">Signals, circumstances and solutions</th><td>Worked out by the app's rules and the Flowchart file from the data.</td></tr>
               <tr><th scope="row">Priority</th><td>Worked out by the Priority model's points (see Priority model).</td></tr>
               <tr><th scope="row">Predicted risk</th><td>A statistical model trained on the monthly panel (see Risk model). Not generative AI.</td></tr>
-              <tr><th scope="row">Sample heatwave</th><td>Built into the app, used when the weather source is set to Sample heatwave; marked "(sample forecast)".</td></tr>
-              <tr><th scope="row">Map locations</th><td>Approximate suburb centres added for the map; the dataset has no coordinates.</td></tr>
+              <tr><th scope="row">Weather outlook, act now and watch, and the funnel</th><td>Worked out by the app from the forecast and each customer's signals (see Weather outlook).</td></tr>
+              <tr><th scope="row">Sample heatwave</th><td>Built into the app, used when the weather source is set to Sample heatwave: a hand-written week for each forecast town, with a three-day heatwave over the Lower West. Marked "(sample forecast)".</td></tr>
+              <tr><th scope="row">Map locations</th><td>Approximate suburb centres added for the queue's map; the dataset has no coordinates. On the outlook map each forecast town sits at the average of its postcodes.</td></tr>
             </tbody>
           </table>
         </div>
@@ -155,7 +156,7 @@ export function DataSourcesPage({ client }: { client: ApiClient }) {
 
       <section className="case-card" aria-labelledby="ds-weather">
         <h2 id="ds-weather">Live data: Bureau of Meteorology</h2>
-        <p className="hint">Fetched by the server every hour, matched to each customer's postcode, and used for the three weather signals. Free anonymous products, under the Bureau's copyright terms.</p>
+        <p className="hint">Fetched by the server every hour, matched to each customer's postcode, and used for the three weather signals and the Weather outlook. Free anonymous products, under the Bureau's copyright terms.</p>
         <p className="block-label">Weather source</p>
         <WeatherSource client={client} />
         <div className="table-scroll">

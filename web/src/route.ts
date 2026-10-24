@@ -23,7 +23,7 @@ export function isModifiedClick(e: { metaKey: boolean; ctrlKey: boolean; shiftKe
   return e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0;
 }
 
-export type Page = "outlook" | "funnel" | "queue" | "case" | "admin" | "data" | "priority" | "casepage" | "riskmodel" | "predictions";
+export type Page = "outlook" | "funnel" | "queue" | "case" | "admin" | "data" | "priority" | "casepage" | "riskmodel" | "outlookmodel" | "predictions";
 
 /** The home page is the weather outlook; the case queue has its own page. */
 export const QUEUE_PATH = "/queue";
@@ -35,6 +35,7 @@ export const DATA_SOURCES_PATH = "/bts/data-sources";
 export const PRIORITY_MODEL_PATH = "/bts/priority-model";
 export const CASE_PAGE_PATH = "/bts/case-page";
 export const RISK_MODEL_PATH = "/bts/risk-model";
+export const OUTLOOK_MODEL_PATH = "/bts/weather-outlook";
 
 export function pageFromPath(path: string): Page {
   if (/^\/(bts\/flowchart|flowchart|admin)\/?$/.test(path)) return "admin"; // the Flowchart page; old /flowchart and /admin links still work
@@ -42,6 +43,7 @@ export function pageFromPath(path: string): Page {
   if (/^\/bts\/priority-model\/?$/.test(path)) return "priority";
   if (/^\/bts\/case-page\/?$/.test(path)) return "casepage";
   if (/^\/bts\/risk-model\/?$/.test(path)) return "riskmodel";
+  if (/^\/bts\/weather-outlook\/?$/.test(path)) return "outlookmodel";
   if (predictionsAccountFromPath(path)) return "predictions";
   if (/^\/funnel\/?$/.test(path)) return "funnel";
   if (accountFromPath(path)) return "case";

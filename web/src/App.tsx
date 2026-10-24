@@ -10,12 +10,13 @@ import type { MapSummary } from "./data/api";
 // Leaflet only loads when the map view is first opened.
 const CaseMap = lazy(() => import("./components/CaseMap").then((m) => ({ default: m.CaseMap })));
 import { CaseDetails } from "./components/CaseDetails";
-import { accountHref, DATA_SOURCES_PATH, FLOWCHART_PATH, PRIORITY_MODEL_PATH, CASE_PAGE_PATH, RISK_MODEL_PATH, QUEUE_PATH, FUNNEL_PATH, isModifiedClick, useRoute, type Page } from "./route";
+import { accountHref, DATA_SOURCES_PATH, FLOWCHART_PATH, PRIORITY_MODEL_PATH, CASE_PAGE_PATH, RISK_MODEL_PATH, OUTLOOK_MODEL_PATH, QUEUE_PATH, FUNNEL_PATH, isModifiedClick, useRoute, type Page } from "./route";
 import { DataSourcesPage } from "./components/DataSourcesPage";
 import { PriorityModelPage } from "./components/PriorityModelPage";
 import { CasePageGuide } from "./components/CasePageGuide";
 import { PredictionsPage } from "./components/PredictionsPage";
 import { RiskModelPage } from "./components/RiskModelPage";
+import { OutlookModelPage } from "./components/OutlookModelPage";
 import { DemoSettings } from "./components/DemoSettings";
 import { OutlookPage } from "./components/OutlookPage";
 import { FunnelPage } from "./components/FunnelPage";
@@ -149,7 +150,7 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; o
   }, [openAccount]);
 
   useEffect(() => {
-    if (props.page === "outlook" || props.page === "funnel") return; // these pages set their own
+    if (props.page !== "queue" && props.page !== "case") return; // the other pages set their own
     document.title = openItem && openAccount ? `${accountOf(openItem) ?? ""} · ${catalogNameFor(openItem)} · ERVEI` : "Case queue · ERVEI";
   }, [openItem, openAccount, props.page]);
 
@@ -429,6 +430,8 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; o
         <PriorityModelPage />
       ) : props.page === "casepage" ? (
         <CasePageGuide />
+      ) : props.page === "outlookmodel" ? (
+        <OutlookModelPage />
       ) : props.page === "riskmodel" ? (
         <RiskModelPage client={client} />
       ) : props.page === "predictions" && props.predictionsAccount ? (
@@ -639,7 +642,7 @@ function BtsMenu(props: { page: Page; navigate: (to: string) => void }) {
     document.addEventListener("keydown", close);
     return () => { document.removeEventListener("mousedown", close); document.removeEventListener("keydown", close); };
   }, [open]);
-  const items = [[FLOWCHART_PATH, "Flowchart", "admin"], [DATA_SOURCES_PATH, "Data sources", "data"], [PRIORITY_MODEL_PATH, "Priority model", "priority"], [CASE_PAGE_PATH, "Case page", "casepage"], [RISK_MODEL_PATH, "Risk model", "riskmodel"]] as const;
+  const items = [[FLOWCHART_PATH, "Flowchart", "admin"], [DATA_SOURCES_PATH, "Data sources", "data"], [PRIORITY_MODEL_PATH, "Priority model", "priority"], [CASE_PAGE_PATH, "Case page", "casepage"], [RISK_MODEL_PATH, "Risk model", "riskmodel"], [OUTLOOK_MODEL_PATH, "Weather outlook", "outlookmodel"]] as const;
   const inside = items.some(([, , page]) => page === props.page);
   return (
     <div className="bts" ref={ref}>
