@@ -2,6 +2,7 @@ import { detectAccountSignals } from "../domain/types";
 import type { ApiClient, CaseItem, Catalog, SupportPlan } from "../data/api";
 import { CaseWeather } from "./CaseWeather";
 import { UsageChart } from "./AccountDetails";
+import { paragraphs } from "./paragraphs";
 import { OUTCOME_LABEL, OUTCOME_ORDER, band, percent } from "./predictionText";
 
 const money = (n: number) => `$${n.toLocaleString("en-AU", { maximumFractionDigits: 0 })}`;
@@ -116,7 +117,7 @@ export function CaseGlance({ item, data, plan, planFailed, onOpen, client }: { i
 
       <section className="case-card vis-card vis-wide" aria-labelledby="vis-do">
         <h2 id="vis-do">What to do first</h2>
-        {plan?.text ? <div className="vis-plan"><p className="vis-plan-label"><span aria-hidden="true">✦</span> AI summary</p><p>{plan.text}</p></div> : planFailed ? <p className="muted">The AI plan isn't available right now; these are the standard first solutions.</p> : c.circumstances.length ? <p className="muted">Drafting a support plan…</p> : null}
+        {plan?.text ? <div className="vis-plan"><p className="vis-plan-label"><span aria-hidden="true">✦</span> AI summary</p>{paragraphs(plan.text).map((t, i) => <p key={i}>{t}</p>)}</div> : planFailed ? <p className="muted">The AI plan isn't available right now; these are the standard first solutions.</p> : c.circumstances.length ? <p className="muted">Drafting a support plan…</p> : null}
         {top.length ? (
           <ol className="vis-steps">
             {top.map((s, i) => (

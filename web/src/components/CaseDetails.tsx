@@ -8,6 +8,7 @@ import { PERIOD_TEXT, readableDates } from "../domain/format";
 import { ageOn, PRIORITY_PROVIDER } from "../domain/types";
 import { Mark, AccountHistory, AccountSignals, ContactHistory, date, SupplyAndCollections, SupportHistory, UtilityAccount } from "./AccountDetails";
 import { CaseGlance } from "./CaseGlance";
+import { paragraphs } from "./paragraphs";
 import { PriorityBreakdownView } from "./PriorityBreakdown";
 
 /** A missing contact detail is shown as not recorded, so it is never mistaken for "none". */
@@ -356,7 +357,7 @@ function AiPlanView({ kind, state }: { kind: PlanKind; state: AiState }) {
   return (
     <div className="ai-plan" aria-live="polite">
       <p className="block-label">{AI_TITLE[kind]} <span className="sim">AI draft · check before acting</span></p>
-      {state.loading ? <p className="muted">{AI_LOADING[kind]}</p> : state.error ? <p className="muted">{state.error}</p> : <p>{state.plan!.text}</p>}
+      {state.loading ? <p className="muted">{AI_LOADING[kind]}</p> : state.error ? <p className="muted">{state.error}</p> : <>{paragraphs(state.plan!.text).map((t, i) => <p key={i}>{t}</p>)}</>}
       {state.plan ? <p className="hint">Drafted by {state.plan.model} from the {AI_SOURCE[kind]}. No name or contact details were sent.</p> : null}
     </div>
   );
