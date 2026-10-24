@@ -122,7 +122,7 @@ export function CaseGlance({ item, data, plan, planFailed, onOpen, client }: { i
             {top.map((s, i) => (
               <li key={s.id}>
                 <span className="rank-num">{i + 1}</span>
-                <div><strong>{s.label}</strong>{s.due ? <span className="sub"> · by {new Date(`${s.due}T00:00:00Z`).toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" })}{s.method ? ` · ${({ phone: "phone call", sms: "SMS", email: "email", letter: "letter" } as Record<string, string>)[s.method]}` : ""}</span> : null}</div>
+                <div><strong>{s.label}</strong>{s.due ? <span className="sub">By {new Date(`${s.due}T00:00:00Z`).toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" })}{s.method ? ` · ${({ phone: "phone call", sms: "SMS", email: "email", letter: "letter" } as Record<string, string>)[s.method]}` : ""}</span> : null}</div>
               </li>
             ))}
           </ol>

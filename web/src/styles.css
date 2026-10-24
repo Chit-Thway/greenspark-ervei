@@ -664,3 +664,4 @@ select:not([multiple]):disabled { opacity: .6; }
 .wx-items strong { font-size: 13px; }
 .wx-items .wx-icon { font-size: 20px; line-height: 1.1; text-align: center; }
 .wx-none { margin: 0; font-size: 13px; }
+.vis-plan { max-width: 75ch; }
