@@ -612,3 +612,4 @@ select:not([multiple]):disabled { opacity: .6; }
 .town-table-wrap::-webkit-scrollbar-thumb { background: #dfe1e6; border-radius: 99px; border: 2px solid var(--surface); }
 .town-table-wrap:hover::-webkit-scrollbar-thumb { background: #c1c7d0; }
 .town-table-wrap::-webkit-scrollbar-button { display: none; }
+.hz-icon { cursor: help; margin-right: 3px; }

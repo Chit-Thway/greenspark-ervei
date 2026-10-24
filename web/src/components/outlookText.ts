@@ -2,6 +2,13 @@
 import type { HazardKind } from "../data/api";
 
 export const HAZARD_LABEL: Record<HazardKind, string> = { heat: "Extreme heat", hot: "Hot day", fire: "Fire danger", warning: "Warning" };
+/** What each symbol means, for tooltips. */
+export const HAZARD_HINT: Record<HazardKind, string> = {
+  heat: "a forecast maximum of 38°C or more (42°C north of the 26th parallel)",
+  hot: "within 4°C of the extreme-heat limit; risky for people on life support or whose power could stop",
+  fire: "an Extreme or Catastrophic fire danger rating for the district",
+  warning: "an active Bureau warning for the district",
+};
 export const HAZARD_ICON: Record<HazardKind, string> = { heat: "🌡️", hot: "☀️", fire: "🔥", warning: "⚠️" };
 export const GROUP_LABEL = { health: "Health", supply: "Supply could stop", cost: "Can't afford cooling", isolation: "Isolated" } as const;
 

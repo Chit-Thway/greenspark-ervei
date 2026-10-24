@@ -3,7 +3,7 @@ import type { ApiClient, EmergencyFeed, HazardKind, Outlook, OutlookCustomer } f
 import { accountHref, isModifiedClick } from "../route";
 import { PRIORITY_TEXT, STATUS_LABELS } from "../domain/format";
 import { band, percent } from "./predictionText";
-import { ALERT_LEVELS, GROUP_LABEL, HAZARD_ICON, HAZARD_LABEL, alertColor, dayDate, isWarning, dayName, tempColor } from "./outlookText";
+import { ALERT_LEVELS, GROUP_LABEL, HAZARD_HINT, HAZARD_ICON, HAZARD_LABEL, alertColor, dayDate, isWarning, dayName, tempColor } from "./outlookText";
 
 // Leaflet only loads with this page.
 const OutlookMap = lazy(() => import("./OutlookMap").then((m) => ({ default: m.OutlookMap })));
@@ -176,7 +176,11 @@ export function OutlookPage({ client, navigate }: { client: Pick<ApiClient, "out
                   <tr key={t.id} className={t.id === town ? "is-selected" : undefined}>
                     <th scope="row">
                       <button type="button" className="town-btn" aria-pressed={t.id === town} onClick={() => setTown(t.id === town ? null : t.id)}>{t.name}</button>
-                      <span className="sub">{t.districtName}{t.hazards.length ? ` · ${[...new Set(t.hazards.map((h) => h.kind))].map((k) => HAZARD_ICON[k]).join(" ")}` : ""}</span>
+                      <span className="sub">{t.districtName}{t.hazards.length ? " · " : ""}{[...new Set(t.hazards.map((h) => h.kind))].map((k) => {
+                        // The symbol's name, then what the forecast says: each day's temperature, the fire rating or the warning.
+                        const tip = `${HAZARD_LABEL[k]}: ${HAZARD_HINT[k]}\n${t.hazards.filter((h) => h.kind === k).map((h) => h.text).join("\n")}`;
+                        return <span key={k} className="hz-icon" title={tip} aria-label={tip} role="img">{HAZARD_ICON[k]}</span>;
+                      })}</span>
                     </th>
                     {ready.days.map((d) => {
                       const day = t.days.find((x) => x.date === d.date);
