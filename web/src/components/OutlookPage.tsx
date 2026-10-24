@@ -74,7 +74,8 @@ export function OutlookPage({ client, navigate }: { client: Pick<ApiClient, "out
   };
   // Only real warnings go on the map; other notices, such as park closures, are left off.
   const warnings = (emergency?.alerts ?? []).filter((a) => isWarning(a.alertLevel));
-  const maxExposed = Math.max(1, ...ready.days.map((d) => d.exposed));
+  // The bars show only act now and watch, scaled to the busiest day.
+  const maxExposed = Math.max(1, ...ready.days.map((d) => d.act + d.watch));
   const towns = [...ready.towns].sort((a, b) => b.act - a.act || b.watch - a.watch || b.exposed - a.exposed || a.name.localeCompare(b.name));
   const chosen = town ? townsById.get(town) : null;
   const filtered = !!(tier || hazard || group || town);
@@ -111,7 +112,7 @@ export function OutlookPage({ client, navigate }: { client: Pick<ApiClient, "out
       </section>
 
       <section className="panel outlook-days" aria-labelledby="days-title">
-        <div className="panel-head"><h2 id="days-title">The week ahead</h2><span className="hint">Hottest place each day, and customers with dangerous or hot weather that day</span></div>
+        <div className="panel-head"><h2 id="days-title">The week ahead</h2><span className="hint">Hottest place each day, and the act now and watch customers facing hot or dangerous weather that day</span></div>
         <ol className="day-strip">
           {ready.days.map((d) => (
             <li key={d.date} className={d.date === ready.today ? "is-today" : undefined}>
@@ -121,7 +122,6 @@ export function OutlookPage({ client, navigate }: { client: Pick<ApiClient, "out
               <span className="day-bar" aria-hidden="true">
                 <i className="bar-act" style={{ height: `${(d.act / maxExposed) * 100}%` }} />
                 <i className="bar-watch" style={{ height: `${(d.watch / maxExposed) * 100}%` }} />
-                <i className="bar-rest" style={{ height: `${((d.exposed - d.act - d.watch) / maxExposed) * 100}%` }} />
               </span>
               <span className="day-count"><span className="day-tiers"><strong className="n-act">{d.act}</strong> act · <strong className="n-watch">{d.watch}</strong> watch</span><span className="sub">{d.exposed} exposed</span></span>
             </li>

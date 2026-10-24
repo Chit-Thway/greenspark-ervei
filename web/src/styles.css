@@ -450,7 +450,7 @@ button.kpi:hover { border-color: #b3bac5; }
 .day-peak { font-size: 15px; font-weight: 700; border-radius: 99px; min-width: 44px; padding: 2px 8px; }
 .day-bar { display: flex; flex-direction: column-reverse; width: 28px; height: 70px; background: #f4f5f7; border-radius: 4px; overflow: hidden; }
 .day-bar i { display: block; width: 100%; }
-.bar-act { background: var(--urgent); } .bar-watch { background: #e0a030; } .bar-rest { background: #c1c7d0; }
+.bar-act { background: var(--urgent); } .bar-watch { background: #e0a030; }
 .day-count { display: grid; gap: 2px; font-size: 12px; }
 .day-tiers { font-size: 13px; } .day-tiers strong { font-size: 15px; }
 .n-act { color: var(--urgent); } .n-watch { color: var(--high); }
