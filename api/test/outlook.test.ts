@@ -25,6 +25,19 @@ describe("weather outlook", () => {
     expect(body.towns.find((t: any) => t.name === "Broome").act).toBe(0); // the sample heatwave is in the south
   });
 
+  it("is worked out once, and again when a case changes", async () => {
+    const snapshot = sampleWeather("2026-10-16");
+    h = await start(":memory:", undefined, { weather: { current: () => snapshot, status: () => ({ mode: "demo" }), setMode: async () => undefined } });
+    const first = (await h.call("staff-manager", "GET", "/api/outlook")).body;
+    expect((await h.call("staff-manager", "GET", "/api/outlook")).body).toEqual(first);
+    const row = first.customers[0];
+    const c = h.store.getCaseForPerson(row.personId)!;
+    const next = c.workflow.status === "waiting" ? "in_progress" : "waiting";
+    expect((await h.call("staff-manager", "POST", "/api/cases/bulk/status", { status: next, items: [{ caseId: c.id, expectedVersion: c.version }] })).status).toBe(200);
+    const after = (await h.call("staff-manager", "GET", "/api/outlook")).body;
+    expect(after.customers.find((x: any) => x.personId === row.personId).status).toBe(next);
+  });
+
   it("says when there is no forecast", async () => {
     h = await start();
     const { body } = await h.call("staff-manager", "GET", "/api/outlook");

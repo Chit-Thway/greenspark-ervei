@@ -311,6 +311,12 @@ export class Store {
     return r ? { ...p, account: JSON.parse(r.doc as string) as CustomerAccount } : p;
   }
 
+  /** Changes whenever a case is added or changed (every change bumps its version): a cheap key for caches. */
+  casesSignature(): string {
+    const r = this.db.prepare("SELECT COUNT(*) AS n, COALESCE(SUM(version), 0) AS v, MAX(updated_at) AS u FROM cases").get() as Row;
+    return `${r.n}:${r.v}:${r.u}`;
+  }
+
   dataset(): QueueDataset {
     return { ...this.catalog, people: this.allPeople(), cases: this.allCases() };
   }

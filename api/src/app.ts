@@ -274,12 +274,21 @@ export function createApp(store: Store, options: AppOptions = {}) {
     res.json({ total: matches.length, unplaced, places: [...places.values()] });
   });
 
+  let outlookCache: { key: string; body: unknown } | null = null;
+  const docIds = new WeakMap<FlowDoc, number>();
+  let nextDocId = 0;
+  // A flowchart edit is a new FlowDoc, so its identity is enough to tell versions apart.
+  const docId = (doc: FlowDoc) => { let n = docIds.get(doc); if (n === undefined) docIds.set(doc, (n = ++nextDocId)); return n; };
   // The weather outlook: the next week's forecast for each town, and the customers it puts at risk, most at risk first.
   app.get("/api/outlook", async (_req, res) => {
     const w = options.weather?.current() ?? null;
     const status = options.weather?.status() ?? { mode: "off" };
     if (!w) return res.json({ available: false, weather: status });
     const today = perthToday(clock());
+    // The same forecast, day, flowchart and case versions give the same outlook, so it is worked out once.
+    const doc = await currentFlow();
+    const key = `${w.fetchedAt}|${today}|${doc ? docId(doc) : "fixture"}|${store.casesSignature()}`;
+    if (outlookCache?.key === key) return res.json(outlookCache.body);
     const data = await dataset();
     const cases = new Map(data.cases.map((c) => [c.personId, c]));
     let uncovered = 0;
@@ -319,12 +328,14 @@ export function createApp(store: Store, options: AppOptions = {}) {
       return { date, peak, exposed: on.length, act: on.filter((r) => r.tier === "act").length, watch: on.filter((r) => r.tier === "watch").length };
     });
     const listed = rows.filter((r) => r.tier).sort((a, b) => (a.tier === b.tier ? 0 : a.tier === "act" ? -1 : 1) || b.score - a.score);
-    res.json({
+    const body = {
       available: true, weather: status, today, demo: w.demo, issuedAt: w.issuedAt, days, towns,
       warnings: w.warnings.filter((x) => x.districts.length).map((x) => ({ title: x.title, districts: x.districts.map((d) => w.districts[d] ?? d), expires: x.expires })),
       totals: { covered: rows.length, uncovered, exposed: rows.filter((r) => r.exposure > 0).length, vulnerable: rows.filter((r) => r.vulnerable).length, act: listed.filter((r) => r.tier === "act").length, watch: listed.filter((r) => r.tier === "watch").length },
       customers: listed.map(({ dates: _dates, vulnerable: _vulnerable, ...r }) => r),
-    });
+    };
+    outlookCache = { key, body };
+    res.json(body);
   });
 
   app.get("/api/cases/ids", async (req, res) => {

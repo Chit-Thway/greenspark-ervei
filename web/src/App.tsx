@@ -163,8 +163,11 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; o
     return () => window.clearTimeout(t);
   }, [searchText]);
 
+  // Only the queue (and a case opened from it) needs the list; the outlook and other pages don't load it.
+  const wantsQueue = props.page === "queue" || props.page === "case";
   // Load the current page whenever the query or data changes. Older responses are ignored.
   useEffect(() => {
+    if (!wantsQueue) return;
     let current = true;
     setLoading(true);
     client.list(query).then(
@@ -195,13 +198,13 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; o
       },
     );
     return () => { current = false; };
-  }, [client, query, refreshTick]);
+  }, [client, query, refreshTick, wantsQueue]);
 
   // The map shows every matching case, so it ignores the page and sort; it loads only while the map is shown.
   const { page: _page, sort: _sort, ...mapQuery } = query;
   const mapKey = JSON.stringify(mapQuery);
   useEffect(() => {
-    if (view !== "map" || !client.mapSummary) return;
+    if (props.page !== "queue" || view !== "map" || !client.mapSummary) return;
     let current = true;
     client.mapSummary(query).then(
       (m) => { if (current) { setMapSummary(m); setMapError(null); } },
@@ -209,7 +212,7 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; o
     );
     return () => { current = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- reload on filter changes only, not paging or sorting
-  }, [client, view, mapKey, refreshTick]);
+  }, [client, view, mapKey, refreshTick, props.page]);
 
   // Filter changes (and data changes) drop selected IDs that no longer match.
   useEffect(() => {
