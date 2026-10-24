@@ -156,7 +156,7 @@ export function OutlookPage({ client, navigate }: { client: Pick<ApiClient, "out
             <label className="check"><input type="checkbox" checked={layers.towns} onChange={() => toggle("towns")} /><span>Forecast towns</span></label>
             <label className="check">
               <input type="checkbox" checked={layers.alerts} disabled={!emergency?.available} onChange={() => toggle("alerts")} />
-              <span>Emergency WA warnings {emergency?.available ? <span className="pill">{warnings.length}</span> : <span className="sub">{emergency ? "unavailable" : "loading…"}</span>}</span>
+              <span>Emergency WA warnings{emergency?.available ? null : <span className="sub"> {emergency ? "unavailable" : "loading…"}</span>}</span>
             </label>
           </span>
             } />
