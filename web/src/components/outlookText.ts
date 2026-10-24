@@ -29,3 +29,5 @@ export function alertColor(level: string): string {
   if (/advice/i.test(level)) return ALERT_LEVELS[2]![1];
   return ALERT_LEVELS[3]![1];
 }
+/** A real warning (advice, watch and act or emergency warning), not another notice such as a park closure. */
+export const isWarning = (level: string) => alertColor(level) !== ALERT_LEVELS[3]![1];

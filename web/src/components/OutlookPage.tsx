@@ -3,7 +3,7 @@ import type { ApiClient, EmergencyFeed, HazardKind, Outlook, OutlookCustomer } f
 import { accountHref, isModifiedClick } from "../route";
 import { PRIORITY_TEXT, STATUS_LABELS } from "../domain/format";
 import { band, percent } from "./predictionText";
-import { ALERT_LEVELS, GROUP_LABEL, HAZARD_ICON, HAZARD_LABEL, alertColor, dayDate, dayName, tempColor } from "./outlookText";
+import { ALERT_LEVELS, GROUP_LABEL, HAZARD_ICON, HAZARD_LABEL, alertColor, dayDate, isWarning, dayName, tempColor } from "./outlookText";
 
 // Leaflet only loads with this page.
 const OutlookMap = lazy(() => import("./OutlookMap").then((m) => ({ default: m.OutlookMap })));
@@ -72,6 +72,8 @@ export function OutlookPage({ client, navigate }: { client: Pick<ApiClient, "out
     e.preventDefault();
     navigate(accountHref(c.accountNumber));
   };
+  // Only real warnings go on the map; other notices, such as park closures, are left off.
+  const warnings = (emergency?.alerts ?? []).filter((a) => isWarning(a.alertLevel));
   const maxExposed = Math.max(1, ...ready.days.map((d) => d.exposed));
   const towns = [...ready.towns].sort((a, b) => b.act - a.act || b.watch - a.watch || b.exposed - a.exposed || a.name.localeCompare(b.name));
   const chosen = town ? townsById.get(town) : null;
@@ -130,13 +132,6 @@ export function OutlookPage({ client, navigate }: { client: Pick<ApiClient, "out
       <section className="panel outlook-places" aria-labelledby="places-title">
         <div className="panel-head">
           <h2 id="places-title">Where</h2>
-          <span className="map-layers" role="group" aria-label="Show on the map">
-            <label className="check"><input type="checkbox" checked={layers.towns} onChange={() => toggle("towns")} /><span>Forecast towns</span></label>
-            <label className="check">
-              <input type="checkbox" checked={layers.alerts} disabled={!emergency?.available} onChange={() => toggle("alerts")} />
-              <span>Emergency WA warnings {emergency?.available ? <span className="pill">{emergency.alerts.length}</span> : <span className="sub">{emergency ? "unavailable" : "loading…"}</span>}</span>
-            </label>
-          </span>
         </div>
         <div className="panel-head map-keys">
           {layers.towns ? <>
@@ -150,14 +145,22 @@ export function OutlookPage({ client, navigate }: { client: Pick<ApiClient, "out
           </> : null}
           {layers.alerts && emergency?.available ? (
             <span className="map-legend" aria-label="Emergency WA warning levels">
-              {ALERT_LEVELS.filter(([label]) => emergency.alerts.some((a) => alertColor(a.alertLevel) === alertColor(label === "Other notices" ? "" : label))).map(([label, color]) => <span key={label}><i className="sq" style={{ background: color }} />{label}</span>)}
+              {ALERT_LEVELS.filter(([label]) => warnings.some((a) => alertColor(a.alertLevel) === alertColor(label))).map(([label, color]) => <span key={label}><svg className="tri" viewBox="0 0 22 20" width="13" height="12" aria-hidden="true"><path d="M11 1.5 L20.5 18.5 H1.5 Z" fill={color} stroke="#253858" strokeWidth="1.5" strokeLinejoin="round" /></svg>{label}</span>)}
               <span className="sub">Emergency WA, updated {emergency.fetchedAt ? new Date(emergency.fetchedAt).toLocaleTimeString("en-AU", { timeZone: "Australia/Perth", hour: "numeric", minute: "2-digit" }) : "–"} · click an area for details</span>
             </span>
           ) : null}
         </div>
         <div className="outlook-places-body">
           <Suspense fallback={<div className="outlook-map" role="status">Loading the map…</div>}>
-            <OutlookMap towns={ready.towns} alerts={emergency?.alerts ?? []} showTowns={layers.towns} showAlerts={layers.alerts && !!emergency?.available} chosen={town} onChoose={setTown} />
+            <OutlookMap towns={ready.towns} alerts={warnings} showTowns={layers.towns} showAlerts={layers.alerts && !!emergency?.available} chosen={town} onChoose={setTown} controls={
+          <span className="map-layers" role="group" aria-label="Show on the map">
+            <label className="check"><input type="checkbox" checked={layers.towns} onChange={() => toggle("towns")} /><span>Forecast towns</span></label>
+            <label className="check">
+              <input type="checkbox" checked={layers.alerts} disabled={!emergency?.available} onChange={() => toggle("alerts")} />
+              <span>Emergency WA warnings {emergency?.available ? <span className="pill">{warnings.length}</span> : <span className="sub">{emergency ? "unavailable" : "loading…"}</span>}</span>
+            </label>
+          </span>
+            } />
           </Suspense>
           <div className="town-table-wrap">
             <table className="town-table">

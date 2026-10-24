@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import type { EmergencyAlert, OutlookTown } from "../data/api";
@@ -16,12 +16,22 @@ function alertPopup(a: EmergencyAlert): HTMLElement {
   return box;
 }
 
+/** A warning triangle in the warning's colour, so warnings never look like the round forecast towns. */
+function triangle(color: string): L.DivIcon {
+  return L.divIcon({
+    className: "alert-tri", iconSize: [22, 20], iconAnchor: [11, 13], popupAnchor: [0, -12],
+    html: `<svg viewBox="0 0 22 20" width="22" height="20" aria-hidden="true"><path d="M11 1.5 L20.5 18.5 H1.5 Z" fill="${color}" stroke="#253858" stroke-width="1.5" stroke-linejoin="round"/><path d="M11 7v5" stroke="#253858" stroke-width="2" stroke-linecap="round"/><circle cx="11" cy="15" r="1.1" fill="#253858"/></svg>`,
+  });
+}
+
 /**
  * The outlook map of WA, with two layers that can be switched on and off: the forecast towns, coloured by the worst
  * weather coming and sized by the customers to contact; and Emergency WA's current warnings, drawn as their areas.
  */
-export function OutlookMap({ towns, alerts, showTowns, showAlerts, chosen, onChoose }: {
+export function OutlookMap({ towns, alerts, showTowns, showAlerts, chosen, onChoose, controls }: {
   towns: OutlookTown[]; alerts: EmergencyAlert[]; showTowns: boolean; showAlerts: boolean; chosen: string | null; onChoose: (id: string | null) => void;
+  /** Shown in the row under the map, before the zoom links: the layer switches. */
+  controls?: ReactNode;
 }) {
   const el = useRef<HTMLDivElement>(null);
   const map = useRef<L.Map | null>(null);
@@ -89,8 +99,8 @@ export function OutlookMap({ towns, alerts, showTowns, showAlerts, chosen, onCho
       for (const p of a.polygons) L.polygon(p, { pane: "alerts", color, weight: 2, fillColor: color, fillOpacity: 0.25 }).bindPopup(() => alertPopup(a)).addTo(g);
       // A dot at the centre too, as small areas vanish when zoomed out.
       if (a.centre) {
-        L.circleMarker(a.centre, { pane: "alerts", radius: 6, color: "#253858", weight: 1.5, fillColor: color, fillOpacity: 1 })
-          .bindTooltip(a.headline || a.alertLevel).bindPopup(() => alertPopup(a)).addTo(g);
+        L.marker(a.centre, { pane: "alerts", icon: triangle(color), keyboard: true, title: a.headline || a.alertLevel })
+          .bindPopup(() => alertPopup(a)).addTo(g);
       }
     }
   }, [alerts]);
@@ -109,6 +119,7 @@ export function OutlookMap({ towns, alerts, showTowns, showAlerts, chosen, onCho
     <div ref={wrap} className={`outlook-map-wrap${full ? " is-full" : ""}`}>
       <div ref={el} className="outlook-map" role="region" aria-label="Map of forecast towns and Emergency WA warnings" />
       <div className="map-zoom outlook-zoom">
+        {controls}
         <button type="button" className="link-btn" onClick={() => map.current?.setView([-31.95, 115.86], 9)}>Perth</button>
         <button type="button" className="link-btn" onClick={() => map.current?.setView([-33.2, 116.2], 7)}>South West</button>
         <button type="button" className="link-btn" onClick={() => map.current?.setView([-26.5, 121], 5)}>All of WA</button>
