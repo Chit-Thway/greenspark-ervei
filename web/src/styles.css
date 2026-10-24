@@ -603,3 +603,10 @@ select:not([multiple]):disabled { opacity: .6; }
 .mtp-counts strong { font-size: 26px; line-height: 1.1; margin: 0; }
 .mtp-act { border-left: 4px solid var(--urgent) !important; } .mtp-act strong { color: var(--urgent); }
 .mtp-watch { border-left: 4px solid #e0a030 !important; } .mtp-watch strong { color: var(--high); }
+/* A thin, quiet scrollbar for the town table */
+.town-table-wrap { scrollbar-width: thin; scrollbar-color: #c1c7d0 transparent; }
+.town-table-wrap::-webkit-scrollbar { width: 8px; height: 8px; }
+.town-table-wrap::-webkit-scrollbar-track { background: transparent; }
+.town-table-wrap::-webkit-scrollbar-thumb { background: #dfe1e6; border-radius: 99px; border: 2px solid var(--surface); }
+.town-table-wrap:hover::-webkit-scrollbar-thumb { background: #c1c7d0; }
+.town-table-wrap::-webkit-scrollbar-button { display: none; }
