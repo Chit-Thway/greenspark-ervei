@@ -533,3 +533,6 @@ button.kpi:hover { border-color: #b3bac5; }
 .map-legend i.sq { border-radius: 2px; }
 .alert-pop { display: grid; gap: 4px; max-width: 260px; font-size: 13px; }
 .alert-pop p { margin: 0; }
+.map-full { margin-left: auto; }
+.outlook-map-wrap:fullscreen { display: flex; flex-direction: column; background: var(--surface); }
+.outlook-map-wrap:fullscreen .outlook-map { flex: 1; min-height: 0; }
