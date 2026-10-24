@@ -558,3 +558,4 @@ button.kpi:hover { border-color: #b3bac5; }
   .case-wx-map { min-height: 260px; }
   .case-wx-days .sub { font-size: 11px; }
 }
+.vis-card .usage-chart { max-width: 560px; }

@@ -332,7 +332,7 @@ export function UsageChart({ usage }: { usage: { month: string; kWh: number; kWh
           <g key={m.month}>
             <rect x={i * step + (step - bar) / 2} y={y(m.kWh)} width={bar} height={H - bottom - y(m.kWh)} rx={2} className="usage-bar"><title>{`${m.month}: ${m.kWh} kWh${m.kWhLastYear !== null ? ` (last year ${m.kWhLastYear})` : ""}`}</title></rect>
             {months.length <= 12 || i % 3 === 0 ? (
-              <text x={i * step + step / 2} y={H - 4} textAnchor="middle" className="usage-axis">
+              <text x={i === 0 ? i * step + (step - bar) / 2 : i * step + step / 2} y={H - 4} textAnchor={i === 0 ? "start" : "middle"} className="usage-axis">
                 {MONTH_SHORT[Number(m.month.slice(5)) - 1]}{i === 0 || m.month.endsWith("-01") || (months.length > 12 && i % 12 === 0) ? ` ${m.month.slice(2, 4)}` : ""}
               </text>
             ) : null}
