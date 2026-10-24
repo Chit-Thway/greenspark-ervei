@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import type { EmergencyAlert, OutlookTown } from "../data/api";
-import { alertColor, hazardColor } from "./outlookText";
+import { HAZARD_ICON, HAZARD_LABEL, alertColor, dayDate, dayName, hazardColor, tempColor } from "./outlookText";
 
 /** A popup's content, built as elements so the feed's text is never read as HTML. */
 export function alertPopup(a: EmergencyAlert): HTMLElement {
@@ -58,6 +58,9 @@ export function OutlookMap({ towns, alerts, showTowns, showAlerts, chosen, onCho
     return () => { document.removeEventListener("fullscreenchange", onFull); m.remove(); map.current = null; };
   }, []);
   // Browsers without the Fullscreen API for elements (Safari on iPhone) get the map filling the window instead.
+  const picked = chosen ? towns.find((t) => t.id === chosen) ?? null : null;
+  // The panel takes room from the map, so Leaflet measures again when it opens or closes.
+  useEffect(() => { requestAnimationFrame(() => map.current?.invalidateSize()); }, [full, !!picked]);
   const toggleFull = () => {
     if (document.fullscreenEnabled && wrap.current?.requestFullscreen) {
       if (document.fullscreenElement) void document.exitFullscreen(); else void wrap.current.requestFullscreen();
@@ -118,6 +121,27 @@ export function OutlookMap({ towns, alerts, showTowns, showAlerts, chosen, onCho
   return (
     <div ref={wrap} className={`outlook-map-wrap${full ? " is-full" : ""}`}>
       <div ref={el} className="outlook-map" role="region" aria-label="Map of forecast towns and Emergency WA warnings" />
+      {full && picked ? (
+        <section className="map-town-panel" aria-label={`${picked.name} forecast`}>
+          <div className="mtp-head">
+            <div>
+              <h2>{picked.name}</h2>
+              <p className="sub">{picked.districtName}{picked.hazards.length ? " · " : ""}{[...new Set(picked.hazards.map((h) => h.kind))].map((k) => <span key={k} title={HAZARD_LABEL[k]}>{HAZARD_ICON[k]} {HAZARD_LABEL[k]} </span>)}</p>
+            </div>
+            <div className="mtp-counts"><span><strong>{picked.act}</strong> act now</span><span><strong>{picked.watch}</strong> watch</span></div>
+            <button type="button" className="icon-btn" aria-label="Close town forecast" onClick={() => choose.current(null)}>✕</button>
+          </div>
+          <ol className="mtp-days">
+            {picked.days.slice(0, 7).map((d) => (
+              <li key={d.date} style={tempColor(d.max)} title={d.precis}>
+                <span className="mtp-day">{dayName(d.date)} {dayDate(d.date)}</span>
+                <strong>{d.max ?? "–"}°</strong>
+                <span className="mtp-min">{d.min ?? "–"}°</span>
+              </li>
+            ))}
+          </ol>
+        </section>
+      ) : null}
       <div className="map-zoom outlook-zoom">
         {controls}
         <button type="button" className="link-btn" onClick={() => map.current?.setView([-31.95, 115.86], 9)}>Perth</button>
