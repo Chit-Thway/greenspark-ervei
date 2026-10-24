@@ -12,9 +12,9 @@ COPY web/package.json web/
 COPY e2e/package.json e2e/
 RUN npm ci -w api -w shared -w web --include-workspace-root --no-audit --no-fund
 
-# 2. Data: only re-copied when it changes. The full import's accounts arrive compressed (see .dockerignore).
+# 2. Data: only re-copied when it changes. The full import arrives compressed, as committed (see .dockerignore).
 COPY data ./data
-RUN if [ -f data/synthetic/accounts.all.jsonl.gz ]; then gunzip -f data/synthetic/accounts.all.jsonl.gz; fi
+RUN for f in data/synthetic/accounts.all.jsonl.gz data/synthetic/case-queue.all.json.gz; do if [ -f "$f" ]; then gunzip -f "$f"; fi; done
 
 # 3. Code: changes most often, so it comes last.
 COPY . .

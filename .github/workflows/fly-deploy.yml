@@ -1,0 +1,23 @@
+# Deploys to Fly.io (app greenspark-ervei, see fly.toml) on every push to main, building on Fly's remote builder.
+# Needs the repository secret FLY_API_TOKEN: a deploy token from `fly tokens create deploy -a greenspark-ervei`.
+name: Deploy to Fly.io
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# One deploy at a time; a newer push waits for the running one rather than cancelling it mid-release.
+concurrency:
+  group: fly-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - run: flyctl deploy --remote-only
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
