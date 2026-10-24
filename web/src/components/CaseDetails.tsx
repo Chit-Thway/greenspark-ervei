@@ -3,13 +3,13 @@ import type { CaseStatus, QueueCase, ReviewStatus, StaffUser } from "../domain/t
 import type { ApiClient, CaseItem, Catalog, ContactMethod, PlanKind, PlanStep, SupportPlan } from "../data/api";
 import { CaseFlowModal } from "../admin/CaseFlowModal";
 import { RiskCard } from "./PredictionsPage";
-import { accountHref, isModifiedClick } from "../route";
+import { isModifiedClick } from "../route";
 import { describeFollowUp, PERIOD_TEXT, readableDates, STATUS_LABELS } from "../domain/format";
 import { isResolved } from "../domain/query";
 import { PriorityBadge } from "./Primitives";
 import { ageOn, PRIORITY_PROVIDER } from "../domain/types";
 import { AccountHistory, AccountSignals, ContactHistory, date, SupplyAndCollections, SupportHistory, UtilityAccount } from "./AccountDetails";
-import { CaseToc, type TocItem } from "./CaseToc";
+import { CaseGlance } from "./CaseGlance";
 
 /** A missing contact detail is shown as not recorded, so it is never mistaken for "none". */
 function notRecorded(v: string | null | undefined): string {
@@ -57,23 +57,191 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
   useEffect(() => { heading.current?.focus(); }, [c.id]);
 
   const history = c.assistance.reportedHistory;
-  // The table of contents lists the sections this case shows, in reading order (left column, then right).
-  const toc: TocItem[] = [
-    { id: "ov-contact", label: "Customer details" },
-    ...(acct ? [{ id: "ov-account", label: "Utility account" }] : []),
-    { id: "ov-model", label: fromSignals ? "Priority" : "Model assessment" },
-    ...(item.prediction ? [{ id: "ov-risk", label: "Predicted risk" }] : []),
-    ...(acct ? [{ id: "ov-signals", label: "Account signals" }] : []),
-    { id: "ov-assist", label: "Assistance reported" },
-    { id: "ov-support", label: "Support areas" },
-    ...(fromFlow && c.recommendations.length ? [{ id: "ov-solutions", label: "Solutions to offer" }] : []),
+  const [section, setSection] = useSection();
+  // The sections behind the summary, each opened as a modal from its card or the list below.
+  const sections: { id: string; title: string; hint: string; body: React.ReactNode }[] = [
+    { id: "customer", title: "Customer and account", hint: "Contact details, household and the utility account", body: (
+      <>
+          <section className="case-card" aria-labelledby="ov-contact">
+            <h3 id="ov-contact">Customer details <span className="sim">fictional</span></h3>
+            <dl className="details">
+              <div><dt>Preferred name</dt><dd>{notRecorded(person?.preferredName)}</dd></div>
+              <div><dt>Gender</dt><dd>{notRecorded(person?.gender)}</dd></div>
+              <div><dt>Age</dt><dd>{acct ? `${ageOn(acct.dateOfBirth, data.asOf)} (born ${date(acct.dateOfBirth)})` : "Not recorded"}</dd></div>
+              <div><dt>Household</dt><dd>{notRecorded(person?.householdSummary)}</dd></div>
+              <div className="wide">
+                <dt>Address</dt>
+                <dd>
+                  {person?.address ? (
+                    <address>
+                      {person.address.line1}<br />
+                      {person.address.line2 ? <>{person.address.line2}<br /></> : null}
+                      {person.suburb} {person.state} {person.address.postcode}
+                    </address>
+                  ) : "Not recorded"}
+                </dd>
+              </div>
+              <div><dt>Mobile</dt><dd>{notRecorded(person?.mobile)}</dd></div>
+              <div><dt>Phone</dt><dd>{notRecorded(person?.phone)}</dd></div>
+              <div className="wide"><dt>Email</dt><dd>{notRecorded(person?.email)}</dd></div>
+              <div><dt>Interpreter</dt><dd>{acct ? (acct.interpreterRequired ? "Required" : "Not required") : "Not recorded"}</dd></div>
+            </dl>
+          </section>
+          {acct ? <UtilityAccount account={acct} accountNumber={person?.accountNumber ?? null} /> : null}
+      </>
+    ) },
+    { id: "priority", title: fromSignals ? "Priority and predicted risk" : "Model assessment and predicted risk", hint: "How the priority is worked out, and the 90-day risk model", body: (
+      <>
+          <section className="case-card model" aria-labelledby="ov-model">
+            {fromSignals ? (
+              <h3 id="ov-model">Priority <span className="sim">from signals</span></h3>
+            ) : (
+              <h3 id="ov-model">Model assessment <span className="sim">simulated · {a.provider}</span></h3>
+            )}
+            {a.status === "ready" && a.priority ? (
+              <>
+                <p>Priority {a.priority.score}/100 ({a.priority.label}) · trend: {a.trend ?? "unknown"}</p>
+                <p className="hint">{a.explanation}</p>
+                {fromSignals ? <p className="hint">Points for each flagged circumstance (by type, more if sensitive) and each signal behind them. A guide for ordering the queue, not a judgement about the customer.</p> : null}
+              </>
+            ) : (
+              <p>{a.explanation ?? (a.status === "pending" ? "Assessment pending. No priority has been assigned." : "Assessment unavailable. No priority has been assigned.")}</p>
+            )}
+          </section>
+
+          {props.navigate ? <RiskCard item={item} accountNumber={person?.accountNumber ?? null} navigate={props.navigate} /> : null}
+      </>
+    ) },
+    ...(acct ? [{ id: "signals", title: "Account signals", hint: "Warning signs in the account and the weather forecast", body: (
+        <AccountSignals account={acct} asOf={data.asOf} weather={item.weatherSignals} summary={props.loadPlan ? <AiPlan kind="signals" caseId={c.id} version={c.version} load={props.loadPlan} /> : null} />
+    ) }] : []),
+    { id: "support", title: "Support areas and why", hint: `${c.circumstances.length} circumstance${c.circumstances.length === 1 ? "" : "s"} flagged, and what's been reported`, body: (
+      <>
+          <section className="case-card" aria-labelledby="ov-support">
+            <h3 id="ov-support">Support areas and why {fromFlow ? <span className="sim">hardship flow</span> : null}</h3>
+            {fromFlow ? (
+              <p className="hint">Worked out from account data and survey answers with the Flowchart&apos;s rules: one strong signal, or two supporting ones. Sensitive circumstances need a strong signal.</p>
+            ) : null}
+            {supportAi ? <AiPlanView kind="support" state={supportAi} /> : null}
+            {c.circumstances.length === 0 ? <p className="muted">{fromFlow ? "No circumstances flagged." : "No circumstances flagged from the reported answers."}</p> : null}
+            {data.supportAreas.filter((area) => c.supportAreaIds.includes(area.id)).map((area) => (
+              <div key={area.id} className="area-block">
+                <h4>{area.label}</h4>
+                {c.circumstances.filter((x) => data.circumstances.find((d) => d.id === x.circumstanceId)?.supportAreaId === area.id).map((x) => {
+                  const def = data.circumstances.find((d) => d.id === x.circumstanceId)!;
+                  const recs = c.recommendations.filter((r) => r.circumstanceIds.includes(x.circumstanceId));
+                  return (
+                    <div key={x.circumstanceId} className={`circ${def.sensitivity === "safety" ? " circ-safety" : ""}`}>
+                      <div className="circ-head">
+                        <strong>{def.label}</strong>
+                        {def.sensitivity && def.sensitivity !== "standard" ? <span className={`sens sens-${def.sensitivity}`}>{def.sensitivity === "safety" ? "Safety" : "Sensitive"}</span> : null}
+                      </div>
+                      {def.sensitivity === "safety" ? <p className="hint">Never actioned automatically. Route to trained staff.</p> : null}
+                      {def.handling ? <p className="hint">{def.handling}</p> : null}
+                      {x.signals ? (
+                        <>
+                        <p className="block-label">Why it&apos;s flagged</p>
+                        <ul className="evidence signals">
+                          {x.signals.map((sg) => (
+                            <li key={sg.id}>
+                              <span>{sg.name} <span className="sub">{readableDates(sg.evidence)}</span></span>
+                              <span className={`strength strength-${sg.strength}`}>{sg.strength === "strong" ? "Strong" : "Supporting"}</span>
+                            </li>
+                          ))}
+                        </ul>
+                        </>
+                      ) : (
+                        <ul className="evidence">
+                          {x.evidenceFieldIds.map((fid) => {
+                            const f = field(fid);
+                            const ans = answerText(c, fid);
+                            return (
+                              <li key={fid}>
+                                <span>{f?.label ?? fid} <span className="sub">({fid}, {f ? PERIOD_TEXT[f.referencePeriod] : ""}{c.reportedAt ? `, reported ${c.reportedAt}` : ""})</span></span>
+                                <span className={`answer answer-${ans.tone}`}>{ans.text}</span>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      )}
+                      {recs.length ? (
+                        <div className="suggest">
+                          <span className="sim">{fromFlow ? "Solutions for staff review" : "Suggested for staff review"}</span>
+                          <ul className="suggest-list">
+                            {recs.map((r) => <li key={r.recommendationId}>{data.recommendations.find((d) => d.id === r.recommendationId)?.label ?? r.recommendationId}</li>)}
+                          </ul>
+                        </div>
+                      ) : null}
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
+          </section>
+          <section className="case-card" aria-labelledby="ov-assist">
+            <h3 id="ov-assist">Assistance already reported</h3>
+            <p className="hint">Separate from support needs. Past support is not a current plan.</p>
+            <ul className="evidence">
+              <li><span>Hardship program enrolment (at report)</span><span className={`answer answer-${answerText(c, "Q37").tone}`}>{answerText(c, "Q37").text}</span></li>
+              <li><span>Energy-bill concession (at report)</span><span className={`answer answer-${answerText(c, "Z7_8").tone}`}>{answerText(c, "Z7_8").text}</span></li>
+            </ul>
+            <p className="subhead">Reported in the past 12 months</p>
+            {history.length ? (
+              <ul className="plain">{history.map((h) => <li key={h.evidenceFieldId}>{field(h.evidenceFieldId)?.label ?? h.evidenceFieldId}</li>)}</ul>
+            ) : (
+              <p className="muted">{c.answerAvailability.Q36b_1 === "unknown" ? "Unknown. Not recorded." : "None reported."}</p>
+            )}
+          </section>
+      </>
+    ) },
+    ...(fromFlow && c.recommendations.length ? [{ id: "solutions", title: "Solutions to offer", hint: `${c.recommendations.length} to check and offer, in the suggested order`, body: (
+          <section className="case-card" aria-labelledby="ov-solutions">
+            <h3 id="ov-solutions">Solutions to offer <span className="sim">for staff review</span></h3>
+            <p className="hint">What we can offer this customer, or refer them to. Check eligibility before offering.</p>
+            {aiOrder ? (
+              <div className="order-toggle">
+                <span className="hint">Ordered by AI to match the Suggested plan. Check before acting.</span>
+              </div>
+            ) : null}
+            {aiOrder?.some((o) => o.due) ? <SolutionTimeline steps={aiOrder} names={(id) => data.recommendations.find((x) => x.id === id)?.label ?? id} interpreter={!!supportAi?.plan?.interpreter} /> : null}
+            <ol className="suggest-list solutions">
+              {orderedRecs.map((r, rank) => {
+                const step = aiOrder?.find((o) => o.id === r.recommendationId);
+                const why = step?.reason;
+                const d = data.recommendations.find((x) => x.id === r.recommendationId);
+                const forNames = r.circumstanceIds.map((id) => data.circumstances.find((x) => x.id === id)?.label ?? id);
+                return (
+                  <li key={r.recommendationId} className="solution">
+                    <strong>{why ? <span className="rank-num">{rank + 1}</span> : null}{d?.label ?? r.recommendationId}</strong>
+                    {why ? <p className="rank-why">{why}</p> : null}
+                    {step?.due ? (
+                      <p className="rank-when">
+                        By <strong>{dueDate(step.due)}</strong>{step.method ? <> · {METHOD_LABEL[step.method]}{supportAi?.plan?.interpreter && step.method === "phone" ? " with an interpreter" : ""}</> : null}
+                      </p>
+                    ) : null}
+                    <dl className="solution-facts">
+                      {d?.howToAccess ? <div><dt>What to do</dt><dd>{d.howToAccess}</dd></div> : null}
+                      {d?.provider ? <div><dt>Who</dt><dd>{d.provider}</dd></div> : null}
+                      {d?.contact ? <div><dt>Contact</dt><dd>{d.contact}</dd></div> : null}
+                      {d?.description ? <div><dt>Good to know</dt><dd>{d.description}</dd></div> : null}
+                      <div><dt>For</dt><dd>{forNames.join(", ")}</dd></div>
+                    </dl>
+                    {d?.sourceUrl ? <a className="sub" href={d.sourceUrl} target="_blank" rel="noreferrer">Source{d.verified ? "" : " (not re-checked)"}</a> : null}
+                  </li>
+                );
+              })}
+            </ol>
+          </section>
+    ) }] : []),
     ...(acct ? [
-      { id: "ov-bills", label: acct.prepay ? "Prepaid top-ups" : "Bills" },
-      { id: "ov-support-history", label: "Support history" },
-      { id: "ov-supply", label: "Collections and supply" },
+      { id: "bills", title: acct.prepay ? "Prepaid top-ups" : "Bills", hint: acct.prepay ? "Top-ups and self-disconnections" : "Bills, payments and usage", body: <AccountHistory account={acct} asOf={data.asOf} /> },
+      { id: "support-history", title: "Support history", hint: "Payment plans, extensions, hardship and concessions", body: <SupportHistory account={acct} /> },
+      { id: "supply", title: "Collections and supply", hint: "Notices, collections, disconnections and outages", body: <SupplyAndCollections account={acct} /> },
+      { id: "contacts", title: "Contact history", hint: "Calls, messages and what was said", body: <ContactHistory account={acct} /> },
     ] : []),
-    ...(acct ? [{ id: "ov-contacts", label: "Contact history" }] : []),
   ];
+  const open = sections.find((x) => x.id === section) ?? null;
+
   return (
     <article className="case-page" aria-labelledby="case-title">
       <header className="case-head">
@@ -83,199 +251,78 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
         <div className="ov-row">
           <PriorityBadge c={c} />
           <span className={`sub follow-${fu.tone}`}>{fu.text}</span>
-          {person?.accountNumber && props.navigate ? (
-            <a className="btn btn-small" href={`${accountHref(person.accountNumber)}/visual`} onClick={(e) => { if (isModifiedClick(e)) return; e.preventDefault(); props.navigate!(`${accountHref(person.accountNumber!)}/visual`); }}>At a glance</a>
-          ) : null}
+          <span className="sub">Assigned to {assignedUser?.displayName ?? c.workflow.assignedToUserId ?? "nobody"} · {STATUS_LABELS[c.workflow.status]}</span>
         </div>
       </header>
 
-      <div className="case-layout">
-      <CaseToc items={toc} />
-      <div className="case-grid">
-      <div className="case-col">
-      <dl className="facts case-card">
-        <div><dt>Assigned worker</dt><dd>{assignedUser?.displayName ?? c.workflow.assignedToUserId}</dd></div>
-        <div><dt>Case status</dt><dd>{STATUS_LABELS[c.workflow.status]}</dd></div>
-      </dl>
-      <section className="case-card" aria-labelledby="ov-contact">
-        <h3 id="ov-contact">Customer details <span className="sim">fictional</span></h3>
-        <dl className="details">
-          <div><dt>Preferred name</dt><dd>{notRecorded(person?.preferredName)}</dd></div>
-          <div><dt>Gender</dt><dd>{notRecorded(person?.gender)}</dd></div>
-          <div><dt>Age</dt><dd>{acct ? `${ageOn(acct.dateOfBirth, data.asOf)} (born ${date(acct.dateOfBirth)})` : "Not recorded"}</dd></div>
-          <div><dt>Household</dt><dd>{notRecorded(person?.householdSummary)}</dd></div>
-          <div className="wide">
-            <dt>Address</dt>
-            <dd>
-              {person?.address ? (
-                <address>
-                  {person.address.line1}<br />
-                  {person.address.line2 ? <>{person.address.line2}<br /></> : null}
-                  {person.suburb} {person.state} {person.address.postcode}
-                </address>
-              ) : "Not recorded"}
-            </dd>
-          </div>
-          <div><dt>Mobile</dt><dd>{notRecorded(person?.mobile)}</dd></div>
-          <div><dt>Phone</dt><dd>{notRecorded(person?.phone)}</dd></div>
-          <div className="wide"><dt>Email</dt><dd>{notRecorded(person?.email)}</dd></div>
-          <div><dt>Interpreter</dt><dd>{acct ? (acct.interpreterRequired ? "Required" : "Not required") : "Not recorded"}</dd></div>
-        </dl>
-      </section>
-      {acct ? <UtilityAccount account={acct} accountNumber={person?.accountNumber ?? null} /> : null}
+      <CaseGlance item={item} data={data} plan={supportAi?.plan ?? null} planFailed={!!supportAi?.error} onOpen={setSection} />
 
-      <section className="case-card model" aria-labelledby="ov-model">
-        {fromSignals ? (
-          <h3 id="ov-model">Priority <span className="sim">from signals</span></h3>
-        ) : (
-          <h3 id="ov-model">Model assessment <span className="sim">simulated · {a.provider}</span></h3>
-        )}
-        {a.status === "ready" && a.priority ? (
-          <>
-            <p>Priority {a.priority.score}/100 ({a.priority.label}) · trend: {a.trend ?? "unknown"}</p>
-            <p className="hint">{a.explanation}</p>
-            {fromSignals ? <p className="hint">Points for each flagged circumstance (by type, more if sensitive) and each signal behind them. A guide for ordering the queue, not a judgement about the customer.</p> : null}
-          </>
-        ) : (
-          <p>{a.explanation ?? (a.status === "pending" ? "Assessment pending. No priority has been assigned." : "Assessment unavailable. No priority has been assigned.")}</p>
-        )}
-      </section>
-
-      {props.navigate ? <RiskCard item={item} accountNumber={person?.accountNumber ?? null} navigate={props.navigate} /> : null}
-      {acct ? <AccountSignals account={acct} asOf={data.asOf} weather={item.weatherSignals} summary={props.loadPlan ? <AiPlan kind="signals" caseId={c.id} version={c.version} load={props.loadPlan} /> : null} /> : null}
-
-      <section className="case-card" aria-labelledby="ov-assist">
-        <h3 id="ov-assist">Assistance already reported</h3>
-        <p className="hint">Separate from support needs. Past support is not a current plan.</p>
-        <ul className="evidence">
-          <li><span>Hardship program enrolment (at report)</span><span className={`answer answer-${answerText(c, "Q37").tone}`}>{answerText(c, "Q37").text}</span></li>
-          <li><span>Energy-bill concession (at report)</span><span className={`answer answer-${answerText(c, "Z7_8").tone}`}>{answerText(c, "Z7_8").text}</span></li>
-        </ul>
-        <p className="subhead">Reported in the past 12 months</p>
-        {history.length ? (
-          <ul className="plain">{history.map((h) => <li key={h.evidenceFieldId}>{field(h.evidenceFieldId)?.label ?? h.evidenceFieldId}</li>)}</ul>
-        ) : (
-          <p className="muted">{c.answerAvailability.Q36b_1 === "unknown" ? "Unknown. Not recorded." : "None reported."}</p>
-        )}
-      </section>
-
-      <section className="case-card" aria-labelledby="ov-support">
-        <h3 id="ov-support">Support areas and why {fromFlow ? <span className="sim">hardship flow</span> : null}</h3>
-        {fromFlow ? (
-          <p className="hint">Worked out from account data and survey answers with the Flowchart&apos;s rules: one strong signal, or two supporting ones. Sensitive circumstances need a strong signal.</p>
-        ) : null}
-        {supportAi ? <AiPlanView kind="support" state={supportAi} /> : null}
-        {c.circumstances.length === 0 ? <p className="muted">{fromFlow ? "No circumstances flagged." : "No circumstances flagged from the reported answers."}</p> : null}
-        {data.supportAreas.filter((area) => c.supportAreaIds.includes(area.id)).map((area) => (
-          <div key={area.id} className="area-block">
-            <h4>{area.label}</h4>
-            {c.circumstances.filter((x) => data.circumstances.find((d) => d.id === x.circumstanceId)?.supportAreaId === area.id).map((x) => {
-              const def = data.circumstances.find((d) => d.id === x.circumstanceId)!;
-              const recs = c.recommendations.filter((r) => r.circumstanceIds.includes(x.circumstanceId));
-              return (
-                <div key={x.circumstanceId} className={`circ${def.sensitivity === "safety" ? " circ-safety" : ""}`}>
-                  <div className="circ-head">
-                    <strong>{def.label}</strong>
-                    {def.sensitivity && def.sensitivity !== "standard" ? <span className={`sens sens-${def.sensitivity}`}>{def.sensitivity === "safety" ? "Safety" : "Sensitive"}</span> : null}
-                  </div>
-                  {def.sensitivity === "safety" ? <p className="hint">Never actioned automatically. Route to trained staff.</p> : null}
-                  {def.handling ? <p className="hint">{def.handling}</p> : null}
-                  {x.signals ? (
-                    <>
-                    <p className="block-label">Why it&apos;s flagged</p>
-                    <ul className="evidence signals">
-                      {x.signals.map((sg) => (
-                        <li key={sg.id}>
-                          <span>{sg.name} <span className="sub">{readableDates(sg.evidence)}</span></span>
-                          <span className={`strength strength-${sg.strength}`}>{sg.strength === "strong" ? "Strong" : "Supporting"}</span>
-                        </li>
-                      ))}
-                    </ul>
-                    </>
-                  ) : (
-                    <ul className="evidence">
-                      {x.evidenceFieldIds.map((fid) => {
-                        const f = field(fid);
-                        const ans = answerText(c, fid);
-                        return (
-                          <li key={fid}>
-                            <span>{f?.label ?? fid} <span className="sub">({fid}, {f ? PERIOD_TEXT[f.referencePeriod] : ""}{c.reportedAt ? `, reported ${c.reportedAt}` : ""})</span></span>
-                            <span className={`answer answer-${ans.tone}`}>{ans.text}</span>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  )}
-                  {recs.length ? (
-                    <div className="suggest">
-                      <span className="sim">{fromFlow ? "Solutions for staff review" : "Suggested for staff review"}</span>
-                      <ul className="suggest-list">
-                        {recs.map((r) => <li key={r.recommendationId}>{data.recommendations.find((d) => d.id === r.recommendationId)?.label ?? r.recommendationId}</li>)}
-                      </ul>
-                    </div>
-                  ) : null}
-                </div>
-              );
-            })}
-          </div>
-        ))}
-      </section>
-
-      {fromFlow && c.recommendations.length ? (
-        <section className="case-card" aria-labelledby="ov-solutions">
-          <h3 id="ov-solutions">Solutions to offer <span className="sim">for staff review</span></h3>
-          <p className="hint">What we can offer this customer, or refer them to. Check eligibility before offering.</p>
-          {aiOrder ? (
-            <div className="order-toggle">
-              <span className="hint">Ordered by AI to match the Suggested plan. Check before acting.</span>
-            </div>
+      <section className="case-more" aria-labelledby="more-title">
+        <h2 id="more-title">More about this case</h2>
+        <ul className="more-tiles">
+          {sections.map((x) => (
+            <li key={x.id}>
+              <a href={`#${x.id}`} className="more-tile" onClick={(e) => { if (isModifiedClick(e)) return; e.preventDefault(); setSection(x.id); }}>
+                <strong>{x.title}</strong><span className="sub">{x.hint}</span>
+              </a>
+            </li>
+          ))}
+          {fromFlow && props.client ? (
+            <li><button type="button" className="more-tile" onClick={() => setFlowOpen(true)}><strong>Flowchart for this case</strong><span className="sub">Signals seen, circumstances flagged and solutions, on the flowchart</span></button></li>
           ) : null}
-          {aiOrder?.some((o) => o.due) ? <SolutionTimeline steps={aiOrder} names={(id) => data.recommendations.find((x) => x.id === id)?.label ?? id} interpreter={!!supportAi?.plan?.interpreter} /> : null}
-          <ol className="suggest-list solutions">
-            {orderedRecs.map((r, rank) => {
-              const step = aiOrder?.find((o) => o.id === r.recommendationId);
-              const why = step?.reason;
-              const d = data.recommendations.find((x) => x.id === r.recommendationId);
-              const forNames = r.circumstanceIds.map((id) => data.circumstances.find((x) => x.id === id)?.label ?? id);
-              return (
-                <li key={r.recommendationId} className="solution">
-                  <strong>{why ? <span className="rank-num">{rank + 1}</span> : null}{d?.label ?? r.recommendationId}</strong>
-                  {why ? <p className="rank-why">{why}</p> : null}
-                  {step?.due ? (
-                    <p className="rank-when">
-                      By <strong>{dueDate(step.due)}</strong>{step.method ? <> · {METHOD_LABEL[step.method]}{supportAi?.plan?.interpreter && step.method === "phone" ? " with an interpreter" : ""}</> : null}
-                    </p>
-                  ) : null}
-                  <dl className="solution-facts">
-                    {d?.howToAccess ? <div><dt>What to do</dt><dd>{d.howToAccess}</dd></div> : null}
-                    {d?.provider ? <div><dt>Who</dt><dd>{d.provider}</dd></div> : null}
-                    {d?.contact ? <div><dt>Contact</dt><dd>{d.contact}</dd></div> : null}
-                    {d?.description ? <div><dt>Good to know</dt><dd>{d.description}</dd></div> : null}
-                    <div><dt>For</dt><dd>{forNames.join(", ")}</dd></div>
-                  </dl>
-                  {d?.sourceUrl ? <a className="sub" href={d.sourceUrl} target="_blank" rel="noreferrer">Source{d.verified ? "" : " (not re-checked)"}</a> : null}
-                </li>
-              );
-            })}
-          </ol>
-        </section>
-      ) : null}
+        </ul>
+      </section>
 
-      {acct ? <AccountHistory account={acct} asOf={data.asOf} /> : null}
-      {acct ? <SupportHistory account={acct} /> : null}
-      {acct ? <SupplyAndCollections account={acct} /> : null}
-
-      </div>
-      <div className="case-col">
-      {acct ? <ContactHistory account={acct} /> : null}
-      {fromFlow && props.client ? (
-        <button type="button" className="btn case-flow-btn" onClick={() => setFlowOpen(true)}>Flowchart for this case</button>
-      ) : null}
+      {open ? <SectionModal key={open.id} title={open.title} name={person?.displayName ?? ""} onClose={() => setSection(null)}>{open.body}</SectionModal> : null}
       {flowOpen && props.client ? <CaseFlowModal client={props.client} data={data} c={c} person={person ?? null} weather={item.weatherSignals ?? []} onClose={() => setFlowOpen(false)} /> : null}
-      </div>
-      </div>
-      </div>
     </article>
+  );
+}
+
+/** The open section, kept in the address's #hash so it can be linked to and Back closes it. */
+function useSection(): [string | null, (id: string | null) => void] {
+  const read = () => decodeURIComponent(window.location.hash.slice(1)) || null;
+  const [id, setId] = useState(read);
+  const pushed = useRef(false);
+  useEffect(() => {
+    const sync = () => { pushed.current = false; setId(read()); };
+    window.addEventListener("popstate", sync);
+    return () => window.removeEventListener("popstate", sync);
+  }, []);
+  const set = (next: string | null) => {
+    if (next) {
+      window.history.pushState(null, "", `${window.location.pathname}#${encodeURIComponent(next)}`);
+      pushed.current = true;
+    } else if (pushed.current) {
+      window.history.back(); // the popstate listener clears it
+      return;
+    } else {
+      window.history.replaceState(null, "", window.location.pathname);
+    }
+    setId(next);
+  };
+  return [id, set];
+}
+
+/** One section of the case in a modal dialog. Escape, the Close button or a click outside closes it. */
+function SectionModal({ title, name, onClose, children }: { title: string; name: string; onClose: () => void; children: React.ReactNode }) {
+  const ref = useRef<HTMLDialogElement>(null);
+  useEffect(() => {
+    const d = ref.current;
+    if (d && !d.open) d.showModal();
+  }, []);
+  return (
+    <dialog
+      ref={ref} className="case-modal" aria-labelledby="case-modal-title"
+      onCancel={(e) => { e.preventDefault(); onClose(); }}
+      onClick={(e) => { if (e.target === ref.current) onClose(); }}
+    >
+      <header className="case-modal-head">
+        <div><p className="eyebrow">{name}</p><h2 id="case-modal-title">{title}</h2></div>
+        <button type="button" className="btn" onClick={onClose}>Close</button>
+      </header>
+      <div className="case-modal-body">{children}</div>
+    </dialog>
   );
 }
 

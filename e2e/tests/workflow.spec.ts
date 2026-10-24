@@ -79,7 +79,7 @@ test.describe.serial("manager to worker workflow", () => {
     await first.locator(".name-link").click();
     await expect(page).toHaveURL(new RegExp(`/accounts/${account}$`));
     const panel = page.locator(".case-page");
-    await expect(panel.locator("dt", { hasText: "Assigned worker" })).toBeVisible();
+    await expect(panel.locator(".case-head")).toContainText("Assigned to Alex"); // who has it and its status, under the name
     await expect(panel.getByRole("heading", { name: "Case notes" })).toHaveCount(0);
     await expect(panel.getByRole("button", { name: "Save status" })).toHaveCount(0);
   });
