@@ -24,6 +24,34 @@ export function priorityLabel(score: number): PriorityLabel {
 /** Signals that mean things are getting worse (or about to, for weather), shown as a rising trend. */
 const WORSENING = new Set(["acct_rising_arrears", "acct_usage_drop", "acct_prepay_low_credit", "acct_disconnection_warning", "wx_extreme_heat", "wx_fire_danger", "wx_warning"]);
 
+/** Flowchart circumstance types, as the breakdown names them. */
+export const CIRCUMSTANCE_TYPE_NAMES: Record<string, string> = { knockon: "Knock-on effect", life: "Life situation", account: "Bill or account issue", company: "Company practice", access: "Access barrier" };
+
+export interface PriorityBreakdown {
+  circumstances: { id: string; label: string; type: string; base: number; extra: number; extraFor: "sensitive" | "safety" | null; points: number }[];
+  signals: { id: string; name: string; strength: "strong" | "supporting"; points: number; worsening: boolean }[];
+  total: number; score: number; capped: boolean;
+}
+
+/** Every part of a case's priority, with its points: what the score adds up, so staff can see why. */
+export function priorityBreakdown(circumstances: CaseCircumstance[], defs: Map<string, CircumstanceDefinition>): PriorityBreakdown {
+  const w = PRIORITY_WEIGHTS;
+  const rows = circumstances.map((x) => {
+    const d = defs.get(x.circumstanceId);
+    const base = w.type[d?.type ?? ""] ?? w.otherType;
+    const extraFor = d?.sensitivity === "safety" ? "safety" as const : d?.sensitivity === "sensitive" ? "sensitive" as const : null;
+    const extra = extraFor === "safety" ? w.safety : extraFor === "sensitive" ? w.sensitive : 0;
+    return { id: x.circumstanceId, label: d?.label ?? x.circumstanceId, type: d?.type ?? "", base, extra, extraFor, points: base + extra };
+  });
+  // A signal counts once, at its strongest link to any flagged circumstance.
+  const signals = new Map<string, { name: string; strength: "strong" | "supporting" }>();
+  for (const x of circumstances) for (const s of x.signals ?? []) if (signals.get(s.id)?.strength !== "strong") signals.set(s.id, { name: s.name, strength: s.strength });
+  const sig = [...signals].map(([id, s]) => ({ id, name: s.name, strength: s.strength, points: s.strength === "strong" ? w.strongSignal : w.supportingSignal, worsening: WORSENING.has(id) }));
+  const total = rows.reduce((t, r) => t + r.points, 0) + sig.reduce((t, r) => t + r.points, 0);
+  const score = Math.min(100, Math.round(total));
+  return { circumstances: rows, signals: sig, total, score, capped: total > 100 };
+}
+
 /**
  * The priority for one case. `hasData` is false when the case has no account and no survey answers, in which
  * case there is nothing to score and the result is "unavailable" rather than a misleading zero.
@@ -34,24 +62,16 @@ export function priorityFromSignals(circumstances: CaseCircumstance[], defs: Map
     return { ...base, status: "unavailable", priority: null, trend: null, explanation: "No account data or survey answers to score yet." };
   }
   const w = PRIORITY_WEIGHTS;
-  const parts = circumstances.map((x) => {
-    const d = defs.get(x.circumstanceId);
-    const points = (w.type[d?.type ?? ""] ?? w.otherType) + (d?.sensitivity === "safety" ? w.safety : d?.sensitivity === "sensitive" ? w.sensitive : 0);
-    return { label: d?.label ?? x.circumstanceId, points };
-  });
-  // A signal counts once, at its strongest link to any flagged circumstance.
-  const signals = new Map<string, "strong" | "supporting">();
-  for (const x of circumstances) for (const s of x.signals ?? []) if (signals.get(s.id) !== "strong") signals.set(s.id, s.strength);
-  const strong = [...signals.values()].filter((s) => s === "strong").length;
-  const supporting = signals.size - strong;
-  const total = parts.reduce((t, p) => t + p.points, 0) + strong * w.strongSignal + supporting * w.supportingSignal;
-  const score = Math.min(100, Math.round(total));
-  const top = [...parts].sort((a, b) => b.points - a.points).slice(0, 3).map((p) => `${p.label} +${p.points}`);
+  const b = priorityBreakdown(circumstances, defs);
+  const strong = b.signals.filter((x) => x.strength === "strong").length;
+  const supporting = b.signals.length - strong;
+  const score = b.score;
+  const top = [...b.circumstances].sort((x, y) => y.points - x.points).slice(0, 3).map((p) => `${p.label} +${p.points}`);
   const explanation = circumstances.length
-    ? `${circumstances.length} circumstance${circumstances.length === 1 ? "" : "s"} (${top.join(", ")}${parts.length > 3 ? ", …" : ""}) and ${signals.size} signal${signals.size === 1 ? "" : "s"} (${strong} strong +${strong * w.strongSignal}, ${supporting} supporting +${supporting * w.supportingSignal}).${score === 100 && total > 100 ? " Capped at 100." : ""}`
+    ? `${circumstances.length} circumstance${circumstances.length === 1 ? "" : "s"} (${top.join(", ")}${b.circumstances.length > 3 ? ", …" : ""}) and ${b.signals.length} signal${b.signals.length === 1 ? "" : "s"} (${strong} strong +${strong * w.strongSignal}, ${supporting} supporting +${supporting * w.supportingSignal}).${b.capped ? " Capped at 100." : ""}`
     : "No circumstances flagged from the account data or survey answers.";
   return {
     ...base, status: "ready", priority: { score, label: priorityLabel(score) },
-    trend: [...signals.keys()].some((id) => WORSENING.has(id)) ? "rising" : "stable", explanation,
+    trend: b.signals.some((x) => x.worsening) ? "rising" : "stable", explanation,
   };
 }

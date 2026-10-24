@@ -10,6 +10,7 @@ import { PriorityBadge } from "./Primitives";
 import { ageOn, PRIORITY_PROVIDER } from "../domain/types";
 import { Mark, AccountHistory, AccountSignals, ContactHistory, date, SupplyAndCollections, SupportHistory, UtilityAccount } from "./AccountDetails";
 import { CaseGlance } from "./CaseGlance";
+import { PriorityBreakdownView } from "./PriorityBreakdown";
 
 /** A missing contact detail is shown as not recorded, so it is never mistaken for "none". */
 function notRecorded(v: string | null | undefined): string {
@@ -101,8 +102,12 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
             {a.status === "ready" && a.priority ? (
               <>
                 <p>Priority {a.priority.score}/100 ({a.priority.label}) · trend: {a.trend ?? "unknown"}</p>
-                <p className="hint">{a.explanation}</p>
-                {fromSignals ? <p className="hint">Points for each flagged circumstance (by type, more if sensitive) and each signal behind them. A guide for ordering the queue, not a judgement about the customer.</p> : null}
+                {fromSignals ? (
+                  <>
+                    <PriorityBreakdownView c={c} data={data} />
+                    <p className="hint">A guide for ordering the queue, not a judgement about the customer.</p>
+                  </>
+                ) : <p className="hint">{a.explanation}</p>}
               </>
             ) : (
               <p>{a.explanation ?? (a.status === "pending" ? "Assessment pending. No priority has been assigned." : "Assessment unavailable. No priority has been assigned.")}</p>
