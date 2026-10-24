@@ -58,7 +58,6 @@ export function FunnelPage({ client, navigate }: { client: Pick<ApiClient, "outl
         </div>
         <div className="outlook-source">
           {data.demo ? null : <span className="demo-pill">Live Bureau forecast</span>}
-          <span className="sub">Change the forecast in Demo settings</span>
         </div>
       </div>
 

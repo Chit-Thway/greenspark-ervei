@@ -92,7 +92,7 @@ export function OutlookPage({ client, navigate }: { client: Pick<ApiClient, "out
         </div>
         <div className="outlook-source">
           {ready.demo ? null : <span className="demo-pill">Live Bureau forecast</span>}
-          <span className="sub">{ready.issuedAt ? `Issued ${new Date(ready.issuedAt).toLocaleString("en-AU", { timeZone: "Australia/Perth", day: "numeric", month: "short", hour: "numeric", minute: "2-digit" })}` : "Issue time not given"} · change in Demo settings</span>
+          <span className="sub">{ready.issuedAt ? `Issued ${new Date(ready.issuedAt).toLocaleString("en-AU", { timeZone: "Australia/Perth", day: "numeric", month: "short", hour: "numeric", minute: "2-digit" })}` : "Issue time not given"}</span>
         </div>
       </div>
 
