@@ -453,7 +453,8 @@ button.kpi:hover { border-color: #b3bac5; }
 .bar-act { background: var(--urgent); } .bar-watch { background: #e0a030; } .bar-rest { background: #c1c7d0; }
 .day-count { font-size: 12px; } .day-count strong { font-size: 14px; }
 .outlook-places-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); border-top: 1px solid var(--border); margin-top: 12px; }
-.outlook-map { min-height: 460px; height: 100%; z-index: 0; display: grid; place-items: center; color: var(--muted); }
+.outlook-map-wrap { display: flex; flex-direction: column; min-width: 0; }
+.outlook-map { flex: 1; min-height: 460px; z-index: 0; display: grid; place-items: center; color: var(--muted); }
 .outlook-zoom { padding: 8px 16px; }
 .town-table-wrap { border-left: 1px solid var(--border); max-height: 500px; overflow: auto; }
 .town-table { width: 100%; border-collapse: collapse; font-size: 13px; }
