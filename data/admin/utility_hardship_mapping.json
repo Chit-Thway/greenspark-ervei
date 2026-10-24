@@ -5704,7 +5704,7 @@
     },
     {
       "id": "debt_spiral",
-      "name": "Debt spiral",
+      "name": "Possible debt spiral",
       "type": "knockon",
       "category": "knockon",
       "description": "Fees and arrears compound.",
@@ -5738,7 +5738,7 @@
     },
     {
       "id": "avoidance",
-      "name": "Avoiding bills until crisis",
+      "name": "Possibly avoiding bills until crisis",
       "type": "knockon",
       "category": "knockon",
       "description": "No engagement until disconnection.",
