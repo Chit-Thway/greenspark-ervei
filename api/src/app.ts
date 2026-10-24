@@ -295,7 +295,7 @@ export function createApp(store: Store, options: AppOptions = {}) {
         personId: o.personId, townId: o.townId, tier: o.tier, score: o.score, exposure: o.exposure,
         // For the funnel: hot or dangerous weather and something that makes it harder to cope with.
         vulnerable: o.exposure > 0 && (o.sensitivity.length > 0 || highRisk),
-        kinds: [...new Set(o.hazards.map((h) => h.kind))], dates: [...new Set(o.hazards.map((h) => h.date))], firstDate: o.hazards.find((h) => h.kind !== "warning")?.date ?? null, worst: worst?.text ?? null,
+        kinds: [...new Set(o.hazards.map((h) => h.kind))], dates: [...new Set(o.hazards.map((h) => h.date))], firstDate: o.hazards.find((h) => h.kind !== "warning")?.date ?? null, firstKind: o.hazards.find((h) => h.kind !== "warning")?.kind ?? null, worst: worst?.text ?? null,
         sensitivity: o.sensitivity.map(({ id, group, label }) => ({ id, group, label })), accountNumber: p.accountNumber ?? null, displayName: p.displayName, suburb: p.suburb, postcode: p.address?.postcode ?? null, risk,
         priority: c?.modelAssessment.priority ? { label: c.modelAssessment.priority.label, score: c.modelAssessment.priority.score } : null, status: c?.workflow.status ?? null,
       }];

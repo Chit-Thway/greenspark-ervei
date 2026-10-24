@@ -246,7 +246,7 @@ export function OutlookPage({ client, navigate }: { client: Pick<ApiClient, "out
                         {(() => {
                           // A warning is in force now; the forecast's hot or dangerous days start on their own date.
                           const when = c.firstDate ? (c.firstDate === ready.today ? "today" : `${dayName(c.firstDate)} ${dayDate(c.firstDate)}`) : null;
-                          const parts = [c.kinds.includes("warning") ? "Warning in place now" : null, when ? (c.kinds.includes("warning") ? `hot from ${when}` : `From ${when}`) : null].filter(Boolean);
+                          const parts = [c.kinds.includes("warning") ? "Warning in place now" : null, when ? (c.kinds.includes("warning") ? `${c.firstKind === "fire" ? "fire danger" : "hot"} from ${when}` : `From ${when}`) : null].filter(Boolean);
                           return parts.length ? <span className="sub">{parts.join(" · ")}</span> : null;
                         })()}
                       </td>

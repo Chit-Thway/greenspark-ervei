@@ -128,7 +128,7 @@ export interface OutlookTown {
 export interface OutlookCustomer {
   personId: string; townId: string; tier: "act" | "watch"; score: number; exposure: number;
   /** `firstDate`: the first hot or dangerous forecast day (a warning is in force from today, so it is left out). */
-  kinds: HazardKind[]; firstDate: string | null; worst: string | null;
+  kinds: HazardKind[]; firstDate: string | null; firstKind: HazardKind | null; worst: string | null;
   sensitivity: { id: string; group: "health" | "supply" | "cost" | "isolation"; label: string }[];
   accountNumber: string | null; displayName: string; suburb: string; postcode: string | null;
   risk: { probability: number; baseRate: number | null } | null;
