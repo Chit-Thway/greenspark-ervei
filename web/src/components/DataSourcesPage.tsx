@@ -35,7 +35,7 @@ const SOURCES: Source[] = [
   { file: "contacts.csv", rows: "11,110", contains: "Every contact: channel, direction, reason, outcome, sentiment, complaint, agent notes.",
     extracted: "All contacts, shown as Contact history; used for repeat contact, complaints and unanswered outreach." },
   { file: "contact_transcripts.jsonl", rows: "4,406", contains: "Conversation transcripts for some contacts.",
-    extracted: "Attached to their contacts. What customers said in the last 12 months raises matching self-report signals (for example \"I lost my job a few weeks ago\" for Lost job)." },
+    extracted: "Attached to their contacts. What customers said in the last 12 months raises matching self-report signals (for example \"I lost my job a few weeks ago\" for Says: lost job)." },
   { file: "collection_events.csv", rows: "44,604", contains: "Collection notices: reminders, warnings, missed instalments, referrals, disconnections.",
     extracted: "All notices (disconnection warnings, plans broken, debt collection referrals and more)." },
   { file: "disconnections.csv", rows: "121", contains: "Disconnections for non-payment and reconnections.", extracted: "All disconnections; supply is \"disconnected\" when the latest has no reconnection." },

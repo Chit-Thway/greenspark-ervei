@@ -53,7 +53,7 @@ test("search finds an item and the utility filter narrows the board", async ({ p
   await openAdmin(page);
   await page.getByLabel("Find a signal, circumstance or solution").fill("lost job");
   await page.getByRole("list", { name: "Search results" }).getByRole("button").first().click();
-  await expect(page.getByRole("heading", { name: "Lost job" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Says: lost job" })).toBeVisible();
   await details(page).getByRole("button", { name: "Close details" }).click();
   const before = Number(await page.getByTestId("count-circumstances").innerText());
   await page.locator(`label[for="u-water"]`).click();
