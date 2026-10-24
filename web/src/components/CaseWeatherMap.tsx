@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import { addBaseTiles } from "./mapTiles";
 import type { EmergencyAlert } from "../data/api";
 import { alertPopup, triangle } from "./OutlookMap";
 import { alertColor } from "./outlookText";
@@ -12,9 +13,7 @@ export function CaseWeatherMap({ location, label, alerts }: { location: [number,
   useEffect(() => {
     if (!el.current) return;
     const m = L.map(el.current, { scrollWheelZoom: false });
-    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 18, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-    }).addTo(m);
+    addBaseTiles(m);
     const points: [number, number][] = [location];
     for (const a of alerts) {
       const color = alertColor(a.alertLevel);

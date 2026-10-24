@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import { addBaseTiles } from "./mapTiles";
 import type { EmergencyAlert, OutlookTown } from "../data/api";
 import { HAZARD_ICON, HAZARD_LABEL, alertColor, dayDate, dayName, hazardColor, tempColor } from "./outlookText";
 
@@ -45,9 +46,7 @@ export function OutlookMap({ towns, alerts, showTowns, showAlerts, chosen, onCho
   useEffect(() => {
     if (!el.current || map.current) return;
     const m = (map.current = L.map(el.current, { scrollWheelZoom: true }).setView([-26.5, 121], 5));
-    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 18, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-    }).addTo(m);
+    addBaseTiles(m);
     // Warning areas sit under the town circles, so the towns stay clickable.
     m.createPane("alerts").style.zIndex = "390";
     townLayer.current = L.layerGroup();

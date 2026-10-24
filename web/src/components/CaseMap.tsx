@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import { addBaseTiles } from "./mapTiles";
 import type { MapPlace, MapSummary } from "../data/api";
 import { accountHref, isModifiedClick } from "../route";
 
@@ -22,9 +23,7 @@ export function CaseMap({ summary, onOpen }: { summary: MapSummary; onOpen: (acc
   useEffect(() => {
     if (!el.current || map.current) return;
     map.current = L.map(el.current, { scrollWheelZoom: true }).setView([-31.95, 115.86], 9);
-    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 18, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-    }).addTo(map.current);
+    addBaseTiles(map.current);
     layer.current = L.layerGroup().addTo(map.current);
     return () => { map.current?.remove(); map.current = null; };
   }, []);
