@@ -659,10 +659,10 @@ select:not([multiple]):disabled { opacity: .6; }
 .case-wx-days { margin: 0; padding: 8px 6px; background: var(--bg); border-radius: var(--r-control); }
 .wx-day { font-size: 12px; font-weight: 600; } .wx-day .sub { display: inline; font-weight: 400; font-size: 11px; }
 .wx-items { display: grid; gap: 8px; margin: 0; }
-.wx-items li { display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 8px; align-items: start; padding: 8px 10px; border: 1px solid var(--border); border-radius: var(--r-control); background: var(--surface); }
+.wx-items li { display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: 8px; align-items: start; padding: 8px 10px; border: 1px solid var(--border); border-radius: var(--r-control); background: var(--surface); }
 .wx-items li > div { display: grid; gap: 1px; }
 .wx-items strong { font-size: 13px; }
-.wx-items .wx-icon { font-size: 20px; line-height: 1.1; text-align: center; }
+.wx-items .wx-icon { font-size: 15px; line-height: 1.3; text-align: center; }
 .wx-none { margin: 0; font-size: 13px; }
 .vis-plan { max-width: 75ch; }
 /* The AI summary stands out from the rest of the card */
@@ -670,3 +670,4 @@ select:not([multiple]):disabled { opacity: .6; }
 .vis-plan p:not(.vis-plan-label) { font-size: 15px; line-height: 1.5; margin: 0 0 8px; color: var(--fg); }
 .vis-plan p:last-child { margin-bottom: 0; }
 .vis-plan-label { margin: 0 0 4px; font-size: 12px; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; color: var(--suggest); }
+.wx-items svg.wx-icon { width: 17px; height: 15px; margin-top: 2px; }
