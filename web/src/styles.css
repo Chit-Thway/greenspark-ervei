@@ -580,7 +580,7 @@ select:not([multiple]) {
   background-repeat: no-repeat; background-position: right 12px center; background-size: 12px 8px;
 }
 select:not([multiple]):disabled { opacity: .6; }
-.map-keys .map-legend-symbols { order: 2; margin-left: auto; }
+.outlook-places .panel-head.map-keys .map-legend-symbols { order: 2; margin-left: auto; }
 /* Full-screen map: the chosen town's week as a bottom panel */
 .map-town-panel { border-top: 1px solid var(--border); padding: 12px 16px; background: var(--surface); }
 .mtp-head { display: flex; align-items: flex-start; gap: 16px; margin-bottom: 10px; }
