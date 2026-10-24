@@ -249,8 +249,8 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
   return (
     <article className="case-page" aria-labelledby="case-title">
       <header className="case-head">
-        <span className="eyebrow">{person?.accountNumber ?? "No account number"} · {person?.suburb}, {person?.state} · Assigned to {assignedUser?.displayName ?? c.workflow.assignedToUserId ?? "nobody"}</span>
         <h1 id="case-title" tabIndex={-1} ref={heading}>{person?.displayName ?? "Unknown person"}</h1>
+        <span className="case-meta">{person?.accountNumber ?? "No account number"} · {person?.suburb}, {person?.state} · Assigned to {assignedUser?.displayName ?? c.workflow.assignedToUserId ?? "nobody"}</span>
       </header>
 
       <CaseGlance item={item} data={data} plan={supportAi?.plan ?? null} planFailed={!!supportAi?.error} onOpen={setSection} client={props.client} />

@@ -647,3 +647,4 @@ select:not([multiple]):disabled { opacity: .6; }
 .vis-bad .vis-icon { background: #fff; color: var(--urgent); }
 .vis-warn .vis-icon { background: #fff; color: var(--high); }
 .vis-info .vis-icon { background: var(--selected); color: var(--brand-hover); }
+.case-meta { display: block; font-size: 13px; color: var(--muted); margin-top: 2px; }
