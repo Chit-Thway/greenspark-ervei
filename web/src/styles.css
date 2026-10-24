@@ -671,3 +671,15 @@ select:not([multiple]):disabled { opacity: .6; }
 .vis-plan p:last-child { margin-bottom: 0; }
 .vis-plan-label { margin: 0 0 4px; font-size: 12px; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; color: var(--suggest); }
 .wx-items svg.wx-icon { width: 17px; height: 15px; margin-top: 2px; }
+
+/* Outlook list on phones: one card per customer. Badge and name on top, then the weather and needs, then
+   predicted risk and priority side by side. */
+@media (max-width: 640px) {
+  .case-table.outlook-table { min-width: 0; }
+  .outlook-table tr { grid-template-columns: 72px auto minmax(0, 1fr); gap: 6px 8px; align-items: start; }
+  .outlook-table td:nth-child(1) { grid-column: 1; grid-row: 1; padding-top: 2px; }
+  .outlook-table td:nth-child(2) { grid-column: 2 / -1; grid-row: 1; }
+  .outlook-table td:nth-child(3), .outlook-table td:nth-child(4) { grid-column: 1 / -1; }
+  .outlook-table td:nth-child(5) { grid-column: 1 / span 2; }
+  .outlook-table td:nth-child(6) { grid-column: 3; }
+}
