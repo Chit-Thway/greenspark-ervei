@@ -34,7 +34,7 @@ export function CaseWeather({ item, client }: { item: CaseItem; client?: Pick<Ap
 
   return (
     <section className="case-card vis-card vis-wide" aria-labelledby="vis-wx">
-      <h2 id="vis-wx">Weather and warnings this week {f.demo ? <span className="sim">sample forecast</span> : null}</h2>
+      <h2 id="vis-wx">Weather and warnings this week</h2>
       <div className="case-wx">
         {f.location ? (
           <Suspense fallback={<div className="case-wx-map" role="status">Loading the map…</div>}>

@@ -147,7 +147,7 @@ export function DataSourcesPage({ client }: { client: ApiClient }) {
               <tr><th scope="row">Priority</th><td>Worked out by the Priority model's points (see Priority model).</td></tr>
               <tr><th scope="row">Predicted risk</th><td>A statistical model trained on the monthly panel (see Risk model). Not generative AI.</td></tr>
               <tr><th scope="row">Weather outlook, act now and watch, and the funnel</th><td>Worked out by the app from the forecast and each customer's signals (see Weather outlook).</td></tr>
-              <tr><th scope="row">Sample heatwave</th><td>Built into the app, used when the weather source is set to Sample heatwave: a hand-written week for each forecast town, with a three-day heatwave over the Lower West. Marked "(sample forecast)".</td></tr>
+              <tr><th scope="row">Sample heatwave</th><td>Built into the app, used when the weather source is set to Sample heatwave: a hand-written week for each forecast town, with a three-day heatwave over the Lower West.</td></tr>
               <tr><th scope="row">Map locations</th><td>Approximate suburb centres added for the queue's map; the dataset has no coordinates. On the outlook map each forecast town sits at the average of its postcodes.</td></tr>
             </tbody>
           </table>
@@ -169,7 +169,7 @@ export function DataSourcesPage({ client }: { client: ApiClient }) {
             </tbody>
           </table>
         </div>
-        <p className="hint">Each dataset postcode is matched to its nearest forecast town (Perth suburbs to the nearest metro point). The server starts with the sample heatwave (set <code>WEATHER_MODE</code> to <code>live</code> or <code>off</code> to change that); a switch above lasts until the server restarts. Sample evidence is marked "(sample forecast)".</p>
+        <p className="hint">Each dataset postcode is matched to its nearest forecast town (Perth suburbs to the nearest metro point). The server starts with the sample heatwave (set <code>WEATHER_MODE</code> to <code>live</code> or <code>off</code> to change that); a switch above lasts until the server restarts.</p>
       </section>
 
       <section className="case-card" aria-labelledby="ds-ewa">

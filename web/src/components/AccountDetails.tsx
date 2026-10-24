@@ -60,7 +60,7 @@ export function UtilityAccount({ account: a, accountNumber }: { account: Custome
   const cp = a.contactPreferences;
   return (
     <section className="case-card" aria-labelledby="ov-account">
-      <h3 id="ov-account">Utility account <span className="sim">synthetic dataset</span></h3>
+      <h3 id="ov-account">Utility account</h3>
       <dl className="details">
         <div><dt>Account number</dt><dd>{accountNumber ?? "Not recorded"}</dd></div>
         <div><dt>Customer since</dt><dd>{date(a.customerSince)}</dd></div>

@@ -485,7 +485,6 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; o
           <section className="panel" aria-labelledby="list-title" aria-busy={loading}>
             <div className="panel-head">
               <h2 id="list-title">{({ all: "All cases", mine: "Assigned to me", needs_review: "Needs review" })[query.view]} <span className="pill">{list?.total ?? "–"}</span></h2>
-              <span className="sim">{catalog.circumstanceSource === "flow" ? "Fictional demo data" : "Model suggestions · simulated data"}</span>
               <span className="view-switch" role="group" aria-label="Show cases as">
                 <button type="button" aria-pressed={view === "list"} onClick={() => chooseView("list")}>List</button>
                 <button type="button" aria-pressed={view === "map"} onClick={() => chooseView("map")}>Map</button>
@@ -583,7 +582,7 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; o
             </div>
           </section>
 
-          <footer className="foot"><span>All people and case details are fictional.</span><span>Demo date {catalog.asOf}</span></footer>
+          <footer className="foot"><span>Demo date {catalog.asOf}</span></footer>
         </main>
 
       </div>

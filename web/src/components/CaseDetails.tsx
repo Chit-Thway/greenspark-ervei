@@ -63,7 +63,7 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
     { id: "customer", title: "Customer and account", hint: "Contact details, household and the utility account", body: (
       <>
           <section className="case-card" aria-labelledby="ov-contact">
-            <h3 id="ov-contact">Customer details <span className="sim">fictional</span></h3>
+            <h3 id="ov-contact">Customer details</h3>
             <dl className="details">
               <div><dt>Preferred name</dt><dd>{notRecorded(person?.preferredName)}</dd></div>
               <div><dt>Gender</dt><dd>{notRecorded(person?.gender)}</dd></div>
@@ -96,7 +96,7 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
             {fromSignals ? (
               <h3 id="ov-model">Priority <span className="sim">from signals</span></h3>
             ) : (
-              <h3 id="ov-model">Model assessment <span className="sim">simulated · {a.provider}</span></h3>
+              <h3 id="ov-model">Model assessment</h3>
             )}
             {a.status === "ready" && a.priority ? (
               <>

@@ -42,7 +42,7 @@ export function CaseTable(props: {
               />
             </th>
             <th scope="col">Person / case</th>
-            <th scope="col">Priority{data.circumstanceSource === "flow" ? null : <> <span className="sim">simulated</span></>}</th>
+            <th scope="col">Priority</th>
             <th scope="col">Predicted risk <span className="sim">90 days</span></th>
             <th scope="col">Support needs</th>
             <th scope="col">Assigned to</th>

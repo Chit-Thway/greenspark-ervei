@@ -90,7 +90,7 @@ export function OutlookPage({ client, navigate }: { client: Pick<ApiClient, "out
           </p>
         </div>
         <div className="outlook-source">
-          {ready.demo ? <span className="sim">Sample heatwave forecast</span> : <span className="demo-pill">Live Bureau forecast</span>}
+          {ready.demo ? null : <span className="demo-pill">Live Bureau forecast</span>}
           <span className="sub">{ready.issuedAt ? `Issued ${new Date(ready.issuedAt).toLocaleString("en-AU", { timeZone: "Australia/Perth", day: "numeric", month: "short", hour: "numeric", minute: "2-digit" })}` : "Issue time not given"} · change in Demo settings</span>
         </div>
       </div>
@@ -194,7 +194,6 @@ export function OutlookPage({ client, navigate }: { client: Pick<ApiClient, "out
       <section className="panel" aria-labelledby="who-title">
         <div className="panel-head">
           <h2 id="who-title">Customers to contact before it hits <span className="pill">{rows.length}</span></h2>
-          {ready.demo ? <span className="sim">Sample forecast · fictional customers</span> : <span className="sim">Fictional customers</span>}
         </div>
         <div className="toolbar outlook-filters">
           <label><span className="sub">Who</span>

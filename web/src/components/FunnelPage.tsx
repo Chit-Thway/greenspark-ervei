@@ -57,8 +57,8 @@ export function FunnelPage({ client, navigate }: { client: Pick<ApiClient, "outl
           <p className="hint">How this week’s forecast narrows {list[0]!.count.toLocaleString()} customers down to the ones to contact before the weather hits.</p>
         </div>
         <div className="outlook-source">
-          {data.demo ? <span className="sim">Sample heatwave forecast</span> : <span className="demo-pill">Live Bureau forecast</span>}
-          <span className="sub">Fictional customers · change the forecast in Demo settings</span>
+          {data.demo ? null : <span className="demo-pill">Live Bureau forecast</span>}
+          <span className="sub">Change the forecast in Demo settings</span>
         </div>
       </div>
 

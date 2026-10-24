@@ -81,7 +81,6 @@ export function detectWeatherSignals(postcode: string | null | undefined, northO
   if (!town) return [];
   const district = town.district;
   const districtName = w.districts[district] ?? district;
-  const sample = w.demo ? " (sample forecast)" : "";
   const out: WeatherSignal[] = [];
 
   const limit = northOf26th ? HEAT_THRESHOLD.north : HEAT_THRESHOLD.south;
@@ -90,19 +89,19 @@ export function detectWeatherSignals(postcode: string | null | undefined, northO
     const peak = hot.reduce((a, b) => (b.max! > a.max! ? b : a));
     out.push({
       id: "wx_extreme_heat", name: WEATHER_SIGNAL_NAMES.wx_extreme_heat!,
-      evidence: `Forecast ${peak.max}°C at ${town.name} on ${peak.date}${hot.length > 1 ? `; ${hot.length} days at ${limit}°C or more in the next week` : ""}${sample}`,
+      evidence: `Forecast ${peak.max}°C at ${town.name} on ${peak.date}${hot.length > 1 ? `; ${hot.length} days at ${limit}°C or more in the next week` : ""}`,
     });
   }
 
   const fire = (w.fireDanger[district] ?? []).filter((d) => d.date >= today && FIRE_RATINGS.indexOf(d.rating) >= FIRE_RATINGS.indexOf("Extreme"));
   if (fire.length) {
     const worst = fire.reduce((a, b) => (FIRE_RATINGS.indexOf(b.rating) > FIRE_RATINGS.indexOf(a.rating) ? b : a));
-    out.push({ id: "wx_fire_danger", name: WEATHER_SIGNAL_NAMES.wx_fire_danger!, evidence: `${worst.rating} fire danger in ${worst.area} (${districtName}) on ${worst.date}${sample}` });
+    out.push({ id: "wx_fire_danger", name: WEATHER_SIGNAL_NAMES.wx_fire_danger!, evidence: `${worst.rating} fire danger in ${worst.area} (${districtName}) on ${worst.date}` });
   }
 
   const warning = w.warnings.find((x) => x.districts.includes(district) && isRelevantWarning(x.title));
   if (warning) {
-    out.push({ id: "wx_warning", name: WEATHER_SIGNAL_NAMES.wx_warning!, evidence: `${warning.title} (${districtName})${warning.expires ? `, until ${warning.expires.slice(0, 10)}` : ""}${sample}` });
+    out.push({ id: "wx_warning", name: WEATHER_SIGNAL_NAMES.wx_warning!, evidence: `${warning.title} (${districtName})${warning.expires ? `, until ${warning.expires.slice(0, 10)}` : ""}` });
   }
   return out;
 }
