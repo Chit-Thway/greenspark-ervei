@@ -148,6 +148,8 @@ export type Outlook =
 export interface CaseForecast {
   townId: string; town: string; district: string; demo: boolean; issuedAt: string | null; location: [number, number] | null;
   days: { date: string; max: number | null; min: number | null; precis: string }[]; hazards: OutlookHazard[];
+  /** Where the customer sits on the weather outlook this week, and the needs behind it. */
+  outlook: { tier: "act" | "watch" | null; exposure: number; highRisk: boolean; sensitivity: OutlookCustomer["sensitivity"] } | null;
 }
 export interface EmergencyAlert {
   id: string; headline: string; event: string; category: string; alertLevel: string; severity: string; sent: string | null;

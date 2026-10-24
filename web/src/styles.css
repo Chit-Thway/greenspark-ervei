@@ -683,3 +683,10 @@ select:not([multiple]):disabled { opacity: .6; }
   .outlook-table td:nth-child(5) { grid-column: 1 / span 2; }
   .outlook-table td:nth-child(6) { grid-column: 3; }
 }
+
+/* Case page: where the customer sits on the weather outlook */
+.outlook-banner { display: grid; gap: 8px; padding: 10px 12px; margin: 0 0 12px; border-radius: var(--r-control); border: 1px solid var(--border); border-left-width: 4px; background: var(--surface); }
+.outlook-act { border-left-color: var(--urgent); background: var(--urgent-bg); }
+.outlook-watch { border-left-color: #e0a030; background: var(--high-bg); }
+.outlook-none { border-left-color: #c1c7d0; }
+.ob-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; font-size: 14px; }

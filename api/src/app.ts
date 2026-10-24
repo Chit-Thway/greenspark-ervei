@@ -117,6 +117,13 @@ export function createApp(store: Store, options: AppOptions = {}) {
     const w = options.weather?.current() ?? null;
     return person ? detectWeatherSignals(person.address?.postcode, (person.account?.region.northOf26th ?? person.signalSummary?.northOf26th ?? false), w, perthToday(clock())) : [];
   };
+  /** Where a person sits on the weather outlook (act now, watch or neither) and why, the same way the outlook works it out. */
+  const outlookFor = (person: Person, w: WeatherSnapshot, today: string) => {
+    const risk = riskFor(person);
+    const highRisk = !!risk && risk.baseRate !== null && risk.probability >= 4 * risk.baseRate;
+    const o = customerOutlook(person, w, today, highRisk, risk?.probability ?? 0);
+    return o ? { tier: o.tier, exposure: o.exposure, highRisk, sensitivity: o.sensitivity.map(({ id, group, label }) => ({ id, group, label })) } : null;
+  };
   /** The week's forecast for a person's nearest forecast town, with its hazards, for the case page's weather card. */
   const forecastFor = (person: Person | null) => {
     const w = options.weather?.current() ?? null;
@@ -129,6 +136,7 @@ export function createApp(store: Store, options: AppOptions = {}) {
     return {
       townId, town: t.name, district: w.districts[t.district] ?? t.district, demo: w.demo, issuedAt: w.issuedAt,
       location: POSTCODE_LOCATION[postcode!] ?? null, days: t.days.filter((d) => d.date >= today).slice(0, 7), hazards: townHazards(w, townId, north, today),
+      outlook: outlookFor(person!, w, today),
     };
   };
   const weatherKey = () => { const w = options.weather?.current(); return w ? `${w.fetchedAt}` : ""; };

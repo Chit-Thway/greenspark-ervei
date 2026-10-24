@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import type { ApiClient, CaseItem, EmergencyFeed } from "../data/api";
 import { readableDates } from "../domain/format";
-import { HAZARD_ICON, alertColor, dayDate, dayName, isWarning, km, tempColor } from "./outlookText";
+import { GROUP_LABEL, HAZARD_ICON, alertColor, dayDate, dayName, isWarning, km, tempColor } from "./outlookText";
 
 // Leaflet only loads when a case has somewhere to show.
 const CaseWeatherMap = lazy(() => import("./CaseWeatherMap").then((m) => ({ default: m.CaseWeatherMap })));
@@ -37,6 +37,7 @@ export function CaseWeather({ item, client }: { item: CaseItem; client?: Pick<Ap
   return (
     <section className="case-card vis-card vis-wide" aria-labelledby="vis-wx">
       <h2 id="vis-wx">Weather and warnings this week</h2>
+      <OutlookBanner f={f} />
       <div className="case-wx">
         {f.location ? (
           <Suspense fallback={<div className="case-wx-map" role="status">Loading the map…</div>}>
@@ -87,5 +88,31 @@ export function CaseWeather({ item, client }: { item: CaseItem; client?: Pick<Ap
         </div>
       </div>
     </section>
+  );
+}
+
+/** Where the customer sits on the weather outlook this week: act now, watch or neither, and why. */
+function OutlookBanner({ f }: { f: NonNullable<CaseItem["forecast"]> }) {
+  const o = f.outlook;
+  if (!o) return null;
+  const needs = o.sensitivity;
+  const why = o.tier === "act"
+    ? o.exposure >= 3 ? "Dangerous weather is coming and they have a health or supply need. Contact them before it hits." : "A hot day is coming and they have a critical need, such as life support or a supply that could stop. Contact them before it hits."
+    : o.tier === "watch"
+      ? needs.length ? "Hot or dangerous weather is coming, and their needs add up. Check in if you can." : "Dangerous weather is coming and their predicted risk is high. Check in if you can."
+      : o.exposure > 0 ? "Hot weather is coming, but nothing we know makes it riskier for them." : "No hot or dangerous weather is forecast for them this week.";
+  return (
+    <div className={`outlook-banner outlook-${o.tier ?? "none"}`}>
+      <div className="ob-head">
+        <span className={`badge ${o.tier === "act" ? "badge-urgent" : o.tier === "watch" ? "badge-high" : "badge-none"}`}>{o.tier === "act" ? "Act now" : o.tier === "watch" ? "Watch" : "Not on the outlook"}</span>
+        <span>{why}</span>
+      </div>
+      {o.tier && needs.length ? (
+        <span className="need-chips">
+          {needs.map((n) => <span key={n.id} className={`need need-${n.group}`} title={GROUP_LABEL[n.group]}>{n.label}</span>)}
+          {o.highRisk ? <span className="need need-more">High predicted risk</span> : null}
+        </span>
+      ) : null}
+    </div>
   );
 }
