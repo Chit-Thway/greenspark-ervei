@@ -647,7 +647,8 @@ function BtsMenu(props: { page: Page; navigate: (to: string) => void }) {
     document.addEventListener("keydown", close);
     return () => { document.removeEventListener("mousedown", close); document.removeEventListener("keydown", close); };
   }, [open]);
-  const items = [[FLOWCHART_PATH, "Flowchart", "admin"], [DATA_SOURCES_PATH, "Data sources", "data"], [PRIORITY_MODEL_PATH, "Priority model", "priority"], [CASE_PAGE_PATH, "Case page", "casepage"], [RISK_MODEL_PATH, "Risk model", "riskmodel"], [OUTLOOK_MODEL_PATH, "Weather outlook", "outlookmodel"]] as const;
+  // In the order the demo works: the data, the flowchart rules on it, the models built from them, then the pages they feed.
+  const items = [[DATA_SOURCES_PATH, "Data sources", "data"], [FLOWCHART_PATH, "Flowchart", "admin"], [PRIORITY_MODEL_PATH, "Priority model", "priority"], [RISK_MODEL_PATH, "Risk model", "riskmodel"], [OUTLOOK_MODEL_PATH, "Weather outlook", "outlookmodel"], [CASE_PAGE_PATH, "Case page", "casepage"]] as const;
   const inside = items.some(([, , page]) => page === props.page);
   return (
     <div className="bts" ref={ref}>
