@@ -648,3 +648,19 @@ select:not([multiple]):disabled { opacity: .6; }
 .vis-warn .vis-icon { background: #fff; color: var(--high); }
 .vis-info .vis-icon { background: var(--selected); color: var(--brand-hover); }
 .case-meta { display: block; font-size: 13px; color: var(--muted); margin-top: 2px; }
+
+/* Case weather card: three blocks (forecast, signals, Emergency WA), each with the same heading */
+.case-wx-info { display: grid; gap: 0; align-content: start; }
+.wx-block { padding: 12px 0; border-top: 1px solid var(--border); }
+.wx-block:first-child { padding-top: 0; border-top: 0; }
+.wx-head { display: flex; align-items: baseline; gap: 8px; margin: 0 0 8px; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; color: var(--muted); }
+.wx-head .sub { text-transform: none; letter-spacing: 0; font-weight: 400; font-size: 12px; }
+.wx-head .pill { margin-left: 0; text-transform: none; letter-spacing: 0; }
+.case-wx-days { margin: 0; padding: 8px 6px; background: var(--bg); border-radius: var(--r-control); }
+.wx-day { font-size: 12px; font-weight: 600; } .wx-day .sub { display: inline; font-weight: 400; font-size: 11px; }
+.wx-items { display: grid; gap: 8px; margin: 0; }
+.wx-items li { display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 8px; align-items: start; padding: 8px 10px; border: 1px solid var(--border); border-radius: var(--r-control); background: var(--surface); }
+.wx-items li > div { display: grid; gap: 1px; }
+.wx-items strong { font-size: 13px; }
+.wx-items .wx-icon { font-size: 20px; line-height: 1.1; text-align: center; }
+.wx-none { margin: 0; font-size: 13px; }

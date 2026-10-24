@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import type { ApiClient, CaseItem, EmergencyFeed } from "../data/api";
 import { readableDates } from "../domain/format";
-import { HAZARD_ICON, HAZARD_LABEL, alertColor, dayDate, dayName, isWarning, km, tempColor } from "./outlookText";
+import { HAZARD_ICON, alertColor, dayDate, dayName, isWarning, km, tempColor } from "./outlookText";
 
 // Leaflet only loads when a case has somewhere to show.
 const CaseWeatherMap = lazy(() => import("./CaseWeatherMap").then((m) => ({ default: m.CaseWeatherMap })));
@@ -44,35 +44,46 @@ export function CaseWeather({ item, client }: { item: CaseItem; client?: Pick<Ap
           </Suspense>
         ) : null}
         <div className="case-wx-info">
-          <p className="block-label">Bureau forecast for {f.town} <span className="sub">{f.district}</span></p>
-          <ol className="case-wx-days">
-            {f.days.map((d) => (
-              <li key={d.date} title={d.precis}>
-                <span className="sub">{dayName(d.date)} {dayDate(d.date)}</span>
-                <span className="case-wx-max" style={tempColor(d.max)}>{d.max ?? "–"}°</span>
-                <span className="sub">{d.min ?? "–"}°</span>
-              </li>
-            ))}
-          </ol>
-          {kinds.length ? <p className="case-wx-kinds">{kinds.map((k) => <span key={k}><span aria-hidden="true">{HAZARD_ICON[k]}</span> {HAZARD_LABEL[k]}</span>)}</p> : <p className="muted">No hot or dangerous weather forecast this week.</p>}
-
-          <p className="block-label">Weather signals</p>
-          {signals.length ? (
-            <ul className="plain case-wx-list">{signals.map((s) => <li key={s.id} className="has-icon"><span className="wx-icon" aria-hidden="true">{SIGNAL_ICON[s.id] ?? "•"}</span><div><strong>{s.name}</strong><span className="sub">{readableDates(s.evidence)}</span></div></li>)}</ul>
-          ) : <p className="muted">None: nothing in the forecast reaches the signal limits.</p>}
-
-          <p className="block-label">Emergency WA warnings within {NEAR_KM} km</p>
-          {!feed ? <p className="muted">Loading warnings…</p> : !feed.available ? <p className="muted">Emergency WA isn’t available right now.</p> : near.length ? (
-            <ul className="plain case-wx-list">
-              {near.map(({ a, km: d }) => (
-                <li key={a.id} className="has-icon">
-                  <svg className="wx-icon" viewBox="0 0 22 20" width="22" height="20" aria-hidden="true"><path d="M11 1.5 L20.5 18.5 H1.5 Z" fill={alertColor(a.alertLevel)} stroke="#253858" strokeWidth="1.5" strokeLinejoin="round" /><path d="M11 7v5" stroke="#253858" strokeWidth="2" strokeLinecap="round" /><circle cx="11" cy="15" r="1.1" fill="#253858" /></svg>
-                  <div><strong>{a.headline || a.alertLevel}</strong>
-                  <span className="sub">{a.alertLevel} · {d < 1 ? "under 1 km away" : `${Math.round(d)} km away`}{a.web ? <> · <a href={a.web} target="_blank" rel="noreferrer">Details</a></> : null}</span></div>
+          <section className="wx-block" aria-labelledby="wx-fc">
+            <h3 id="wx-fc" className="wx-head"><span>Forecast</span><span className="sub">{f.town} · {f.district}</span></h3>
+            <ol className="case-wx-days">
+              {f.days.map((d) => (
+                <li key={d.date} title={d.precis}>
+                  <span className="wx-day">{dayName(d.date)}<span className="sub"> {dayDate(d.date)}</span></span>
+                  <span className="case-wx-max" style={tempColor(d.max)}>{d.max ?? "–"}°</span>
+                  <span className="sub">{d.min ?? "–"}°</span>
                 </li>
               ))}
-            </ul>
-          ) : <p className="muted">None near {suburb}.</p>}
+            </ol>
+            {kinds.length ? null : <p className="muted wx-none">No hot or dangerous weather forecast this week.</p>}
+          </section>
+
+          <section className="wx-block" aria-labelledby="wx-sig">
+            <h3 id="wx-sig" className="wx-head"><span>Weather signals</span>{signals.length ? <span className="pill">{signals.length}</span> : null}</h3>
+            {signals.length ? (
+              <ul className="plain wx-items">{signals.map((s) => (
+                <li key={s.id}>
+                  <span className="wx-icon" aria-hidden="true">{SIGNAL_ICON[s.id] ?? "•"}</span>
+                  <div><strong>{s.name}</strong><span className="sub">{readableDates(s.evidence)}</span></div>
+                </li>
+              ))}</ul>
+            ) : <p className="muted wx-none">None: nothing in the forecast reaches the signal limits.</p>}
+          </section>
+
+          <section className="wx-block" aria-labelledby="wx-ewa">
+            <h3 id="wx-ewa" className="wx-head"><span>Emergency WA</span><span className="sub">within {NEAR_KM} km</span>{near.length ? <span className="pill">{near.length}</span> : null}</h3>
+            {!feed ? <p className="muted wx-none">Loading warnings…</p> : !feed.available ? <p className="muted wx-none">Emergency WA isn’t available right now.</p> : near.length ? (
+              <ul className="plain wx-items">
+                {near.map(({ a, km: d }) => (
+                  <li key={a.id}>
+                    <svg className="wx-icon" viewBox="0 0 22 20" width="22" height="20" aria-hidden="true"><path d="M11 1.5 L20.5 18.5 H1.5 Z" fill={alertColor(a.alertLevel)} stroke="#253858" strokeWidth="1.5" strokeLinejoin="round" /><path d="M11 7v5" stroke="#253858" strokeWidth="2" strokeLinecap="round" /><circle cx="11" cy="15" r="1.1" fill="#253858" /></svg>
+                    <div><strong>{a.headline || a.alertLevel}</strong>
+                    <span className="sub">{a.alertLevel} · {d < 1 ? "under 1 km away" : `${Math.round(d)} km away`}{a.web ? <> · <a href={a.web} target="_blank" rel="noreferrer">Details</a></> : null}</span></div>
+                  </li>
+                ))}
+              </ul>
+            ) : <p className="muted wx-none">No warnings near {suburb}.</p>}
+          </section>
         </div>
       </div>
     </section>
