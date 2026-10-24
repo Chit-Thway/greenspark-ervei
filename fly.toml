@@ -19,7 +19,8 @@ swap_size_mb = 256
 [http_service]
   internal_port = 3001
   force_https = true
-  auto_stop_machines = "stop"
+  # Suspend keeps the machine's memory, so it resumes in under a second instead of booting and reloading the data.
+  auto_stop_machines = "suspend"
   auto_start_machines = true
   min_machines_running = 0
 
