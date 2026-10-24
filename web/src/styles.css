@@ -540,3 +540,21 @@ button.kpi:hover { border-color: #b3bac5; }
 .outlook-map-wrap.is-full:not(:fullscreen) { position: fixed; inset: 0; z-index: 1000; }
 .outlook-map-wrap.is-full, .outlook-map-wrap:fullscreen { display: flex; flex-direction: column; background: var(--surface); }
 .outlook-map-wrap.is-full .outlook-map, .outlook-map-wrap:fullscreen .outlook-map { flex: 1; min-height: 0; }
+
+/* Case page: weather and warnings card */
+.case-wx { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+.case-wx-map { min-height: 320px; height: 100%; border-radius: var(--r-control); z-index: 0; display: grid; place-items: center; color: var(--muted); }
+.case-wx-info .block-label:first-child { margin-top: 0; }
+.case-wx-days { list-style: none; margin: 4px 0 8px; padding: 0; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; text-align: center; }
+.case-wx-days li { display: grid; gap: 2px; justify-items: center; }
+.case-wx-max { font-weight: 700; border-radius: 99px; padding: 2px 8px; font-variant-numeric: tabular-nums; }
+.case-wx-kinds { display: flex; flex-wrap: wrap; gap: 4px 12px; margin: 0 0 4px; font-size: 13px; }
+.case-wx-list { display: grid; gap: 6px; margin: 4px 0 0; }
+.case-wx-list li { display: grid; gap: 1px; }
+.case-wx-alert { display: inline-flex; align-items: center; gap: 6px; }
+.case-wx-alert i { width: 10px; height: 10px; border-radius: 2px; flex: none; }
+@media (max-width: 799px) {
+  .case-wx { grid-template-columns: minmax(0, 1fr); }
+  .case-wx-map { min-height: 260px; }
+  .case-wx-days .sub { font-size: 11px; }
+}

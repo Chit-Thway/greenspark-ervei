@@ -31,3 +31,10 @@ export function alertColor(level: string): string {
 }
 /** A real warning (advice, watch and act or emergency warning), not another notice such as a park closure. */
 export const isWarning = (level: string) => alertColor(level) !== ALERT_LEVELS[3]![1];
+
+/** Kilometres between two [lat, lng] points. */
+export function km(a: [number, number], b: [number, number]): number {
+  const r = (d: number) => (d * Math.PI) / 180;
+  const h = Math.sin(r(b[0] - a[0]) / 2) ** 2 + Math.cos(r(a[0])) * Math.cos(r(b[0])) * Math.sin(r(b[1] - a[1]) / 2) ** 2;
+  return 2 * 6371 * Math.asin(Math.sqrt(h));
+}

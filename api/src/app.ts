@@ -117,6 +117,20 @@ export function createApp(store: Store, options: AppOptions = {}) {
     const w = options.weather?.current() ?? null;
     return person ? detectWeatherSignals(person.address?.postcode, (person.account?.region.northOf26th ?? person.signalSummary?.northOf26th ?? false), w, perthToday(clock())) : [];
   };
+  /** The week's forecast for a person's nearest forecast town, with its hazards, for the case page's weather card. */
+  const forecastFor = (person: Person | null) => {
+    const w = options.weather?.current() ?? null;
+    const postcode = person?.address?.postcode;
+    const townId = postcode ? POSTCODE_TOWN[postcode] : undefined;
+    const t = townId && w ? w.towns[townId] : undefined;
+    if (!w || !t || !townId) return null;
+    const today = perthToday(clock());
+    const north = person?.account?.region.northOf26th ?? person?.signalSummary?.northOf26th ?? false;
+    return {
+      townId, town: t.name, district: w.districts[t.district] ?? t.district, demo: w.demo, issuedAt: w.issuedAt,
+      location: POSTCODE_LOCATION[postcode!] ?? null, days: t.days.filter((d) => d.date >= today).slice(0, 7), hazards: townHazards(w, townId, north, today),
+    };
+  };
   const weatherKey = () => { const w = options.weather?.current(); return w ? `${w.fetchedAt}` : ""; };
   // Each case's result is kept per flowchart version until the case changes (every change bumps its version)
   // or a new forecast arrives (hourly). People never change once written, and a flowchart edit is a new FlowDoc.
@@ -348,14 +362,14 @@ export function createApp(store: Store, options: AppOptions = {}) {
     const person = found && store.getPersonWithAccount(found.id);
     const c = person && store.getCaseForPerson(person.id);
     if (!person || !c) throw new ApiError("not_found", "No case was found for that account number.");
-    res.json({ case: await enrichOne(c), person, weatherSignals: weatherFor(person), prediction: predictionFor(person) });
+    res.json({ case: await enrichOne(c), person, weatherSignals: weatherFor(person), forecast: forecastFor(person), prediction: predictionFor(person) });
   });
 
   app.get("/api/cases/:caseId/overview", async (req, res) => {
     const c = store.getCase(String(req.params.caseId));
     if (!c) throw new ApiError("not_found", "Case not found.");
     const person = store.getPersonWithAccount(c.personId);
-    res.json({ case: await enrichOne(c), person, weatherSignals: weatherFor(person), prediction: predictionFor(person) });
+    res.json({ case: await enrichOne(c), person, weatherSignals: weatherFor(person), forecast: forecastFor(person), prediction: predictionFor(person) });
   });
 
   // The risk model: what it predicts, how it was trained and how well it did on held-out customers.

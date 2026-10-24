@@ -255,7 +255,7 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
         </div>
       </header>
 
-      <CaseGlance item={item} data={data} plan={supportAi?.plan ?? null} planFailed={!!supportAi?.error} onOpen={setSection} />
+      <CaseGlance item={item} data={data} plan={supportAi?.plan ?? null} planFailed={!!supportAi?.error} onOpen={setSection} client={props.client} />
 
       <section className="case-more" aria-labelledby="more-title">
         <h2 id="more-title">More about this case</h2>

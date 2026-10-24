@@ -5,7 +5,7 @@ import type { EmergencyAlert, OutlookTown } from "../data/api";
 import { alertColor, hazardColor } from "./outlookText";
 
 /** A popup's content, built as elements so the feed's text is never read as HTML. */
-function alertPopup(a: EmergencyAlert): HTMLElement {
+export function alertPopup(a: EmergencyAlert): HTMLElement {
   const box = document.createElement("div");
   box.className = "alert-pop";
   const add = (tag: string, text: string, cls?: string) => { const el = document.createElement(tag); el.textContent = text; if (cls) el.className = cls; box.append(el); return el; };
@@ -17,7 +17,7 @@ function alertPopup(a: EmergencyAlert): HTMLElement {
 }
 
 /** A warning triangle in the warning's colour, so warnings never look like the round forecast towns. */
-function triangle(color: string): L.DivIcon {
+export function triangle(color: string): L.DivIcon {
   return L.divIcon({
     className: "alert-tri", iconSize: [22, 20], iconAnchor: [11, 13], popupAnchor: [0, -12],
     html: `<svg viewBox="0 0 22 20" width="22" height="20" aria-hidden="true"><path d="M11 1.5 L20.5 18.5 H1.5 Z" fill="${color}" stroke="#253858" stroke-width="1.5" stroke-linejoin="round"/><path d="M11 7v5" stroke="#253858" stroke-width="2" stroke-linecap="round"/><circle cx="11" cy="15" r="1.1" fill="#253858"/></svg>`,

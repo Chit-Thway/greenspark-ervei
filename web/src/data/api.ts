@@ -19,6 +19,8 @@ export interface Catalog {
 /** `weatherSignals`: the customer's weather signals from the latest forecast (case page only). */
 export interface CaseItem {
   case: QueueCase; person: Person | null; weatherSignals?: WeatherSignal[]; prediction?: Prediction | null;
+  /** Case page only: the week's forecast for the customer's nearest forecast town, and the suburb's location. */
+  forecast?: CaseForecast | null;
   /** Queue rows only: the predicted chance of any harm in 90 days, and its average. */
   risk?: { probability: number; baseRate: number | null } | null;
 }
@@ -142,6 +144,10 @@ export type Outlook =
     customers: OutlookCustomer[];
   };
 
+export interface CaseForecast {
+  townId: string; town: string; district: string; demo: boolean; issuedAt: string | null; location: [number, number] | null;
+  days: { date: string; max: number | null; min: number | null; precis: string }[]; hazards: OutlookHazard[];
+}
 export interface EmergencyAlert {
   id: string; headline: string; event: string; category: string; alertLevel: string; severity: string; sent: string | null;
   areaDesc: string; web: string | null; polygons: [number, number][][]; centre: [number, number] | null;

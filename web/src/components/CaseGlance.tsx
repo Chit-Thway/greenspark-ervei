@@ -1,5 +1,6 @@
 import { detectAccountSignals } from "../domain/types";
-import type { CaseItem, Catalog, SupportPlan } from "../data/api";
+import type { ApiClient, CaseItem, Catalog, SupportPlan } from "../data/api";
+import { CaseWeather } from "./CaseWeather";
 import { UsageChart } from "./AccountDetails";
 import { OUTCOME_LABEL, OUTCOME_ORDER, band, percent } from "./predictionText";
 
@@ -27,7 +28,7 @@ function More({ label, onClick }: { label: string; onClick: () => void }) {
  * One case at a glance: how urgent, what's going on, what to offer, in pictures and few words. Each card links to
  * the section with the full detail (`onOpen` takes the section's id).
  */
-export function CaseGlance({ item, data, plan, planFailed, onOpen }: { item: CaseItem; data: Catalog; plan: SupportPlan | null; planFailed: boolean; onOpen: (section: string) => void }) {
+export function CaseGlance({ item, data, plan, planFailed, onOpen, client }: { item: CaseItem; data: Catalog; plan: SupportPlan | null; planFailed: boolean; onOpen: (section: string) => void; client?: Pick<ApiClient, "emergency"> }) {
   const c = item.case, person = item.person, a = person?.account ?? null;
   const priority = c.modelAssessment.priority;
   const overdue = a?.monthly.at(-1)?.overdue ?? 0;
@@ -91,6 +92,8 @@ export function CaseGlance({ item, data, plan, planFailed, onOpen }: { item: Cas
         ) : <p className="muted">No utility account.</p>}
         <More label="Customer and account details" onClick={() => onOpen("customer")} />
       </section>
+
+      <CaseWeather item={item} client={client} />
 
       <section className="case-card vis-card vis-wide" aria-labelledby="vis-going">
         <h2 id="vis-going">What's going on</h2>
