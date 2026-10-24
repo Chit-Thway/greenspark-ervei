@@ -126,7 +126,10 @@ export function OutlookMap({ towns, alerts, showTowns, showAlerts, chosen, onCho
           <div className="mtp-head">
             <div>
               <h2>{picked.name}</h2>
-              <p className="sub">{picked.districtName}{picked.hazards.length ? " · " : ""}{[...new Set(picked.hazards.map((h) => h.kind))].map((k) => <span key={k} title={HAZARD_LABEL[k]}>{HAZARD_ICON[k]} {HAZARD_LABEL[k]} </span>)}</p>
+              <p className="sub">{picked.districtName}</p>
+              {picked.hazards.length ? (
+                <ul className="mtp-hazards">{[...new Set(picked.hazards.map((h) => h.kind))].map((k) => <li key={k}><span aria-hidden="true">{HAZARD_ICON[k]}</span>{HAZARD_LABEL[k]}</li>)}</ul>
+              ) : <p className="sub">No hot or dangerous weather this week</p>}
             </div>
             <div className="mtp-counts"><span><strong>{picked.act}</strong> act now</span><span><strong>{picked.watch}</strong> watch</span></div>
             <button type="button" className="icon-btn" aria-label="Close town forecast" onClick={() => choose.current(null)}>✕</button>

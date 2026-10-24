@@ -594,3 +594,6 @@ select:not([multiple]):disabled { opacity: .6; }
 .mtp-day { font-size: 13px; font-weight: 600; }
 .mtp-min { font-size: 13px; opacity: .8; }
 @media (max-width: 699px) { .mtp-days strong { font-size: 20px; } .mtp-day { font-size: 11px; } }
+.mtp-hazards { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.mtp-hazards li { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 99px; background: var(--bg); border: 1px solid var(--border); font-size: 16px; font-weight: 600; }
+.mtp-hazards li span { font-size: 22px; line-height: 1; }
