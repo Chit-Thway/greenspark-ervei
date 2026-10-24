@@ -48,6 +48,17 @@ export function AccountSignals({ account, asOf, summary, weather = [] }: { accou
 }
 
 /** The utility account: retailer, plan, payments setup, concession, protections and contact settings. */
+type Tone = "yes" | "no" | "bad" | "warn" | "ask";
+const MARK: Record<Tone, string> = { yes: "✓", no: "✕", bad: "✕", warn: "!", ask: "?" };
+/** A tick, cross or flag before a value, so the account reads at a glance. "no" is a plain no; "bad" is a no that matters. */
+export function Mark({ tone }: { tone: Tone }) {
+  return <span className={`mark mark-${tone}`} aria-hidden="true">{MARK[tone]}</span>;
+}
+/** A field's label with a small icon. */
+function Label({ icon, children }: { icon: string; children: string }) {
+  return <dt><span className="dt-icon" aria-hidden="true">{icon}</span>{children}</dt>;
+}
+
 export function UtilityAccount({ account: a, accountNumber }: { account: CustomerAccount; accountNumber: string | null }) {
   const now = a.monthly.at(-1);
   const cp = a.contactPreferences;
@@ -55,32 +66,32 @@ export function UtilityAccount({ account: a, accountNumber }: { account: Custome
     <section className="case-card" aria-labelledby="ov-account">
       <h3 id="ov-account">Utility account <span className="sim">synthetic dataset</span></h3>
       <dl className="details">
-        <div><dt>Account number</dt><dd>{accountNumber ?? "Not recorded"}</dd></div>
-        <div><dt>Customer since</dt><dd>{date(a.customerSince)}</dd></div>
-        <div><dt>Retailer</dt><dd>{a.retailer}</dd></div>
-        <div><dt>Region</dt><dd>{a.region.name}{a.region.northOf26th ? " (north of the 26th parallel)" : ""}</dd></div>
-        <div><dt>Plan</dt><dd>{a.plan.name}{a.plan.billingCycle ? ", billed every two months" : ""}</dd></div>
-        <div><dt>Meter</dt><dd>{human(a.meterType)}{a.solar ? ` · ${a.solar.kw} kW solar` : ""}</dd></div>
-        <div><dt>Supply</dt><dd className={a.supplyStatus === "disconnected" ? "bill-overdue" : undefined}>{a.supplyStatus === "disconnected" ? "Disconnected" : "Connected"}</dd></div>
-        <div><dt>Payment method</dt><dd>{METHOD_LABELS[a.paymentMethod]}</dd></div>
-        {now ? <div><dt>Balance</dt><dd>{dollars(now.balance)}{now.overdue > 0 ? <span className="bill-overdue"> · {dollars(now.overdue)} overdue ({now.daysOverdueOldest} days)</span> : ""}</dd></div> : null}
-        {a.prepay ? <div><dt>Prepay credit</dt><dd>{dollars(a.prepay.creditNow)}</dd></div> : null}
-        <div><dt>Concession</dt><dd>{a.concession.status === "active" ? "On the account" : a.concession.status === "lapsed" ? `Lapsed ${date(a.concession.endDate)}` : "None on file"}</dd></div>
-        <div><dt>Medical cooling subsidy</dt><dd>{yesNo(a.medicalCoolingSubsidy)}</dd></div>
-        <div><dt>Life support</dt><dd>{a.lifeSupport ? `Registered${a.lifeSupportSince ? ` ${date(a.lifeSupportSince)}` : ""}` : "Not registered"}</dd></div>
-        <div><dt>Third-party authority</dt><dd>{a.thirdPartyAuthority ? `${a.thirdPartyAuthority.type}${a.thirdPartyAuthority.name ? `: ${a.thirdPartyAuthority.name}` : " (name not recorded)"}` : "None"}</dd></div>
-        <div><dt>Hardship program</dt><dd>{a.hardshipProgram.status === "none" ? "Not enrolled" : a.hardshipProgram.status === "active" ? "Enrolled" : `Exited (${human(a.hardshipProgram.exitReason)})`}</dd></div>
-        <div><dt>Payment plan</dt><dd>{a.paymentPlan ? `${human(a.paymentPlan.status)}, ${a.paymentPlan.instalments} × ${dollars(a.paymentPlan.instalment)} from ${date(a.paymentPlan.startedAt)}` : "None"}</dd></div>
+        <div><Label icon="#">Account number</Label><dd>{accountNumber ?? "Not recorded"}</dd></div>
+        <div><Label icon="◷">Customer since</Label><dd>{date(a.customerSince)}</dd></div>
+        <div><Label icon="⌂">Retailer</Label><dd>{a.retailer}</dd></div>
+        <div><Label icon="⌖">Region</Label><dd>{a.region.name}{a.region.northOf26th ? " (north of the 26th parallel)" : ""}</dd></div>
+        <div><Label icon="▤">Plan</Label><dd>{a.plan.name}{a.plan.billingCycle ? ", billed every two months" : ""}</dd></div>
+        <div><Label icon="◔">Meter</Label><dd>{human(a.meterType)}{a.solar ? ` · ${a.solar.kw} kW solar` : ""}</dd></div>
+        <div><Label icon="⚡">Supply</Label><dd className={a.supplyStatus === "disconnected" ? "bill-overdue" : undefined}><Mark tone={a.supplyStatus === "disconnected" ? "bad" : "yes"} />{a.supplyStatus === "disconnected" ? "Disconnected" : "Connected"}</dd></div>
+        <div><Label icon="$">Payment method</Label><dd>{METHOD_LABELS[a.paymentMethod]}</dd></div>
+        {now ? <div><Label icon="$">Balance</Label><dd><Mark tone={now.overdue > 0 ? "bad" : "yes"} />{dollars(now.balance)}{now.overdue > 0 ? <span className="bill-overdue"> · {dollars(now.overdue)} overdue ({now.daysOverdueOldest} days)</span> : ""}</dd></div> : null}
+        {a.prepay ? <div><Label icon="▮">Prepay credit</Label><dd>{dollars(a.prepay.creditNow)}</dd></div> : null}
+        <div><Label icon="▣">Concession</Label><dd><Mark tone={a.concession.status === "active" ? "yes" : a.concession.status === "lapsed" ? "warn" : "no"} />{a.concession.status === "active" ? "On the account" : a.concession.status === "lapsed" ? `Lapsed ${date(a.concession.endDate)}` : "None on file"}</dd></div>
+        <div><Label icon="❄">Medical cooling subsidy</Label><dd><Mark tone={a.medicalCoolingSubsidy ? "warn" : "no"} />{yesNo(a.medicalCoolingSubsidy)}</dd></div>
+        <div><Label icon="♥">Life support</Label><dd><Mark tone={a.lifeSupport ? "warn" : "no"} />{a.lifeSupport ? `Registered${a.lifeSupportSince ? ` ${date(a.lifeSupportSince)}` : ""}` : "Not registered"}</dd></div>
+        <div><Label icon="☺">Third-party authority</Label><dd><Mark tone={a.thirdPartyAuthority ? "yes" : "no"} />{a.thirdPartyAuthority ? `${a.thirdPartyAuthority.type}${a.thirdPartyAuthority.name ? `: ${a.thirdPartyAuthority.name}` : " (name not recorded)"}` : "None"}</dd></div>
+        <div><Label icon="◎">Hardship program</Label><dd><Mark tone={a.hardshipProgram.status === "active" ? "yes" : a.hardshipProgram.status === "none" ? "no" : "warn"} />{a.hardshipProgram.status === "none" ? "Not enrolled" : a.hardshipProgram.status === "active" ? "Enrolled" : `Exited (${human(a.hardshipProgram.exitReason)})`}</dd></div>
+        <div><Label icon="▦">Payment plan</Label><dd><Mark tone={!a.paymentPlan ? "no" : a.paymentPlan.status === "broken" ? "bad" : a.paymentPlan.status === "active" ? "yes" : "no"} />{a.paymentPlan ? `${human(a.paymentPlan.status)}, ${a.paymentPlan.instalments} × ${dollars(a.paymentPlan.instalment)} from ${date(a.paymentPlan.startedAt)}` : "None"}</dd></div>
         <div className="wide">
-          <dt>Contact settings</dt>
+          <Label icon="✆">Contact settings</Label>
           <dd>
             <ul className="contact-prefs">
-              <li><span>Preferred channel</span><strong>{human(cp.preferredChannel)}</strong></li>
-              <li><span>SMS</span><strong>{cp.smsOptIn ? "Opted in" : "Opted out"}</strong></li>
-              <li><span>Email</span><strong>{cp.emailOptIn ? "Opted in" : "Opted out"}</strong></li>
-              <li><span>Phone calls</span><strong>{cp.doNotCall ? "Do not call" : "OK to call"}</strong></li>
-              <li><span>Proactive support contact</span><strong>{cp.proactiveSupportConsent === "not_asked" ? "Not asked" : cp.proactiveSupportConsent === "yes" ? "Consented" : "Declined"}</strong></li>
-              <li><span>Online account</span><strong>{cp.onlineAccountActive ? "Active" : "Not active"}</strong></li>
+              <li><span>Preferred channel</span><strong><Mark tone="yes" />{human(cp.preferredChannel)}</strong></li>
+              <li><span>SMS</span><strong><Mark tone={cp.smsOptIn ? "yes" : "bad"} />{cp.smsOptIn ? "Opted in" : "Opted out"}</strong></li>
+              <li><span>Email</span><strong><Mark tone={cp.emailOptIn ? "yes" : "bad"} />{cp.emailOptIn ? "Opted in" : "Opted out"}</strong></li>
+              <li><span>Phone calls</span><strong><Mark tone={cp.doNotCall ? "bad" : "yes"} />{cp.doNotCall ? "Do not call" : "OK to call"}</strong></li>
+              <li><span>Proactive support contact</span><strong><Mark tone={cp.proactiveSupportConsent === "yes" ? "yes" : cp.proactiveSupportConsent === "not_asked" ? "ask" : "bad"} />{cp.proactiveSupportConsent === "not_asked" ? "Not asked" : cp.proactiveSupportConsent === "yes" ? "Consented" : "Declined"}</strong></li>
+              <li><span>Online account</span><strong><Mark tone={cp.onlineAccountActive ? "yes" : "no"} />{cp.onlineAccountActive ? "Active" : "Not active"}</strong></li>
             </ul>
           </dd>
         </div>

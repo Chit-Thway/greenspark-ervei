@@ -8,7 +8,7 @@ import { describeFollowUp, PERIOD_TEXT, readableDates, STATUS_LABELS } from "../
 import { isResolved } from "../domain/query";
 import { PriorityBadge } from "./Primitives";
 import { ageOn, PRIORITY_PROVIDER } from "../domain/types";
-import { AccountHistory, AccountSignals, ContactHistory, date, SupplyAndCollections, SupportHistory, UtilityAccount } from "./AccountDetails";
+import { Mark, AccountHistory, AccountSignals, ContactHistory, date, SupplyAndCollections, SupportHistory, UtilityAccount } from "./AccountDetails";
 import { CaseGlance } from "./CaseGlance";
 
 /** A missing contact detail is shown as not recorded, so it is never mistaken for "none". */
@@ -84,7 +84,7 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
               <div><dt>Mobile</dt><dd>{notRecorded(person?.mobile)}</dd></div>
               <div><dt>Phone</dt><dd>{notRecorded(person?.phone)}</dd></div>
               <div className="wide"><dt>Email</dt><dd>{notRecorded(person?.email)}</dd></div>
-              <div><dt>Interpreter</dt><dd>{acct ? (acct.interpreterRequired ? "Required" : "Not required") : "Not recorded"}</dd></div>
+              <div><dt>Interpreter</dt><dd>{acct ? <Mark tone={acct.interpreterRequired ? "warn" : "no"} /> : null}{acct ? (acct.interpreterRequired ? "Required" : "Not required") : "Not recorded"}</dd></div>
             </dl>
           </section>
           {acct ? <UtilityAccount account={acct} accountNumber={person?.accountNumber ?? null} /> : null}
