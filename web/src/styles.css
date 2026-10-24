@@ -653,9 +653,9 @@ select:not([multiple]):disabled { opacity: .6; }
 .case-wx-info { display: grid; gap: 0; align-content: start; }
 .wx-block { padding: 12px 0; border-top: 1px solid var(--border); }
 .wx-block:first-child { padding-top: 0; border-top: 0; }
-.wx-head { display: flex; align-items: baseline; gap: 8px; margin: 0 0 8px; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; color: var(--muted); }
-.wx-head .sub { text-transform: none; letter-spacing: 0; font-weight: 400; font-size: 12px; }
-.wx-head .pill { margin-left: 0; text-transform: none; letter-spacing: 0; }
+.wx-head { display: flex; align-items: baseline; gap: 8px; margin: 0 0 8px; font-size: 13px; font-weight: 700; color: var(--muted); }
+.wx-head .sub { font-weight: 400; font-size: 12px; }
+.wx-head .pill { margin-left: 0; }
 .case-wx-days { margin: 0; padding: 8px 6px; background: var(--bg); border-radius: var(--r-control); }
 .wx-day { font-size: 12px; font-weight: 600; } .wx-day .sub { display: inline; font-weight: 400; font-size: 11px; }
 .wx-items { display: grid; gap: 8px; margin: 0; }
@@ -669,7 +669,7 @@ select:not([multiple]):disabled { opacity: .6; }
 .vis-plan { background: var(--suggest-bg); border-left: 4px solid var(--suggest); border-radius: var(--r-control); padding: 12px 16px; margin: 0 0 14px; max-width: 80ch; }
 .vis-plan p:not(.vis-plan-label) { font-size: 15px; line-height: 1.5; margin: 0 0 8px; color: var(--fg); }
 .vis-plan p:last-child { margin-bottom: 0; }
-.vis-plan-label { margin: 0 0 4px; font-size: 12px; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; color: var(--suggest); }
+.vis-plan-label { margin: 0 0 4px; font-size: 12px; font-weight: 700; color: var(--suggest); }
 .wx-items svg.wx-icon { width: 17px; height: 15px; margin-top: 2px; }
 
 /* Outlook list on phones: one card per customer. Badge and name on top, then the weather and needs, then
