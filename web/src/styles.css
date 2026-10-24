@@ -665,3 +665,7 @@ select:not([multiple]):disabled { opacity: .6; }
 .wx-items .wx-icon { font-size: 20px; line-height: 1.1; text-align: center; }
 .wx-none { margin: 0; font-size: 13px; }
 .vis-plan { max-width: 75ch; }
+/* The AI summary stands out from the rest of the card */
+.vis-plan { background: var(--suggest-bg); border-left: 4px solid var(--suggest); border-radius: var(--r-control); padding: 12px 16px; margin: 0 0 14px; max-width: 80ch; }
+.vis-plan p:last-child { font-size: 16px; line-height: 1.55; margin: 0; color: var(--fg); }
+.vis-plan-label { margin: 0 0 4px; font-size: 12px; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; color: var(--suggest); }
