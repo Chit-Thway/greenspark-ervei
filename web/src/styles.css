@@ -534,5 +534,6 @@ button.kpi:hover { border-color: #b3bac5; }
 .alert-pop { display: grid; gap: 4px; max-width: 260px; font-size: 13px; }
 .alert-pop p { margin: 0; }
 .map-full { margin-left: auto; }
-.outlook-map-wrap:fullscreen { display: flex; flex-direction: column; background: var(--surface); }
-.outlook-map-wrap:fullscreen .outlook-map { flex: 1; min-height: 0; }
+.outlook-map-wrap.is-full:not(:fullscreen) { position: fixed; inset: 0; z-index: 1000; }
+.outlook-map-wrap.is-full, .outlook-map-wrap:fullscreen { display: flex; flex-direction: column; background: var(--surface); }
+.outlook-map-wrap.is-full .outlook-map, .outlook-map-wrap:fullscreen .outlook-map { flex: 1; min-height: 0; }

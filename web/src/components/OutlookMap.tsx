@@ -47,7 +47,21 @@ export function OutlookMap({ towns, alerts, showTowns, showAlerts, chosen, onCho
     document.addEventListener("fullscreenchange", onFull);
     return () => { document.removeEventListener("fullscreenchange", onFull); m.remove(); map.current = null; };
   }, []);
-  const toggleFull = () => { if (document.fullscreenElement) void document.exitFullscreen(); else void wrap.current?.requestFullscreen(); };
+  // Browsers without the Fullscreen API for elements (Safari on iPhone) get the map filling the window instead.
+  const toggleFull = () => {
+    if (document.fullscreenEnabled && wrap.current?.requestFullscreen) {
+      if (document.fullscreenElement) void document.exitFullscreen(); else void wrap.current.requestFullscreen();
+    } else {
+      setFull((f) => !f);
+      requestAnimationFrame(() => map.current?.invalidateSize());
+    }
+  };
+  useEffect(() => {
+    if (!full || document.fullscreenElement) return;
+    const esc = (e: KeyboardEvent) => { if (e.key === "Escape") { setFull(false); requestAnimationFrame(() => map.current?.invalidateSize()); } };
+    document.addEventListener("keydown", esc);
+    return () => document.removeEventListener("keydown", esc);
+  }, [full]);
 
   useEffect(() => {
     const g = townLayer.current;
@@ -92,13 +106,13 @@ export function OutlookMap({ towns, alerts, showTowns, showAlerts, chosen, onCho
   }, [showTowns, showAlerts]);
 
   return (
-    <div ref={wrap} className="outlook-map-wrap">
+    <div ref={wrap} className={`outlook-map-wrap${full ? " is-full" : ""}`}>
       <div ref={el} className="outlook-map" role="region" aria-label="Map of forecast towns and Emergency WA warnings" />
       <div className="map-zoom outlook-zoom">
         <button type="button" className="link-btn" onClick={() => map.current?.setView([-31.95, 115.86], 9)}>Perth</button>
         <button type="button" className="link-btn" onClick={() => map.current?.setView([-33.2, 116.2], 7)}>South West</button>
         <button type="button" className="link-btn" onClick={() => map.current?.setView([-26.5, 121], 5)}>All of WA</button>
-        {document.fullscreenEnabled ? <button type="button" className="link-btn map-full" aria-pressed={full} onClick={toggleFull}>{full ? "Exit full screen" : "⛶ Full screen"}</button> : null}
+        <button type="button" className="btn btn-small map-full" aria-pressed={full} onClick={toggleFull}>{full ? "✕ Exit full screen" : "⛶ Full screen"}</button>
       </div>
     </div>
   );
