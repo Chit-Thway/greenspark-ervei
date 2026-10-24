@@ -567,3 +567,10 @@ button.kpi:hover { border-color: #b3bac5; }
 .mark-warn { background: var(--high); }
 .mark-ask { background: var(--moderate); }
 .dt-icon { display: inline-block; width: 16px; margin-right: 4px; text-align: center; color: var(--muted); }
+/* Each solution: what to do and when, set apart from the reference facts below */
+.suggest-list.solutions .solution { padding: 0 0 10px; overflow: hidden; }
+.solution-top { background: var(--selected); border-bottom: 1px solid #b7e8cf; padding: 10px 12px; }
+.solution-top > strong { font-size: 15px; }
+.solution-top .rank-when { margin-bottom: 0; }
+.solutions .solution-facts { padding: 8px 12px 0; gap: 4px; }
+.solutions .solution > a.sub { padding: 4px 12px 0; }

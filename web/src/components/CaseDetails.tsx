@@ -212,6 +212,7 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
                 const forNames = r.circumstanceIds.map((id) => data.circumstances.find((x) => x.id === id)?.label ?? id);
                 return (
                   <li key={r.recommendationId} className="solution">
+                    <div className="solution-top">
                     <strong>{why ? <span className="rank-num">{rank + 1}</span> : null}{d?.label ?? r.recommendationId}</strong>
                     {why ? <p className="rank-why">{why}</p> : null}
                     {step?.due ? (
@@ -219,6 +220,7 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
                         By <strong>{dueDate(step.due)}</strong>{step.method ? <> · {METHOD_LABEL[step.method]}{supportAi?.plan?.interpreter && step.method === "phone" ? " with an interpreter" : ""}</> : null}
                       </p>
                     ) : null}
+                    </div>
                     <dl className="solution-facts">
                       {d?.howToAccess ? <div><dt>What to do</dt><dd>{d.howToAccess}</dd></div> : null}
                       {d?.provider ? <div><dt>Who</dt><dd>{d.provider}</dd></div> : null}
