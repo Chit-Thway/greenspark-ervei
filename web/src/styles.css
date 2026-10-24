@@ -597,3 +597,9 @@ select:not([multiple]):disabled { opacity: .6; }
 .mtp-hazards { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
 .mtp-hazards li { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 99px; background: var(--bg); border: 1px solid var(--border); font-size: 16px; font-weight: 600; }
 .mtp-hazards li span { font-size: 22px; line-height: 1; }
+/* Like the outlook's act now and watch tiles */
+.mtp-counts { gap: 10px; }
+.mtp-counts > span { display: grid; gap: 0; min-width: 96px; padding: 6px 12px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-panel); font-weight: 600; color: var(--fg); font-size: 13px; }
+.mtp-counts strong { font-size: 26px; line-height: 1.1; margin: 0; }
+.mtp-act { border-left: 4px solid var(--urgent) !important; } .mtp-act strong { color: var(--urgent); }
+.mtp-watch { border-left: 4px solid #e0a030 !important; } .mtp-watch strong { color: var(--high); }
