@@ -641,3 +641,9 @@ select:not([multiple]):disabled { opacity: .6; }
 .case-wx-list li.has-icon > div { display: grid; gap: 1px; }
 .case-wx-list .wx-icon { font-size: 20px; line-height: 1.1; text-align: center; margin-top: 1px; }
 .case-wx-list strong { font-size: 13px; }
+/* Light circles behind the account fact icons, with the symbol in the tone's colour */
+.vis-icon { background: #eceef1; color: var(--muted); }
+.vis-ok .vis-icon { background: #dff3e8; color: var(--brand-hover); }
+.vis-bad .vis-icon { background: #fff; color: var(--urgent); }
+.vis-warn .vis-icon { background: #fff; color: var(--high); }
+.vis-info .vis-icon { background: var(--selected); color: var(--brand-hover); }
