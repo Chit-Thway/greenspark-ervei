@@ -77,7 +77,7 @@ export function CaseGlance({ item, data, plan, planFailed, onOpen, client }: { i
                 <li key={id} className={`pred-${b.id}`}>
                   <span>{OUTCOME_LABEL[id]}</span>
                   <span className="vis-bar"><i style={{ width: `${Math.max(2, Math.min(100, o.probability * 100 * (100 / 80)))}%` }} /></span>
-                  <strong>{percent(o.probability)}</strong>
+                  <strong title={`${percent(o.probability)} chance`}>{b.text}</strong>
                 </li>
               );
             })}
