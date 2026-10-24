@@ -233,14 +233,13 @@ export function OutlookPage({ client, navigate }: { client: Pick<ApiClient, "out
               </thead>
               <tbody>
                 {rows.slice(0, shown).map((c) => {
-                  const t = townsById.get(c.townId);
                   const b = c.risk ? band(c.risk.probability, c.risk.baseRate) : null;
                   return (
                     <tr key={c.personId} onClick={() => c.accountNumber && navigate(accountHref(c.accountNumber))}>
                       <td><span className={`badge ${c.tier === "act" ? "badge-urgent" : "badge-high"}`}>{c.tier === "act" ? "Act now" : "Watch"}</span></td>
                       <td>
                         {c.accountNumber ? <a className="name-link" href={accountHref(c.accountNumber)} onClick={(e) => { e.stopPropagation(); open(e, c); }}>{c.displayName}</a> : <strong>{c.displayName}</strong>}
-                        <span className="sub">{c.accountNumber} · {c.suburb}{t && t.name !== c.suburb ? ` (${t.name} forecast)` : ""}</span>
+                        <span className="sub">{c.suburb}</span>
                       </td>
                       <td>
                         <span className="wx-kinds">{c.kinds.map((k) => <span key={k} title={HAZARD_LABEL[k]} aria-label={HAZARD_LABEL[k]}>{HAZARD_ICON[k]}</span>)}</span> {c.worst}
