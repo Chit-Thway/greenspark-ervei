@@ -123,7 +123,7 @@ export function OutlookPage({ client, navigate }: { client: Pick<ApiClient, "out
                 <i className="bar-watch" style={{ height: `${(d.watch / maxExposed) * 100}%` }} />
                 <i className="bar-rest" style={{ height: `${((d.exposed - d.act - d.watch) / maxExposed) * 100}%` }} />
               </span>
-              <span className="day-count"><strong>{d.exposed}</strong> exposed<br /><span className="sub">{d.act} act · {d.watch} watch</span></span>
+              <span className="day-count"><span className="day-tiers"><strong className="n-act">{d.act}</strong> act · <strong className="n-watch">{d.watch}</strong> watch</span><span className="sub">{d.exposed} exposed</span></span>
             </li>
           ))}
         </ol>
