@@ -289,7 +289,7 @@ textarea { resize: vertical; }
 .usage-key .key-line { width: 14px; border-top: 2px dashed var(--muted); margin-left: 8px; }
 .contact-prefs { list-style: none; padding: 0; margin: 4px 0 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 6px; }
 .contact-prefs li { display: grid; gap: 1px; padding: 6px 8px; border: 1px solid var(--border); border-radius: var(--r-control); }
-.contact-prefs span { font-size: 12px; color: var(--muted); }
+.contact-prefs li > span { font-size: 12px; color: var(--muted); }
 .contact-prefs strong { font-weight: 600; font-size: 13px; }
 .ai-plan { margin: 8px 0 12px; padding: 10px 12px; border: 1px solid var(--border); border-left: 3px solid var(--brand); border-radius: var(--r-control); background: var(--surface); }
 .ai-plan .block-label { margin-top: 0; }
@@ -566,7 +566,6 @@ button.kpi:hover { border-color: #b3bac5; }
 .mark-bad { background: var(--urgent); }
 .mark-warn { background: var(--high); }
 .mark-ask { background: var(--moderate); }
-.dt-icon { display: inline-block; width: 16px; margin-right: 4px; text-align: center; color: var(--muted); }
 /* Each solution: what to do and when, set apart from the reference facts below */
 .suggest-list.solutions .solution { padding: 0 0 10px; overflow: hidden; }
 .solution-top { background: var(--selected); border-bottom: 1px solid #b7e8cf; padding: 10px 12px; }
