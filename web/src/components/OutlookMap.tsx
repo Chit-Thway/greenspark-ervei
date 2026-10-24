@@ -44,7 +44,7 @@ export function OutlookMap({ towns, alerts, showTowns, showAlerts, chosen, onCho
 
   useEffect(() => {
     if (!el.current || map.current) return;
-    const m = (map.current = L.map(el.current, { scrollWheelZoom: false }).setView([-26.5, 121], 5));
+    const m = (map.current = L.map(el.current, { scrollWheelZoom: true }).setView([-26.5, 121], 5));
     L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
       maxZoom: 18, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
     }).addTo(m);

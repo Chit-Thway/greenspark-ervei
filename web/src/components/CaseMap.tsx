@@ -21,7 +21,7 @@ export function CaseMap({ summary, onOpen }: { summary: MapSummary; onOpen: (acc
 
   useEffect(() => {
     if (!el.current || map.current) return;
-    map.current = L.map(el.current, { scrollWheelZoom: false }).setView([-31.95, 115.86], 9);
+    map.current = L.map(el.current, { scrollWheelZoom: true }).setView([-31.95, 115.86], 9);
     L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
       maxZoom: 18, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
     }).addTo(map.current);

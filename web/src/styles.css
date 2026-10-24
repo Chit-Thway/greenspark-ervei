@@ -613,3 +613,8 @@ select:not([multiple]):disabled { opacity: .6; }
 .town-table-wrap:hover::-webkit-scrollbar-thumb { background: #c1c7d0; }
 .town-table-wrap::-webkit-scrollbar-button { display: none; }
 .hz-icon { cursor: help; margin-right: 3px; }
+.case-wx-map-wrap { position: relative; min-height: 320px; }
+.case-wx-map-wrap .case-wx-map { position: absolute; inset: 0; min-height: 0; height: auto; }
+.map-wheel-hint { position: absolute; inset: 0; z-index: 500; display: grid; place-items: center; background: rgba(9, 30, 66, .45); color: #fff; font-size: 16px; font-weight: 600; border-radius: var(--r-control); opacity: 0; pointer-events: none; transition: opacity .2s; }
+.map-wheel-hint.is-on { opacity: 1; }
+@media (max-width: 799px) { .case-wx-map-wrap { min-height: 260px; } }
