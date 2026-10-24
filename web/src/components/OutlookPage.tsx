@@ -145,8 +145,7 @@ export function OutlookPage({ client, navigate }: { client: Pick<ApiClient, "out
           </> : null}
           {layers.alerts && emergency?.available ? (
             <span className="map-legend" aria-label="Emergency WA warning levels">
-              {ALERT_LEVELS.filter(([label]) => warnings.some((a) => alertColor(a.alertLevel) === alertColor(label))).map(([label, color]) => <span key={label}><svg className="tri" viewBox="0 0 22 20" width="13" height="12" aria-hidden="true"><path d="M11 1.5 L20.5 18.5 H1.5 Z" fill={color} stroke="#253858" strokeWidth="1.5" strokeLinejoin="round" /></svg>{label}</span>)}
-              <span className="sub">Emergency WA, updated {emergency.fetchedAt ? new Date(emergency.fetchedAt).toLocaleTimeString("en-AU", { timeZone: "Australia/Perth", hour: "numeric", minute: "2-digit" }) : "–"} · click an area for details</span>
+              {ALERT_LEVELS.filter(([label]) => warnings.some((a) => alertColor(a.alertLevel) === alertColor(label))).map(([label, color]) => <span key={label}><svg className="tri" viewBox="0 0 22 20" width="13" height="12" aria-hidden="true"><path d="M11 1.5 L20.5 18.5 H1.5 Z" fill={color} stroke="#253858" strokeWidth="1.5" strokeLinejoin="round" /></svg>Emergency WA {label}</span>)}
             </span>
           ) : null}
         </div>
