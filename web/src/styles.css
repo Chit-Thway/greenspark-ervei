@@ -526,3 +526,10 @@ button.kpi:hover { border-color: #b3bac5; }
   .case-modal { width: 100vw; max-width: 100vw; height: 100vh; max-height: 100vh; border-radius: 0; }
   .case-modal-head, .case-modal-body { padding-left: 16px; padding-right: 16px; }
 }
+.map-layers { display: flex; flex-wrap: wrap; gap: 4px 16px; }
+.map-layers .check { padding: 2px 0; font-size: 13px; flex: none; }
+.map-keys { padding-top: 6px; gap: 6px 16px; justify-content: flex-start; }
+.map-keys:empty { display: none; }
+.map-legend i.sq { border-radius: 2px; }
+.alert-pop { display: grid; gap: 4px; max-width: 260px; font-size: 13px; }
+.alert-pop p { margin: 0; }

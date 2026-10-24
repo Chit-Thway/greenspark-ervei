@@ -20,3 +20,12 @@ export function tempColor(max: number | null): { background: string; color: stri
 
 export const dayName = (date: string) => new Date(`${date}T00:00:00Z`).toLocaleDateString("en-AU", { weekday: "short", timeZone: "UTC" });
 export const dayDate = (date: string) => new Date(`${date}T00:00:00Z`).toLocaleDateString("en-AU", { day: "numeric", month: "short", timeZone: "UTC" });
+
+/** Emergency WA's colours for its warning levels: yellow advice, orange watch and act, red emergency warning. */
+export const ALERT_LEVELS: [label: string, color: string][] = [["Emergency Warning", "#d6001c"], ["Watch and Act", "#f07c14"], ["Advice", "#e8c000"], ["Other notices", "#6b7c93"]];
+export function alertColor(level: string): string {
+  if (/emergency warning/i.test(level)) return ALERT_LEVELS[0]![1];
+  if (/watch and act/i.test(level)) return ALERT_LEVELS[1]![1];
+  if (/advice/i.test(level)) return ALERT_LEVELS[2]![1];
+  return ALERT_LEVELS[3]![1];
+}

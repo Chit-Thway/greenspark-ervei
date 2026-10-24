@@ -72,6 +72,8 @@ export interface AppOptions {
   weather?: { current(): WeatherSnapshot | null; status(): unknown; setMode(mode: "live" | "demo" | "off"): Promise<void> };
   /** The 90-day risk model's scores and model card. Without it there are no predictions. */
   predictions?: Predictions | null;
+  /** Emergency WA warnings (DFES) for the outlook map. Without it the map has none. */
+  emergency?: { current(): { available: boolean; fetchedAt: string | null; error: string | null; alerts: unknown[] } };
 }
 
 /** A person as the case list needs them: everything but the utility account and its signal summary. */
@@ -363,6 +365,7 @@ export function createApp(store: Store, options: AppOptions = {}) {
     res.json({ model: m, scoredCustomers: options.predictions!.byCustomer.size });
   });
 
+  app.get("/api/emergency", (_req, res) => { res.json(options.emergency?.current() ?? { available: false, fetchedAt: null, error: null, alerts: [] }); });
   app.get("/api/weather", (_req, res) => { res.json(options.weather?.status() ?? { mode: "off", available: false }); });
   // Anyone can switch the weather source for everyone: the sample heatwave, the Bureau's live data, or off.
   app.post("/api/weather/mode", async (req, res) => {

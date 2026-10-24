@@ -1,17 +1,22 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from "react";
-import type { ApiClient, HazardKind, Outlook, OutlookCustomer } from "../data/api";
+import type { ApiClient, EmergencyFeed, HazardKind, Outlook, OutlookCustomer } from "../data/api";
 import { accountHref, isModifiedClick } from "../route";
 import { PRIORITY_TEXT, STATUS_LABELS } from "../domain/format";
 import { band, percent } from "./predictionText";
-import { GROUP_LABEL, HAZARD_ICON, HAZARD_LABEL, dayDate, dayName, tempColor } from "./outlookText";
+import { ALERT_LEVELS, GROUP_LABEL, HAZARD_ICON, HAZARD_LABEL, alertColor, dayDate, dayName, tempColor } from "./outlookText";
 
 // Leaflet only loads with this page.
 const OutlookMap = lazy(() => import("./OutlookMap").then((m) => ({ default: m.OutlookMap })));
 const PAGE = 50;
+const LAYERS_KEY = "outlook-map-layers";
+type Layers = { towns: boolean; alerts: boolean };
+function storedLayers(): Layers {
+  try { const v = JSON.parse(localStorage.getItem(LAYERS_KEY) ?? "null") as Partial<Layers> | null; return { towns: v?.towns ?? true, alerts: v?.alerts ?? true }; } catch { return { towns: true, alerts: true }; }
+}
 type Group = keyof typeof GROUP_LABEL;
 
 /** The home page: the next week's weather across WA and the customers it could put at risk, so staff can call first. */
-export function OutlookPage({ client, navigate }: { client: Pick<ApiClient, "outlook">; navigate: (to: string) => void }) {
+export function OutlookPage({ client, navigate }: { client: Pick<ApiClient, "outlook" | "emergency">; navigate: (to: string) => void }) {
   const [data, setData] = useState<Outlook | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [retry, setRetry] = useState(0);
@@ -21,6 +26,20 @@ export function OutlookPage({ client, navigate }: { client: Pick<ApiClient, "out
   const [group, setGroup] = useState<"" | Group>("");
   const [town, setTown] = useState<string | null>(null);
   const [shown, setShown] = useState(PAGE);
+  const [emergency, setEmergency] = useState<EmergencyFeed | null>(null);
+  // Which map layers are on is a per-browser preference.
+  const [layers, setLayers] = useState<Layers>(storedLayers);
+  const toggle = (k: keyof Layers) => setLayers((l) => { const n = { ...l, [k]: !l[k] }; try { localStorage.setItem(LAYERS_KEY, JSON.stringify(n)); } catch { /* optional */ } return n; });
+
+  // Emergency WA warnings load on their own, and again every 5 minutes, so they never hold up the outlook.
+  useEffect(() => {
+    if (!client.emergency) return;
+    let current = true;
+    const load = () => client.emergency!().then((f) => { if (current) setEmergency(f); }, () => undefined);
+    void load();
+    const t = window.setInterval(load, 5 * 60 * 1000);
+    return () => { current = false; window.clearInterval(t); };
+  }, [client]);
 
   useEffect(() => {
     if (!client.outlook) { setError("The weather outlook isn't available on this server."); return; }
@@ -111,6 +130,16 @@ export function OutlookPage({ client, navigate }: { client: Pick<ApiClient, "out
       <section className="panel outlook-places" aria-labelledby="places-title">
         <div className="panel-head">
           <h2 id="places-title">Where</h2>
+          <span className="map-layers" role="group" aria-label="Show on the map">
+            <label className="check"><input type="checkbox" checked={layers.towns} onChange={() => toggle("towns")} /><span>Forecast towns</span></label>
+            <label className="check">
+              <input type="checkbox" checked={layers.alerts} disabled={!emergency?.available} onChange={() => toggle("alerts")} />
+              <span>Emergency WA warnings {emergency?.available ? <span className="pill">{emergency.alerts.length}</span> : <span className="sub">{emergency ? "unavailable" : "loading…"}</span>}</span>
+            </label>
+          </span>
+        </div>
+        <div className="panel-head map-keys">
+          {layers.towns ? <>
           <span className="map-legend" aria-label="Colour shows the worst weather forecast">
             <span><i style={{ background: "#ae2e24" }} />Severe</span><span><i style={{ background: "#e2683c" }} />Dangerous</span>
             <span><i style={{ background: "#e0a030" }} />Hot day</span><span><i style={{ background: "#7a9cc6" }} />No hazard</span>
@@ -118,10 +147,17 @@ export function OutlookPage({ client, navigate }: { client: Pick<ApiClient, "out
           <span className="map-legend" aria-label="Symbols show the kinds of weather forecast">
             {(Object.keys(HAZARD_ICON) as HazardKind[]).map((k) => <span key={k}><span aria-hidden="true">{HAZARD_ICON[k]}</span>{HAZARD_LABEL[k]}</span>)}
           </span>
+          </> : null}
+          {layers.alerts && emergency?.available ? (
+            <span className="map-legend" aria-label="Emergency WA warning levels">
+              {ALERT_LEVELS.filter(([label]) => emergency.alerts.some((a) => alertColor(a.alertLevel) === alertColor(label === "Other notices" ? "" : label))).map(([label, color]) => <span key={label}><i className="sq" style={{ background: color }} />{label}</span>)}
+              <span className="sub">Emergency WA, updated {emergency.fetchedAt ? new Date(emergency.fetchedAt).toLocaleTimeString("en-AU", { timeZone: "Australia/Perth", hour: "numeric", minute: "2-digit" }) : "–"} · click an area for details</span>
+            </span>
+          ) : null}
         </div>
         <div className="outlook-places-body">
           <Suspense fallback={<div className="outlook-map" role="status">Loading the map…</div>}>
-            <OutlookMap towns={ready.towns} chosen={town} onChoose={setTown} />
+            <OutlookMap towns={ready.towns} alerts={emergency?.alerts ?? []} showTowns={layers.towns} showAlerts={layers.alerts && !!emergency?.available} chosen={town} onChoose={setTown} />
           </Suspense>
           <div className="town-table-wrap">
             <table className="town-table">

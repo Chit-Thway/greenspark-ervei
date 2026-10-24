@@ -1,29 +1,50 @@
 import { useEffect, useRef } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import type { OutlookTown } from "../data/api";
-import { hazardColor } from "./outlookText";
+import type { EmergencyAlert, OutlookTown } from "../data/api";
+import { alertColor, hazardColor } from "./outlookText";
 
-/** The forecast towns on a map of WA: coloured by the worst weather coming, sized by the customers to contact. */
-export function OutlookMap({ towns, chosen, onChoose }: { towns: OutlookTown[]; chosen: string | null; onChoose: (id: string | null) => void }) {
+/** A popup's content, built as elements so the feed's text is never read as HTML. */
+function alertPopup(a: EmergencyAlert): HTMLElement {
+  const box = document.createElement("div");
+  box.className = "alert-pop";
+  const add = (tag: string, text: string, cls?: string) => { const el = document.createElement(tag); el.textContent = text; if (cls) el.className = cls; box.append(el); return el; };
+  add("strong", a.headline || a.alertLevel);
+  add("span", a.alertLevel, "sub");
+  if (a.areaDesc) add("p", a.areaDesc.length > 240 ? `${a.areaDesc.slice(0, 240)}…` : a.areaDesc);
+  if (a.web) { const link = add("a", "Details on Emergency WA") as HTMLAnchorElement; link.href = a.web; link.target = "_blank"; link.rel = "noreferrer"; }
+  return box;
+}
+
+/**
+ * The outlook map of WA, with two layers that can be switched on and off: the forecast towns, coloured by the worst
+ * weather coming and sized by the customers to contact; and Emergency WA's current warnings, drawn as their areas.
+ */
+export function OutlookMap({ towns, alerts, showTowns, showAlerts, chosen, onChoose }: {
+  towns: OutlookTown[]; alerts: EmergencyAlert[]; showTowns: boolean; showAlerts: boolean; chosen: string | null; onChoose: (id: string | null) => void;
+}) {
   const el = useRef<HTMLDivElement>(null);
   const map = useRef<L.Map | null>(null);
-  const layer = useRef<L.LayerGroup | null>(null);
+  const townLayer = useRef<L.LayerGroup | null>(null);
+  const alertLayer = useRef<L.LayerGroup | null>(null);
   const choose = useRef(onChoose);
   choose.current = onChoose;
 
   useEffect(() => {
     if (!el.current || map.current) return;
-    map.current = L.map(el.current, { scrollWheelZoom: false }).setView([-26.5, 121], 5);
+    const m = (map.current = L.map(el.current, { scrollWheelZoom: false }).setView([-26.5, 121], 5));
     L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
       maxZoom: 18, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-    }).addTo(map.current);
-    layer.current = L.layerGroup().addTo(map.current);
-    return () => { map.current?.remove(); map.current = null; };
+    }).addTo(m);
+    // Warning areas sit under the town circles, so the towns stay clickable.
+    m.createPane("alerts").style.zIndex = "390";
+    townLayer.current = L.layerGroup();
+    alertLayer.current = L.layerGroup();
+    return () => { m.remove(); map.current = null; };
   }, []);
 
   useEffect(() => {
-    const g = layer.current;
+    const g = townLayer.current;
     if (!g) return;
     g.clearLayers();
     const max = Math.max(1, ...towns.map((t) => t.act + t.watch));
@@ -39,9 +60,34 @@ export function OutlookMap({ towns, chosen, onChoose }: { towns: OutlookTown[]; 
     }
   }, [towns, chosen]);
 
+  useEffect(() => {
+    const g = alertLayer.current;
+    if (!g) return;
+    g.clearLayers();
+    for (const a of alerts) {
+      const color = alertColor(a.alertLevel);
+      for (const p of a.polygons) L.polygon(p, { pane: "alerts", color, weight: 2, fillColor: color, fillOpacity: 0.25 }).bindPopup(() => alertPopup(a)).addTo(g);
+      // A dot at the centre too, as small areas vanish when zoomed out.
+      if (a.centre) {
+        L.circleMarker(a.centre, { pane: "alerts", radius: 6, color: "#253858", weight: 1.5, fillColor: color, fillOpacity: 1 })
+          .bindTooltip(a.headline || a.alertLevel).bindPopup(() => alertPopup(a)).addTo(g);
+      }
+    }
+  }, [alerts]);
+
+  useEffect(() => {
+    const m = map.current;
+    if (!m) return;
+    for (const [layer, on] of [[townLayer.current, showTowns], [alertLayer.current, showAlerts]] as const) {
+      if (!layer) continue;
+      if (on && !m.hasLayer(layer)) layer.addTo(m);
+      if (!on && m.hasLayer(layer)) layer.remove();
+    }
+  }, [showTowns, showAlerts]);
+
   return (
     <div>
-      <div ref={el} className="outlook-map" role="region" aria-label="Map of forecast towns, coloured by the worst weather forecast" />
+      <div ref={el} className="outlook-map" role="region" aria-label="Map of forecast towns and Emergency WA warnings" />
       <div className="map-zoom outlook-zoom">
         <button type="button" className="link-btn" onClick={() => map.current?.setView([-31.95, 115.86], 9)}>Perth</button>
         <button type="button" className="link-btn" onClick={() => map.current?.setView([-33.2, 116.2], 7)}>South West</button>

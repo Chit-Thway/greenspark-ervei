@@ -77,6 +77,7 @@ export function OutlookModelPage() {
           <li><strong>Forecast:</strong> the server's weather source, switched in Demo settings: the Bureau's live data, refreshed hourly, or the sample heatwave, a made-up week with a three-day heatwave over the Lower West. Live data is usually quiet unless hot weather is coming.</li>
           <li><strong>Needs</strong> come from the short summary of signals stored with each person, so the outlook never loads whole utility accounts.</li>
           <li><strong>The map</strong> places each forecast town at the average of its postcodes, coloured by its worst weather and sized by its act-now and watch customers.</li>
+          <li><strong>Emergency WA warnings</strong> are a second map layer: the current DFES warnings, fetched by the server every 5 minutes (<code>GET /api/emergency</code>) and drawn as their areas in Emergency WA's colours. They are for awareness only and don't change who is listed. Either layer can be switched off; the choice is remembered in this browser.</li>
         </ul>
       </section>
 

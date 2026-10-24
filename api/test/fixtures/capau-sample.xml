@@ -1,0 +1,935 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<edxlde:EDXLDistribution xmlns:edxlde="urn:oasis:names:tc:emergency:EDXL:DE:1.0" xmlns:fn="https://www.w3.org/2005/xpath-functions/" xmlns:datetime="https://exslt.org/dates-and-times" xmlns:cap="urn:oasis:names:tc:emergency:cap:1.2">
+  <edxlde:distributionID>DFES_ID_Warnings</edxlde:distributionID>
+  <edxlde:senderID>emergencywa@dfes.wa.gov.au</edxlde:senderID>
+  <edxlde:dateTimeSent>2026-10-24T14:12:20.231+08:00</edxlde:dateTimeSent>
+  <edxlde:distributionStatus>Actual</edxlde:distributionStatus>
+  <edxlde:distributionType>Report</edxlde:distributionType>
+  <edxlde:combinedConfidentiality>UNCLASSIFIED AND NOT SENSITIVE</edxlde:combinedConfidentiality>
+  <edxlde:language>en-AU</edxlde:language>
+  <edxlde:contentObject>
+    <edxlde:contentDescription>MONITOR CONDITIONS - TELFER</edxlde:contentDescription>
+    <edxlde:xmlContent>
+      <edxlde:embeddedXMLContent>
+        <cap:alert>
+          <cap:identifier>6adc41c085817a1468e5d6ff</cap:identifier>
+          <cap:sender>emergencywa@dfes.wa.gov.au</cap:sender>
+          <cap:sent>2026-10-24T13:35:08.072+08:00</cap:sent>
+          <cap:status>Actual</cap:status>
+          <cap:msgType>Alert</cap:msgType>
+          <cap:source>DFES</cap:source>
+          <cap:scope>Public</cap:scope>
+          <cap:code>urn:oasis:names:tc:emergency:cap:1.2:profile:CAP-AU:1.0</cap:code>
+          <cap:info>
+            <cap:category>Fire</cap:category>
+            <cap:event>Bushfire</cap:event>
+            <cap:responseType/>
+            <cap:urgency>Future </cap:urgency>
+            <cap:severity>Minor </cap:severity>
+            <cap:certainty>Observed </cap:certainty>
+            <cap:audience/>
+            <cap:valueName>urn:oasis:names:tc:emergency:cap:1.2:profile:CAP-AU:1.0:AUeventLIST:1.0</cap:valueName>
+            <cap:eventCode>
+              <cap:value>Bushfire</cap:value>
+            </cap:eventCode>
+            <cap:onset>2026-10-24T13:35:08.072+08:00</cap:onset>
+            <cap:expires>2026-10-24T13:35:08.072+08:00</cap:expires>
+            <cap:senderName>Department of Fire and Emergency Services WA</cap:senderName>
+            <cap:headline>Bushfire Advice MONITOR CONDITIONS - TELFER</cap:headline>
+            <cap:description>A Bushfire Advice is in place for people travelling on Kunawarritji Track
+between PUNMU and KUNAWARRITJI in the southern part of TELFER in the SHIRE OF
+EAST PILBARA</cap:description>
+            <cap:instruction> * Stay alert and monitor your surroundings.
+
+ * Read through your plan and decide what you will do if the situation gets
+   worse. If you do not have a plan, make one now on Emergency WA
+   [https://emergency.wa.gov.au/plan], or in the Emergency WA app
+   [https://emergency.wa.gov.au/app/plan].
+
+ * Watch for signs of a bushfire, especially smoke and flames.
+
+ * Close all doors and windows, and turn off evaporative air conditioners but
+   keep water running through the system if possible.
+
+ * If you have a respiratory condition and you have been affected by smoke you
+   should contact your local doctor or call 1800MEDICARE (1800 633 422
+   [tel:1800633422]).
+
+If driving
+
+ * Turn your headlights on and drive slowly.
+
+ * Watch for emergency services personnel and follow their directions.
+
+ * If you cannot see clearly, pull over, keep your headlights and hazard lights
+   on, and wait until the smoke clears.</cap:instruction>
+            <cap:web>https://emergency.wa.gov.au/warnings/6adc41c085817a1468e5d6ff</cap:web>
+            <cap:contact>DFES Media on 9395 9543</cap:contact>
+            <cap:parameter>
+              <cap:valueName>DFES_Region</cap:valueName>
+              <cap:value>PILBARA</cap:value>
+            </cap:parameter>
+            <cap:parameter>
+              <cap:valueName>CAD_ID</cap:valueName>
+              <cap:value>825416</cap:value>
+            </cap:parameter>
+            <cap:parameter>
+              <cap:valueName>Agency_Responsible</cap:valueName>
+              <cap:value>Parks and Wildlife Service at the Department of Biodiversity, Conservation and Attractions</cap:value>
+            </cap:parameter>
+            <cap:resource>
+              <cap:resourceDesc>map</cap:resourceDesc>
+              <cap:mimeType>text/html</cap:mimeType>
+            </cap:resource>
+            <cap:area>
+              <cap:areaDesc>A Bushfire Advice is in place for people travelling on Kunawarritji Track
+between PUNMU and KUNAWARRITJI in the southern part of TELFER in the SHIRE OF
+EAST PILBARA</cap:areaDesc>
+              <cap:alertLevel>Bushfire Advice</cap:alertLevel>
+              <cap:polygon>-21.9673613067456,123.2172041606022 -22.08321822317224,123.75369269028761 -22.273432779119403,123.7737868212173 -22.156696832734454,123.21831897167976 -21.9673613067456,123.2172041606022</cap:polygon>
+              <cap:circle>-22.12860819148353,123.50961361994902 0.0</cap:circle>
+              <cap:geocode>
+                <cap:valueName>urn:oasis:names:tc:emergency:cap:1.2:profile:CAP-AU:1.0:ISO 3166-2 </cap:valueName>
+                <cap:value>AU-WA</cap:value>
+              </cap:geocode>
+            </cap:area>
+          </cap:info>
+        </cap:alert>
+      </edxlde:embeddedXMLContent>
+    </edxlde:xmlContent>
+  </edxlde:contentObject>
+  <edxlde:contentObject>
+    <edxlde:contentDescription>MONITOR CONDITIONS - DERBY</edxlde:contentDescription>
+    <edxlde:xmlContent>
+      <edxlde:embeddedXMLContent>
+        <cap:alert>
+          <cap:identifier>6adc308badf35184246dee88</cap:identifier>
+          <cap:sender>emergencywa@dfes.wa.gov.au</cap:sender>
+          <cap:sent>2026-10-24T12:20:51.441+08:00</cap:sent>
+          <cap:status>Actual</cap:status>
+          <cap:msgType>Alert</cap:msgType>
+          <cap:source>DFES</cap:source>
+          <cap:scope>Public</cap:scope>
+          <cap:code>urn:oasis:names:tc:emergency:cap:1.2:profile:CAP-AU:1.0</cap:code>
+          <cap:info>
+            <cap:category>Fire</cap:category>
+            <cap:event>Bushfire</cap:event>
+            <cap:responseType/>
+            <cap:urgency>Future </cap:urgency>
+            <cap:severity>Minor </cap:severity>
+            <cap:certainty>Observed </cap:certainty>
+            <cap:audience/>
+            <cap:valueName>urn:oasis:names:tc:emergency:cap:1.2:profile:CAP-AU:1.0:AUeventLIST:1.0</cap:valueName>
+            <cap:eventCode>
+              <cap:value>Bushfire</cap:value>
+            </cap:eventCode>
+            <cap:onset>2026-10-24T12:20:51.441+08:00</cap:onset>
+            <cap:expires>2026-10-24T12:20:51.441+08:00</cap:expires>
+            <cap:senderName>Department of Fire and Emergency Services WA</cap:senderName>
+            <cap:headline>Bushfire Advice MONITOR CONDITIONS - DERBY</cap:headline>
+            <cap:description>A Bushfire Advice is in place for people travelling along Gibb River Road
+between Lennard Road and Bungarun Road in DERBY in the SHIRE OF DERBY/WEST
+KIMBERLEY.</cap:description>
+            <cap:instruction> * Stay alert and monitor your surroundings.
+
+ * Read through your plan and decide what you will do if the situation gets
+   worse. If you do not have a plan, make one now on Emergency WA
+   [https://emergency.wa.gov.au/plan], or in the Emergency WA app
+   [https://emergency.wa.gov.au/app/plan].
+
+ * Watch for signs of a bushfire, especially smoke and flames.
+
+ * Close all doors and windows, and turn off evaporative air conditioners but
+   keep water running through the system if possible.
+
+ * If you have a respiratory condition and you have been affected by smoke you
+   should contact your local doctor or call 1800MEDICARE (1800 633 422
+   [tel:1800633422]).
+
+If driving
+
+ * Turn your headlights on and drive slowly.
+
+ * Watch for emergency services personnel and follow their directions.
+
+ * If you cannot see clearly, pull over, keep your headlights and hazard lights
+   on, and wait until the smoke clears.</cap:instruction>
+            <cap:web>https://emergency.wa.gov.au/warnings/6adc308badf35184246dee88</cap:web>
+            <cap:contact>DFES Media on 9395 9543</cap:contact>
+            <cap:parameter>
+              <cap:valueName>DFES_Region</cap:valueName>
+              <cap:value>KIMBERLEY</cap:value>
+            </cap:parameter>
+            <cap:parameter>
+              <cap:valueName>CAD_ID</cap:valueName>
+              <cap:value/>
+            </cap:parameter>
+            <cap:parameter>
+              <cap:valueName>Agency_Responsible</cap:valueName>
+              <cap:value>Department of Fire and Emergency Services (DFES)</cap:value>
+            </cap:parameter>
+            <cap:resource>
+              <cap:resourceDesc>map</cap:resourceDesc>
+              <cap:mimeType>text/html</cap:mimeType>
+            </cap:resource>
+            <cap:area>
+              <cap:areaDesc>A Bushfire Advice is in place for people travelling along Gibb River Road
+between Lennard Road and Bungarun Road in DERBY in the SHIRE OF DERBY/WEST
+KIMBERLEY.</cap:areaDesc>
+              <cap:alertLevel>Bushfire Advice</cap:alertLevel>
+              <cap:polygon>-17.345361554549484,123.68455508272365 -17.346145677405005,123.68386608840262 -17.347816288082214,123.68352413777552 -17.353327929030115,123.70752390213192 -17.355932623977296,123.72584743899102 -17.356654974743392,123.75195211103414 -17.353100004602382,123.75213501192519 -17.35327249867433,123.73735594232778 -17.352660297711935,123.72268918073036 -17.350986914059376,123.70789415488002 -17.345361554549484,123.68455508272365</cap:polygon>
+              <cap:circle>-17.354417537750244,123.72874991200442 0.0</cap:circle>
+              <cap:geocode>
+                <cap:valueName>urn:oasis:names:tc:emergency:cap:1.2:profile:CAP-AU:1.0:ISO 3166-2 </cap:valueName>
+                <cap:value>AU-WA</cap:value>
+              </cap:geocode>
+            </cap:area>
+          </cap:info>
+        </cap:alert>
+      </edxlde:embeddedXMLContent>
+    </edxlde:xmlContent>
+  </edxlde:contentObject>
+  <edxlde:contentObject>
+    <edxlde:contentDescription>THREAT IS REDUCED - TELFER</edxlde:contentDescription>
+    <edxlde:xmlContent>
+      <edxlde:embeddedXMLContent>
+        <cap:alert>
+          <cap:identifier>6ad8230263be015c32db44d2</cap:identifier>
+          <cap:sender>emergencywa@dfes.wa.gov.au</cap:sender>
+          <cap:sent>2026-10-24T10:40:26.111+08:00</cap:sent>
+          <cap:status>Actual</cap:status>
+          <cap:msgType>Alert</cap:msgType>
+          <cap:source>DFES</cap:source>
+          <cap:scope>Public</cap:scope>
+          <cap:code>urn:oasis:names:tc:emergency:cap:1.2:profile:CAP-AU:1.0</cap:code>
+          <cap:info>
+            <cap:category>Fire</cap:category>
+            <cap:event>Bushfire</cap:event>
+            <cap:responseType/>
+            <cap:urgency>Future </cap:urgency>
+            <cap:severity>Minor </cap:severity>
+            <cap:certainty>Observed </cap:certainty>
+            <cap:audience/>
+            <cap:valueName>urn:oasis:names:tc:emergency:cap:1.2:profile:CAP-AU:1.0:AUeventLIST:1.0</cap:valueName>
+            <cap:eventCode>
+              <cap:value>Bushfire</cap:value>
+            </cap:eventCode>
+            <cap:onset>2026-10-24T10:40:26.111+08:00</cap:onset>
+            <cap:expires>2026-10-24T10:40:26.111+08:00</cap:expires>
+            <cap:senderName>Department of Fire and Emergency Services WA</cap:senderName>
+            <cap:headline>Bushfire Advice THREAT IS REDUCED - TELFER</cap:headline>
+            <cap:description>A Bushfire Advice is in place for the Telfer townsite and Telfer minesite and
+for people in an area between Punmu Access Road and Telfer Road in TELFER in the
+SHIRE OF EAST PILBARA.</cap:description>
+            <cap:instruction> * The threat of the fire has reduced however you should take care in the area.
+
+ * Stay alert for potential dangers such as smoke and fallen trees and power
+   poles.
+
+ * If you do not have a plan, make one now on Emergency WA
+   [https://emergency.wa.gov.au/plan], or in the Emergency WA app
+   [https://emergency.wa.gov.au/app/plan] to stay safe in future emergencies.</cap:instruction>
+            <cap:web>https://emergency.wa.gov.au/warnings/6ad8230263be015c32db44d2</cap:web>
+            <cap:contact>DFES Media on 9395 9543</cap:contact>
+            <cap:parameter>
+              <cap:valueName>DFES_Region</cap:valueName>
+              <cap:value>PILBARA</cap:value>
+            </cap:parameter>
+            <cap:parameter>
+              <cap:valueName>CAD_ID</cap:valueName>
+              <cap:value>825584</cap:value>
+            </cap:parameter>
+            <cap:parameter>
+              <cap:valueName>Agency_Responsible</cap:valueName>
+              <cap:value>Department of Fire and Emergency Services (DFES)</cap:value>
+            </cap:parameter>
+            <cap:resource>
+              <cap:resourceDesc>map</cap:resourceDesc>
+              <cap:mimeType>text/html</cap:mimeType>
+            </cap:resource>
+            <cap:area>
+              <cap:areaDesc>A Bushfire Advice is in place for the Telfer townsite and Telfer minesite and
+for people in an area between Punmu Access Road and Telfer Road in TELFER in the
+SHIRE OF EAST PILBARA.</cap:areaDesc>
+              <cap:alertLevel>Bushfire Advice</cap:alertLevel>
+              <cap:polygon>-21.6571087157363,122.27586939926175 -21.647343342694796,122.25335499589505 -21.62885707808985,122.2154557502273 -21.66233989375162,122.1696764633819 -21.6846574548389,122.14566109979114 -21.69350247634314,122.1498183394753 -21.71071759279188,122.1568000671391 -21.73267011557445,122.17559702623487 -21.778383504976276,122.23877950538395 -21.77556168517745,122.42641789193414 -21.727539506767513,122.47317486633057 -21.654495735615498,122.32597329827246 -21.6571087157363,122.27586939926175</cap:polygon>
+              <cap:circle>-21.71457658615313,122.26837344693362 0.0</cap:circle>
+              <cap:geocode>
+                <cap:valueName>urn:oasis:names:tc:emergency:cap:1.2:profile:CAP-AU:1.0:ISO 3166-2 </cap:valueName>
+                <cap:value>AU-WA</cap:value>
+              </cap:geocode>
+            </cap:area>
+          </cap:info>
+        </cap:alert>
+      </edxlde:embeddedXMLContent>
+    </edxlde:xmlContent>
+  </edxlde:contentObject>
+  <edxlde:contentObject>
+    <edxlde:contentDescription>MONITOR CONDITIONS - KUNUNURRA</edxlde:contentDescription>
+    <edxlde:xmlContent>
+      <edxlde:embeddedXMLContent>
+        <cap:alert>
+          <cap:identifier>6adc029dba77a986ee5ff78f</cap:identifier>
+          <cap:sender>emergencywa@dfes.wa.gov.au</cap:sender>
+          <cap:sent>2026-10-24T09:02:39.980+08:00</cap:sent>
+          <cap:status>Actual</cap:status>
+          <cap:msgType>Alert</cap:msgType>
+          <cap:source>DFES</cap:source>
+          <cap:scope>Public</cap:scope>
+          <cap:code>urn:oasis:names:tc:emergency:cap:1.2:profile:CAP-AU:1.0</cap:code>
+          <cap:info>
+            <cap:category>Fire</cap:category>
+            <cap:event>Bushfire</cap:event>
+            <cap:responseType/>
+            <cap:urgency>Future </cap:urgency>
+            <cap:severity>Minor </cap:severity>
+            <cap:certainty>Observed </cap:certainty>
+            <cap:audience/>
+            <cap:valueName>urn:oasis:names:tc:emergency:cap:1.2:profile:CAP-AU:1.0:AUeventLIST:1.0</cap:valueName>
+            <cap:eventCode>
+              <cap:value>Bushfire</cap:value>
+            </cap:eventCode>
+            <cap:onset>2026-10-24T09:02:39.980+08:00</cap:onset>
+            <cap:expires>2026-10-24T09:02:39.980+08:00</cap:expires>
+            <cap:senderName>Department of Fire and Emergency Services WA</cap:senderName>
+            <cap:headline>Bushfire Advice MONITOR CONDITIONS - KUNUNURRA</cap:headline>
+            <cap:description>A Bushfire Advice is in place for people travelling along Victoria Highway,
+between Mirima National Park and Barrbem Reserve, in KUNUNURRA in the SHIRE OF
+WYNDHAM-EAST KIMBERLEY.</cap:description>
+            <cap:instruction> * Stay alert and monitor your surroundings.
+
+ * Read through your plan and decide what you will do if the situation gets
+   worse. If you do not have a plan, make one now on Emergency WA
+   [https://emergency.wa.gov.au/plan], or in the Emergency WA app
+   [https://emergency.wa.gov.au/app/plan].
+
+ * Watch for signs of a bushfire, especially smoke and flames.
+
+ * Close all doors and windows, and turn off evaporative air conditioners but
+   keep water running through the system if possible.
+
+ * If you have a respiratory condition and you have been affected by smoke you
+   should contact your local doctor or call 1800MEDICARE (1800 633 422
+   [tel:1800633422]).
+
+If driving
+
+ * Turn your headlights on and drive slowly.
+
+ * Watch for emergency services personnel and follow their directions.
+
+ * If you cannot see clearly, pull over, keep your headlights and hazard lights
+   on, and wait until the smoke clears.</cap:instruction>
+            <cap:web>https://emergency.wa.gov.au/warnings/6adc029dba77a986ee5ff78f</cap:web>
+            <cap:contact>DFES Media on 9395 9543</cap:contact>
+            <cap:parameter>
+              <cap:valueName>DFES_Region</cap:valueName>
+              <cap:value>KIMBERLEY</cap:value>
+            </cap:parameter>
+            <cap:parameter>
+              <cap:valueName>CAD_ID</cap:valueName>
+              <cap:value>825413</cap:value>
+            </cap:parameter>
+            <cap:parameter>
+              <cap:valueName>Agency_Responsible</cap:valueName>
+              <cap:value>Department of Fire and Emergency Services (DFES)</cap:value>
+            </cap:parameter>
+            <cap:resource>
+              <cap:resourceDesc>map</cap:resourceDesc>
+              <cap:mimeType>text/html</cap:mimeType>
+            </cap:resource>
+            <cap:area>
+              <cap:areaDesc>A Bushfire Advice is in place for people travelling along Victoria Highway,
+between Mirima National Park and Barrbem Reserve, in KUNUNURRA in the SHIRE OF
+WYNDHAM-EAST KIMBERLEY.</cap:areaDesc>
+              <cap:alertLevel>Bushfire Advice</cap:alertLevel>
+              <cap:polygon>-15.746677420076168,128.79265278718862 -15.722882393521957,128.8511152540118 -15.744571616639078,128.8804731879847 -15.847904409300043,128.9152391624243 -15.818421532445115,128.83154329803398 -15.809197298064419,128.82241274275134 -15.800097815254844,128.81122574816277 -15.782703480172117,128.8039157890438 -15.760890850565488,128.7948952598258 -15.746677420076168,128.79265278718862</cap:polygon>
+              <cap:circle>-15.785393401411,128.85394597480646 0.0</cap:circle>
+              <cap:geocode>
+                <cap:valueName>urn:oasis:names:tc:emergency:cap:1.2:profile:CAP-AU:1.0:ISO 3166-2 </cap:valueName>
+                <cap:value>AU-WA</cap:value>
+              </cap:geocode>
+            </cap:area>
+          </cap:info>
+        </cap:alert>
+      </edxlde:embeddedXMLContent>
+    </edxlde:xmlContent>
+  </edxlde:contentObject>
+  <edxlde:contentObject>
+    <edxlde:contentDescription>THREAT IS REDUCED - KUNUNURRA</edxlde:contentDescription>
+    <edxlde:xmlContent>
+      <edxlde:embeddedXMLContent>
+        <cap:alert>
+          <cap:identifier>6ad71b13a60c89988e5d8ea8</cap:identifier>
+          <cap:sender>emergencywa@dfes.wa.gov.au</cap:sender>
+          <cap:sent>2026-10-24T09:02:39.980+08:00</cap:sent>
+          <cap:status>Actual</cap:status>
+          <cap:msgType>Alert</cap:msgType>
+          <cap:source>DFES</cap:source>
+          <cap:scope>Public</cap:scope>
+          <cap:code>urn:oasis:names:tc:emergency:cap:1.2:profile:CAP-AU:1.0</cap:code>
+          <cap:info>
+            <cap:category>Fire</cap:category>
+            <cap:event>Bushfire</cap:event>
+            <cap:responseType/>
+            <cap:urgency>Future </cap:urgency>
+            <cap:severity>Minor </cap:severity>
+            <cap:certainty>Observed </cap:certainty>
+            <cap:audience/>
+            <cap:valueName>urn:oasis:names:tc:emergency:cap:1.2:profile:CAP-AU:1.0:AUeventLIST:1.0</cap:valueName>
+            <cap:eventCode>
+              <cap:value>Bushfire</cap:value>
+            </cap:eventCode>
+            <cap:onset>2026-10-24T09:02:39.980+08:00</cap:onset>
+            <cap:expires>2026-10-24T09:02:39.980+08:00</cap:expires>
+            <cap:senderName>Department of Fire and Emergency Services WA</cap:senderName>
+            <cap:headline>Bushfire Advice THREAT IS REDUCED - KUNUNURRA</cap:headline>
+            <cap:description>A Bushfire Advice is in place for people travelling on and to the north of
+Victoria Highway, from the east side of Kununurra to the Emu Creek Community in
+KUNUNURRA in the SHIRE OF WYNDHAM-EAST KIMBERLEY.</cap:description>
+            <cap:instruction> * The threat of the fire has reduced however you should take care in the area.
+
+ * Stay alert for potential dangers such as smoke and fallen trees and power
+   poles.
+
+ * If you do not have a plan, make one now on Emergency WA
+   [https://emergency.wa.gov.au/plan], or in the Emergency WA app
+   [https://emergency.wa.gov.au/app/plan] to stay safe in future emergencies.</cap:instruction>
+            <cap:web>https://emergency.wa.gov.au/warnings/6ad71b13a60c89988e5d8ea8</cap:web>
+            <cap:contact>DFES Media on 9395 9543</cap:contact>
+            <cap:parameter>
+              <cap:valueName>DFES_Region</cap:valueName>
+              <cap:value>KIMBERLEY</cap:value>
+            </cap:parameter>
+            <cap:parameter>
+              <cap:valueName>CAD_ID</cap:valueName>
+              <cap:value>825413</cap:value>
+            </cap:parameter>
+            <cap:parameter>
+              <cap:valueName>Agency_Responsible</cap:valueName>
+              <cap:value>Department of Fire and Emergency Services (DFES)</cap:value>
+            </cap:parameter>
+            <cap:resource>
+              <cap:resourceDesc>map</cap:resourceDesc>
+              <cap:mimeType>text/html</cap:mimeType>
+            </cap:resource>
+            <cap:area>
+              <cap:areaDesc>A Bushfire Advice is in place for people travelling on and to the north of
+Victoria Highway, from the east side of Kununurra to the Emu Creek Community in
+KUNUNURRA in the SHIRE OF WYNDHAM-EAST KIMBERLEY.</cap:areaDesc>
+              <cap:alertLevel>Bushfire Advice</cap:alertLevel>
+              <cap:polygon>-15.818421532445967,128.83154329803045 -15.819443165232471,128.82728189771456 -15.819865538171705,128.81294012642525 -15.820475269686156,128.79723521761935 -15.814679281094143,128.76888653790803 -15.786951002076279,128.742485618707 -15.746269371260738,128.7398215558797 -15.746678446449636,128.79278567467315 -15.76142564334414,128.79497464343302 -15.80095275779064,128.81158505344354 -15.808014784456574,128.82124226856723 -15.818421532445967,128.83154329803045</cap:polygon>
+              <cap:circle>-15.783180381777726,128.78181683036334 0.0</cap:circle>
+              <cap:geocode>
+                <cap:valueName>urn:oasis:names:tc:emergency:cap:1.2:profile:CAP-AU:1.0:ISO 3166-2 </cap:valueName>
+                <cap:value>AU-WA</cap:value>
+              </cap:geocode>
+            </cap:area>
+          </cap:info>
+        </cap:alert>
+      </edxlde:embeddedXMLContent>
+    </edxlde:xmlContent>
+  </edxlde:contentObject>
+  <edxlde:contentObject>
+    <edxlde:contentDescription>THREAT IS REDUCED - WYNDHAM</edxlde:contentDescription>
+    <edxlde:xmlContent>
+      <edxlde:embeddedXMLContent>
+        <cap:alert>
+          <cap:identifier>6ad77765aaf139a0d9a4e3b3</cap:identifier>
+          <cap:sender>emergencywa@dfes.wa.gov.au</cap:sender>
+          <cap:sent>2026-10-24T08:57:25.770+08:00</cap:sent>
+          <cap:status>Actual</cap:status>
+          <cap:msgType>Alert</cap:msgType>
+          <cap:source>DFES</cap:source>
+          <cap:scope>Public</cap:scope>
+          <cap:code>urn:oasis:names:tc:emergency:cap:1.2:profile:CAP-AU:1.0</cap:code>
+          <cap:info>
+            <cap:category>Fire</cap:category>
+            <cap:event>Bushfire</cap:event>
+            <cap:responseType/>
+            <cap:urgency>Future </cap:urgency>
+            <cap:severity>Minor </cap:severity>
+            <cap:certainty>Observed </cap:certainty>
+            <cap:audience/>
+            <cap:valueName>urn:oasis:names:tc:emergency:cap:1.2:profile:CAP-AU:1.0:AUeventLIST:1.0</cap:valueName>
+            <cap:eventCode>
+              <cap:value>Bushfire</cap:value>
+            </cap:eventCode>
+            <cap:onset>2026-10-24T08:57:25.770+08:00</cap:onset>
+            <cap:expires>2026-10-24T08:57:25.770+08:00</cap:expires>
+            <cap:senderName>Department of Fire and Emergency Services WA</cap:senderName>
+            <cap:headline>Bushfire Advice THREAT IS REDUCED - WYNDHAM</cap:headline>
+            <cap:description>A Bushfire Advice is in place for people in an area bounded by Barytes Road,
+Five Rivers Lookout, Great Northern Highway and Meat Works Road, west of the
+Wyndham townsite in WYNDHAM in the SHIRE OF WYNDHAM-EAST KIMBERLEY.</cap:description>
+            <cap:instruction> * The threat of the fire has reduced however you should take care in the area.
+
+ * Stay alert for potential dangers such as smoke and fallen trees and power
+   poles.
+
+ * If you do not have a plan, make one now on Emergency WA
+   [https://emergency.wa.gov.au/plan], or in the Emergency WA app
+   [https://emergency.wa.gov.au/app/plan] to stay safe in future emergencies.</cap:instruction>
+            <cap:web>https://emergency.wa.gov.au/warnings/6ad77765aaf139a0d9a4e3b3</cap:web>
+            <cap:contact>DFES Media on 9395 9543</cap:contact>
+            <cap:parameter>
+              <cap:valueName>DFES_Region</cap:valueName>
+              <cap:value>KIMBERLEY</cap:value>
+            </cap:parameter>
+            <cap:parameter>
+              <cap:valueName>CAD_ID</cap:valueName>
+              <cap:value>825512</cap:value>
+            </cap:parameter>
+            <cap:parameter>
+              <cap:valueName>Agency_Responsible</cap:valueName>
+              <cap:value>Department of Fire and Emergency Services (DFES)</cap:value>
+            </cap:parameter>
+            <cap:resource>
+              <cap:resourceDesc>map</cap:resourceDesc>
+              <cap:mimeType>text/html</cap:mimeType>
+            </cap:resource>
+            <cap:area>
+              <cap:areaDesc>A Bushfire Advice is in place for people in an area bounded by Barytes Road,
+Five Rivers Lookout, Great Northern Highway and Meat Works Road, west of the
+Wyndham townsite in WYNDHAM in the SHIRE OF WYNDHAM-EAST KIMBERLEY.</cap:areaDesc>
+              <cap:alertLevel>Bushfire Advice</cap:alertLevel>
+              <cap:polygon>-15.473240019976302,128.12595579000134 -15.483159842621077,128.1143699894306 -15.485180914748767,128.10713306037803 -15.485769595831101,128.10169970912682 -15.480658258797334,128.0971098653177 -15.476332255232464,128.09671198503855 -15.461458844508513,128.10012739898042 -15.456983576668136,128.10361611064826 -15.45390191376417,128.10557711456 -15.449916229618509,128.10685602365783 -15.450367827667876,128.10903182178168 -15.450244558986824,128.11080436002607 -15.448970768466879,128.11084361524155 -15.447635336299768,128.11014358829408 -15.446383074073353,128.11062164309425 -15.443279710315949,128.1125308926172 -15.441800929731187,128.1151675176692 -15.441802899639896,128.11792161199128 -15.473240019976302,128.12595579000134</cap:polygon>
+              <cap:circle>-15.448264033185268,128.11502682244156 0.0</cap:circle>
+              <cap:geocode>
+                <cap:valueName>urn:oasis:names:tc:emergency:cap:1.2:profile:CAP-AU:1.0:ISO 3166-2 </cap:valueName>
+                <cap:value>AU-WA</cap:value>
+              </cap:geocode>
+            </cap:area>
+          </cap:info>
+        </cap:alert>
+      </edxlde:embeddedXMLContent>
+    </edxlde:xmlContent>
+  </edxlde:contentObject>
+  <edxlde:contentObject>
+    <edxlde:contentDescription>MONITOR CONDITIONS - GIBB</edxlde:contentDescription>
+    <edxlde:xmlContent>
+      <edxlde:embeddedXMLContent>
+        <cap:alert>
+          <cap:identifier>6adb0afd75081574b38c3bd8</cap:identifier>
+          <cap:sender>emergencywa@dfes.wa.gov.au</cap:sender>
+          <cap:sent>2026-10-23T16:14:56.913+08:00</cap:sent>
+          <cap:status>Actual</cap:status>
+          <cap:msgType>Alert</cap:msgType>
+          <cap:source>DFES</cap:source>
+          <cap:scope>Public</cap:scope>
+          <cap:code>urn:oasis:names:tc:emergency:cap:1.2:profile:CAP-AU:1.0</cap:code>
+          <cap:info>
+            <cap:category>Fire</cap:category>
+            <cap:event>Bushfire</cap:event>
+            <cap:responseType/>
+            <cap:urgency>Future </cap:urgency>
+            <cap:severity>Minor </cap:severity>
+            <cap:certainty>Observed </cap:certainty>
+            <cap:audience/>
+            <cap:valueName>urn:oasis:names:tc:emergency:cap:1.2:profile:CAP-AU:1.0:AUeventLIST:1.0</cap:valueName>
+            <cap:eventCode>
+              <cap:value>Bushfire</cap:value>
+            </cap:eventCode>
+            <cap:onset>2026-10-23T16:14:56.913+08:00</cap:onset>
+            <cap:expires>2026-10-23T16:14:56.913+08:00</cap:expires>
+            <cap:senderName>Department of Fire and Emergency Services WA</cap:senderName>
+            <cap:headline>Bushfire Advice MONITOR CONDITIONS - GIBB</cap:headline>
+            <cap:description>A Bushfire Advice is in place for people travelling along Gibb River Road in the
+vicinity of Kennedy Creek, in GIBB in the SHIRE OF WYNDHAM-EAST KIMBERLEY.</cap:description>
+            <cap:instruction> * Stay alert and monitor your surroundings.
+
+ * Read through your plan and decide what you will do if the situation gets
+   worse. If you do not have a plan, make one now on Emergency WA
+   [https://emergency.wa.gov.au/plan], or in the Emergency WA app
+   [https://emergency.wa.gov.au/app/plan].
+
+ * Watch for signs of a bushfire, especially smoke and flames.
+
+ * Close all doors and windows, and turn off evaporative air conditioners but
+   keep water running through the system if possible.
+
+ * If you have a respiratory condition and you have been affected by smoke you
+   should contact your local doctor or call 1800MEDICARE (1800 633 422
+   [tel:1800633422]).
+
+If driving
+
+ * Turn your headlights on and drive slowly.
+
+ * Watch for emergency services personnel and follow their directions.
+
+ * If you cannot see clearly, pull over, keep your headlights and hazard lights
+   on, and wait until the smoke clears.</cap:instruction>
+            <cap:web>https://emergency.wa.gov.au/warnings/6adb0afd75081574b38c3bd8</cap:web>
+            <cap:contact>DFES Media on 9395 9543</cap:contact>
+            <cap:parameter>
+              <cap:valueName>DFES_Region</cap:valueName>
+              <cap:value>KIMBERLEY</cap:value>
+            </cap:parameter>
+            <cap:parameter>
+              <cap:valueName>CAD_ID</cap:valueName>
+              <cap:value>823730</cap:value>
+            </cap:parameter>
+            <cap:parameter>
+              <cap:valueName>Agency_Responsible</cap:valueName>
+              <cap:value>Department of Fire and Emergency Services (DFES)</cap:value>
+            </cap:parameter>
+            <cap:resource>
+              <cap:resourceDesc>map</cap:resourceDesc>
+              <cap:mimeType>text/html</cap:mimeType>
+            </cap:resource>
+            <cap:area>
+              <cap:areaDesc>A Bushfire Advice is in place for people travelling along Gibb River Road in the
+vicinity of Kennedy Creek, in GIBB in the SHIRE OF WYNDHAM-EAST KIMBERLEY.</cap:areaDesc>
+              <cap:alertLevel>Bushfire Advice</cap:alertLevel>
+              <cap:polygon>-16.13391593996225,126.47412930452418 -16.11834775907066,126.57896082547666 -16.368263051180747,126.52224038902011 -16.33716253398603,126.43310827459067 -16.13391593996225,126.47412930452418</cap:polygon>
+              <cap:circle>-16.243305405125703,126.50603455003366 0.0</cap:circle>
+              <cap:geocode>
+                <cap:valueName>urn:oasis:names:tc:emergency:cap:1.2:profile:CAP-AU:1.0:ISO 3166-2 </cap:valueName>
+                <cap:value>AU-WA</cap:value>
+              </cap:geocode>
+            </cap:area>
+          </cap:info>
+        </cap:alert>
+      </edxlde:embeddedXMLContent>
+    </edxlde:xmlContent>
+  </edxlde:contentObject>
+  <edxlde:contentObject>
+    <edxlde:contentDescription>MONITOR CONDITIONS - BULARL DI WUNAMI AND MOUNT HARDMAN</edxlde:contentDescription>
+    <edxlde:xmlContent>
+      <edxlde:embeddedXMLContent>
+        <cap:alert>
+          <cap:identifier>6ad63ed5f7a5a9bf0ac4a0c4</cap:identifier>
+          <cap:sender>emergencywa@dfes.wa.gov.au</cap:sender>
+          <cap:sent>2026-10-23T15:45:44.054+08:00</cap:sent>
+          <cap:status>Actual</cap:status>
+          <cap:msgType>Alert</cap:msgType>
+          <cap:source>DFES</cap:source>
+          <cap:scope>Public</cap:scope>
+          <cap:code>urn:oasis:names:tc:emergency:cap:1.2:profile:CAP-AU:1.0</cap:code>
+          <cap:info>
+            <cap:category>Fire</cap:category>
+            <cap:event>Bushfire</cap:event>
+            <cap:responseType/>
+            <cap:urgency>Future </cap:urgency>
+            <cap:severity>Minor </cap:severity>
+            <cap:certainty>Observed </cap:certainty>
+            <cap:audience/>
+            <cap:valueName>urn:oasis:names:tc:emergency:cap:1.2:profile:CAP-AU:1.0:AUeventLIST:1.0</cap:valueName>
+            <cap:eventCode>
+              <cap:value>Bushfire</cap:value>
+            </cap:eventCode>
+            <cap:onset>2026-10-23T15:45:44.054+08:00</cap:onset>
+            <cap:expires>2026-10-23T15:45:44.054+08:00</cap:expires>
+            <cap:senderName>Department of Fire and Emergency Services WA</cap:senderName>
+            <cap:headline>Bushfire Advice MONITOR CONDITIONS - BULARL DI WUNAMI AND MOUNT HARDMAN</cap:headline>
+            <cap:description>A Bushfire Advice is in place for people travelling along Great Northern Highway
+in BULARL DI WUNAMI and MOUNT HARDMAN in the SHIRE OF DERBY/WEST KIMBERLEY.</cap:description>
+            <cap:instruction> * Stay alert and monitor your surroundings.
+
+ * Read through your plan and decide what you will do if the situation gets
+   worse. If you do not have a plan, make one now on Emergency WA
+   [https://emergency.wa.gov.au/plan], or in the Emergency WA app
+   [https://emergency.wa.gov.au/app/plan].
+
+ * Watch for signs of a bushfire, especially smoke and flames.
+
+ * Close all doors and windows, and turn off evaporative air conditioners but
+   keep water running through the system if possible.
+
+ * If you have a respiratory condition and you have been affected by smoke you
+   should contact your local doctor or call 1800MEDICARE (1800 633 422
+   [tel:1800633422]).
+
+If driving
+
+ * Turn your headlights on and drive slowly.
+
+ * Watch for emergency services personnel and follow their directions.
+
+ * If you cannot see clearly, pull over, keep your headlights and hazard lights
+   on, and wait until the smoke clears.</cap:instruction>
+            <cap:web>https://emergency.wa.gov.au/warnings/6ad63ed5f7a5a9bf0ac4a0c4</cap:web>
+            <cap:contact>DFES Media on 9395 9543</cap:contact>
+            <cap:parameter>
+              <cap:valueName>DFES_Region</cap:valueName>
+              <cap:value>KIMBERLEY</cap:value>
+            </cap:parameter>
+            <cap:parameter>
+              <cap:valueName>CAD_ID</cap:valueName>
+              <cap:value>825204</cap:value>
+            </cap:parameter>
+            <cap:parameter>
+              <cap:valueName>Agency_Responsible</cap:valueName>
+              <cap:value>Department of Fire and Emergency Services (DFES)</cap:value>
+            </cap:parameter>
+            <cap:resource>
+              <cap:resourceDesc>map</cap:resourceDesc>
+              <cap:mimeType>text/html</cap:mimeType>
+            </cap:resource>
+            <cap:area>
+              <cap:areaDesc>A Bushfire Advice is in place for people travelling along Great Northern Highway
+in BULARL DI WUNAMI and MOUNT HARDMAN in the SHIRE OF DERBY/WEST KIMBERLEY.</cap:areaDesc>
+              <cap:alertLevel>Bushfire Advice</cap:alertLevel>
+              <cap:polygon>-17.996057173249113,125.12489625127216 -17.935876193250095,125.13150611425897 -17.9292138263349,124.82368678504452 -17.98066584650823,124.81433253509294 -17.996057173249113,125.12489625127216</cap:polygon>
+              <cap:circle>-17.96349611347351,124.9889219269553 0.0</cap:circle>
+              <cap:geocode>
+                <cap:valueName>urn:oasis:names:tc:emergency:cap:1.2:profile:CAP-AU:1.0:ISO 3166-2 </cap:valueName>
+                <cap:value>AU-WA</cap:value>
+              </cap:geocode>
+            </cap:area>
+          </cap:info>
+        </cap:alert>
+      </edxlde:embeddedXMLContent>
+    </edxlde:xmlContent>
+  </edxlde:contentObject>
+  <edxlde:contentObject>
+    <edxlde:contentDescription>MONITOR CONDITIONS - LITTLE SANDY DESERT</edxlde:contentDescription>
+    <edxlde:xmlContent>
+      <edxlde:embeddedXMLContent>
+        <cap:alert>
+          <cap:identifier>6ad733112bde6c96fb874b20</cap:identifier>
+          <cap:sender>emergencywa@dfes.wa.gov.au</cap:sender>
+          <cap:sent>2026-10-23T15:28:04.895+08:00</cap:sent>
+          <cap:status>Actual</cap:status>
+          <cap:msgType>Alert</cap:msgType>
+          <cap:source>DFES</cap:source>
+          <cap:scope>Public</cap:scope>
+          <cap:code>urn:oasis:names:tc:emergency:cap:1.2:profile:CAP-AU:1.0</cap:code>
+          <cap:info>
+            <cap:category>Fire</cap:category>
+            <cap:event>Bushfire</cap:event>
+            <cap:responseType/>
+            <cap:urgency>Future </cap:urgency>
+            <cap:severity>Minor </cap:severity>
+            <cap:certainty>Observed </cap:certainty>
+            <cap:audience/>
+            <cap:valueName>urn:oasis:names:tc:emergency:cap:1.2:profile:CAP-AU:1.0:AUeventLIST:1.0</cap:valueName>
+            <cap:eventCode>
+              <cap:value>Bushfire</cap:value>
+            </cap:eventCode>
+            <cap:onset>2026-10-23T15:28:04.895+08:00</cap:onset>
+            <cap:expires>2026-10-23T15:28:04.895+08:00</cap:expires>
+            <cap:senderName>Department of Fire and Emergency Services WA</cap:senderName>
+            <cap:headline>Bushfire Advice MONITOR CONDITIONS - LITTLE SANDY DESERT</cap:headline>
+            <cap:description>A Bushfire Advice is in place for people in the area of the Canning Stock Route
+between Well 16 and Well 20 in the LITTLE SANDY DESERT in the SHIRE OF WILUNA
+and the SHIRE OF EAST PILBARA.</cap:description>
+            <cap:instruction> * Stay alert and monitor your surroundings.
+
+ * Read through your plan and decide what you will do if the situation gets
+   worse. If you do not have a plan, make one now on Emergency WA
+   [https://emergency.wa.gov.au/plan], or in the Emergency WA app
+   [https://emergency.wa.gov.au/app/plan].
+
+ * Watch for signs of a bushfire, especially smoke and flames.
+
+ * Close all doors and windows, and turn off evaporative air conditioners but
+   keep water running through the system if possible.
+
+ * If you have a respiratory condition and you have been affected by smoke you
+   should contact your local doctor or call 1800MEDICARE (1800 633 422
+   [tel:1800633422]).
+
+If driving
+
+ * Turn your headlights on and drive slowly.
+
+ * Watch for emergency services personnel and follow their directions.
+
+ * If you cannot see clearly, pull over, keep your headlights and hazard lights
+   on, and wait until the smoke clears.</cap:instruction>
+            <cap:web>https://emergency.wa.gov.au/warnings/6ad733112bde6c96fb874b20</cap:web>
+            <cap:contact>DFES Media on 9395 9543</cap:contact>
+            <cap:parameter>
+              <cap:valueName>DFES_Region</cap:valueName>
+              <cap:value>MIDWEST GASCOYNE</cap:value>
+            </cap:parameter>
+            <cap:parameter>
+              <cap:valueName>CAD_ID</cap:valueName>
+              <cap:value>825458</cap:value>
+            </cap:parameter>
+            <cap:parameter>
+              <cap:valueName>Agency_Responsible</cap:valueName>
+              <cap:value>Department of Fire and Emergency Services (DFES)</cap:value>
+            </cap:parameter>
+            <cap:resource>
+              <cap:resourceDesc>map</cap:resourceDesc>
+              <cap:mimeType>text/html</cap:mimeType>
+            </cap:resource>
+            <cap:area>
+              <cap:areaDesc>A Bushfire Advice is in place for people in the area of the Canning Stock Route
+between Well 16 and Well 20 in the LITTLE SANDY DESERT in the SHIRE OF WILUNA
+and the SHIRE OF EAST PILBARA.</cap:areaDesc>
+              <cap:alertLevel>Bushfire Advice</cap:alertLevel>
+              <cap:polygon/>
+              <cap:circle>-23.71876958686741,122.29660406253686 0.0</cap:circle>
+              <cap:geocode>
+                <cap:valueName>urn:oasis:names:tc:emergency:cap:1.2:profile:CAP-AU:1.0:ISO 3166-2 </cap:valueName>
+                <cap:value>AU-WA</cap:value>
+              </cap:geocode>
+            </cap:area>
+          </cap:info>
+        </cap:alert>
+      </edxlde:embeddedXMLContent>
+    </edxlde:xmlContent>
+  </edxlde:contentObject>
+  <edxlde:contentObject>
+    <edxlde:contentDescription>MONITOR CONDITIONS - ORD RIVER</edxlde:contentDescription>
+    <edxlde:xmlContent>
+      <edxlde:embeddedXMLContent>
+        <cap:alert>
+          <cap:identifier>6adb030775081574b38c3ae4</cap:identifier>
+          <cap:sender>emergencywa@dfes.wa.gov.au</cap:sender>
+          <cap:sent>2026-10-23T14:52:30.183+08:00</cap:sent>
+          <cap:status>Actual</cap:status>
+          <cap:msgType>Alert</cap:msgType>
+          <cap:source>DFES</cap:source>
+          <cap:scope>Public</cap:scope>
+          <cap:code>urn:oasis:names:tc:emergency:cap:1.2:profile:CAP-AU:1.0</cap:code>
+          <cap:info>
+            <cap:category>Fire</cap:category>
+            <cap:event>Bushfire</cap:event>
+            <cap:responseType/>
+            <cap:urgency>Future </cap:urgency>
+            <cap:severity>Minor </cap:severity>
+            <cap:certainty>Observed </cap:certainty>
+            <cap:audience/>
+            <cap:valueName>urn:oasis:names:tc:emergency:cap:1.2:profile:CAP-AU:1.0:AUeventLIST:1.0</cap:valueName>
+            <cap:eventCode>
+              <cap:value>Bushfire</cap:value>
+            </cap:eventCode>
+            <cap:onset>2026-10-23T14:52:30.183+08:00</cap:onset>
+            <cap:expires>2026-10-23T14:52:30.183+08:00</cap:expires>
+            <cap:senderName>Department of Fire and Emergency Services WA</cap:senderName>
+            <cap:headline>Bushfire Advice MONITOR CONDITIONS - ORD RIVER</cap:headline>
+            <cap:description>A Bushfire Advice is in place for people travelling along Great Northern Highway
+in the vicinity of Upper Panton River and Little Panton River in ORD RIVER in
+the SHIRE OF HALLS CREEK.</cap:description>
+            <cap:instruction> * Stay alert and monitor your surroundings.
+
+ * Read through your plan and decide what you will do if the situation gets
+   worse. If you do not have a plan, make one now on Emergency WA
+   [https://emergency.wa.gov.au/plan], or in the Emergency WA app
+   [https://emergency.wa.gov.au/app/plan].
+
+ * Watch for signs of a bushfire, especially smoke and flames.
+
+ * Close all doors and windows, and turn off evaporative air conditioners but
+   keep water running through the system if possible.
+
+ * If you have a respiratory condition and you have been affected by smoke you
+   should contact your local doctor or call 1800MEDICARE (1800 633 422
+   [tel:1800633422]).
+
+If driving
+
+ * Turn your headlights on and drive slowly.
+
+ * Watch for emergency services personnel and follow their directions.
+
+ * If you cannot see clearly, pull over, keep your headlights and hazard lights
+   on, and wait until the smoke clears.</cap:instruction>
+            <cap:web>https://emergency.wa.gov.au/warnings/6adb030775081574b38c3ae4</cap:web>
+            <cap:contact>DFES Media on 9395 9543</cap:contact>
+            <cap:parameter>
+              <cap:valueName>DFES_Region</cap:valueName>
+              <cap:value>KIMBERLEY</cap:value>
+            </cap:parameter>
+            <cap:parameter>
+              <cap:valueName>CAD_ID</cap:valueName>
+              <cap:value>825411</cap:value>
+            </cap:parameter>
+            <cap:parameter>
+              <cap:valueName>Agency_Responsible</cap:valueName>
+              <cap:value>Department of Fire and Emergency Services (DFES)</cap:value>
+            </cap:parameter>
+            <cap:resource>
+              <cap:resourceDesc>map</cap:resourceDesc>
+              <cap:mimeType>text/html</cap:mimeType>
+            </cap:resource>
+            <cap:area>
+              <cap:areaDesc>A Bushfire Advice is in place for people travelling along Great Northern Highway
+in the vicinity of Upper Panton River and Little Panton River in ORD RIVER in
+the SHIRE OF HALLS CREEK.</cap:areaDesc>
+              <cap:alertLevel>Bushfire Advice</cap:alertLevel>
+              <cap:polygon>-17.796080264802796,127.77846207813542 -17.793503761831246,127.80119217514687 -17.792017330396092,127.82591472991476 -17.873564983170084,127.85406068381423 -17.87623976944613,127.83061561706097 -17.8861973810276,127.79644334978656 -17.796080264802796,127.77846207813542</cap:polygon>
+              <cap:circle>-17.839107355711846,127.81646443741508 0.0</cap:circle>
+              <cap:geocode>
+                <cap:valueName>urn:oasis:names:tc:emergency:cap:1.2:profile:CAP-AU:1.0:ISO 3166-2 </cap:valueName>
+                <cap:value>AU-WA</cap:value>
+              </cap:geocode>
+            </cap:area>
+          </cap:info>
+        </cap:alert>
+      </edxlde:embeddedXMLContent>
+    </edxlde:xmlContent>
+  </edxlde:contentObject>
+  <edxlde:contentObject>
+    <edxlde:contentDescription>Park Closure for Nyinggulara National Park (Ex-Ningaloo) in the SHIRE OF EXMOUTH.</edxlde:contentDescription>
+    <edxlde:xmlContent>
+      <edxlde:embeddedXMLContent>
+        <cap:alert>
+          <cap:identifier>69c3670c8ecdafcd633709bf</cap:identifier>
+          <cap:sender>emergencywa@dfes.wa.gov.au</cap:sender>
+          <cap:sent>2026-03-30T13:39:20.610+08:00</cap:sent>
+          <cap:status>Actual</cap:status>
+          <cap:msgType>Alert</cap:msgType>
+          <cap:source>DFES</cap:source>
+          <cap:scope>Public</cap:scope>
+          <cap:code>urn:oasis:names:tc:emergency:cap:1.2:profile:CAP-AU:1.0</cap:code>
+          <cap:info>
+            <cap:category>Infra</cap:category>
+            <cap:event>Facility Closure</cap:event>
+            <cap:responseType/>
+            <cap:urgency>Immediate </cap:urgency>
+            <cap:severity>Minor </cap:severity>
+            <cap:certainty>Observed </cap:certainty>
+            <cap:audience/>
+            <cap:valueName>urn:oasis:names:tc:emergency:cap:1.2:profile:CAP-AU:1.0:AUeventLIST:1.0</cap:valueName>
+            <cap:eventCode>
+              <cap:value>Facility Closure</cap:value>
+            </cap:eventCode>
+            <cap:onset>2026-03-30T13:39:20.610+08:00</cap:onset>
+            <cap:expires>2026-03-30T13:39:20.610+08:00</cap:expires>
+            <cap:senderName>Department of Fire and Emergency Services WA</cap:senderName>
+            <cap:headline>Facility or Park Closure</cap:headline>
+            <cap:description/>
+            <cap:instruction> * People are urged to avoid the area, follow the advice of Parks and Wildlife
+   Service staff and observe signage.
+ * People already in the area should leave for a safer place.
+ * For more information, contact your local Parks and Wildlife Service office.</cap:instruction>
+            <cap:web>https://emergency.wa.gov.au/warnings/69c3670c8ecdafcd633709bf</cap:web>
+            <cap:contact>DFES Media on 9395 9543</cap:contact>
+            <cap:parameter>
+              <cap:valueName>DFES_Region</cap:valueName>
+              <cap:value>PILBARA</cap:value>
+            </cap:parameter>
+            <cap:parameter>
+              <cap:valueName>CAD_ID</cap:valueName>
+              <cap:value/>
+            </cap:parameter>
+            <cap:parameter>
+              <cap:valueName>Agency_Responsible</cap:valueName>
+              <cap:value>Parks and Wildlife Service at the Department of Biodiversity, Conservation and Attractions</cap:value>
+            </cap:parameter>
+            <cap:resource>
+              <cap:resourceDesc>map</cap:resourceDesc>
+              <cap:mimeType>text/html</cap:mimeType>
+            </cap:resource>
+            <cap:area>
+              <cap:areaDesc/>
+              <cap:alertLevel>Facility or Park Closure</cap:alertLevel>
+              <cap:polygon/>
+              <cap:circle>-22.57225252389948,113.72833900605667 0.0</cap:circle>
+              <cap:geocode>
+                <cap:valueName>urn:oasis:names:tc:emergency:cap:1.2:profile:CAP-AU:1.0:ISO 3166-2 </cap:valueName>
+                <cap:value>AU-WA</cap:value>
+              </cap:geocode>
+            </cap:area>
+          </cap:info>
+        </cap:alert>
+      </edxlde:embeddedXMLContent>
+    </edxlde:xmlContent>
+  </edxlde:contentObject>
+</edxlde:EDXLDistribution>

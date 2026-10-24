@@ -87,6 +87,8 @@ export interface ApiClient {
   account(accountNumber: string): Promise<CaseItem>;
   /** The weather outlook: the week's forecast and the customers it puts at risk. Optional so test clients can leave it out. */
   outlook?(): Promise<Outlook>;
+  /** Current Emergency WA warnings, for the outlook map. Optional so test clients can leave it out. */
+  emergency?(): Promise<EmergencyFeed>;
   /** The risk model's card. Optional so test clients can leave it out. */
   riskModel?(): Promise<RiskModelCard>;
   assign(assigneeUserId: string, items: VersionedId[]): Promise<MutationResult>;
@@ -139,6 +141,12 @@ export type Outlook =
     totals: { covered: number; uncovered: number; exposed: number; vulnerable: number; act: number; watch: number };
     customers: OutlookCustomer[];
   };
+
+export interface EmergencyAlert {
+  id: string; headline: string; event: string; category: string; alertLevel: string; severity: string; sent: string | null;
+  areaDesc: string; web: string | null; polygons: [number, number][][]; centre: [number, number] | null;
+}
+export interface EmergencyFeed { available: boolean; fetchedAt: string | null; error: string | null; alerts: EmergencyAlert[] }
 
 export interface VersionedId { caseId: string; expectedVersion: number }
 
@@ -201,6 +209,7 @@ export function createApiClient(getUser: () => string, base = ""): ApiClient {
     overview: (id) => req("GET", `/api/cases/${encodeURIComponent(id)}/overview`),
     riskModel: () => req("GET", "/api/model/risk"),
     outlook: () => req("GET", "/api/outlook"),
+    emergency: () => req("GET", "/api/emergency"),
     account: (accountNumber) => req("GET", `/api/accounts/${encodeURIComponent(accountNumber)}`),
     assign: (assigneeUserId, items) => req("POST", "/api/cases/bulk/assignment", { assigneeUserId, items }),
     setStatus: (status, items) =>

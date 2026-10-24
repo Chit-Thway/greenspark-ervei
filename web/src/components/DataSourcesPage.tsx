@@ -172,6 +172,23 @@ export function DataSourcesPage({ client }: { client: ApiClient }) {
         <p className="hint">Each dataset postcode is matched to its nearest forecast town (Perth suburbs to the nearest metro point). The server starts with the sample heatwave (set <code>WEATHER_MODE</code> to <code>live</code> or <code>off</code> to change that); a switch above lasts until the server restarts. Sample evidence is marked "(sample forecast)".</p>
       </section>
 
+      <section className="case-card" aria-labelledby="ds-ewa">
+        <h2 id="ds-ewa">Live data: Emergency WA</h2>
+        <p className="hint">
+          The Department of Fire and Emergency Services' public warnings feed (<code>api.emergency.wa.gov.au/v1/capau</code>), in the
+          CAP-AU format, fetched by the server every 5 minutes. Shown on the Weather outlook map as a layer that can be switched off;
+          it doesn't change any signal, priority or outlook tier.
+        </p>
+        <div className="table-scroll">
+          <table className="mini-table ds-table">
+            <thead><tr><th scope="col">What's in it</th><th scope="col">What is used</th></tr></thead>
+            <tbody>
+              <tr><td>Every current warning in WA (bushfires, floods, storms, closures and more), each with its alert level, the area it covers as an outline or a centre point, instructions and a link.</td><td>Headline, alert level (coloured as Emergency WA does: yellow advice, orange watch and act, red emergency warning), the area's outline and centre, area description and the link to the warning. Cancelled alerts are left out.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
       <section className="case-card" aria-labelledby="ds-files">
         <h2 id="ds-files">Files <span className="pill">{SOURCES.length}</span></h2>
         <div className="table-scroll">
