@@ -573,3 +573,10 @@ button.kpi:hover { border-color: #b3bac5; }
 .solution-top .rank-when { margin-bottom: 0; }
 .solutions .solution-facts { padding: 8px 12px 0; gap: 4px; }
 .solutions .solution > a.sub { padding: 4px 12px 0; }
+/* One chevron for every dropdown, with room beside it (browsers draw their own tight to the edge) */
+select:not([multiple]) {
+  appearance: none; -webkit-appearance: none; padding-right: 34px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%235e6c84' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 12px center; background-size: 12px 8px;
+}
+select:not([multiple]):disabled { opacity: .6; }
