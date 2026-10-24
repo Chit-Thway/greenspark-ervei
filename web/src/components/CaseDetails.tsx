@@ -5,7 +5,6 @@ import { CaseFlowModal } from "../admin/CaseFlowModal";
 import { RiskCard } from "./PredictionsPage";
 import { isModifiedClick } from "../route";
 import { PERIOD_TEXT, readableDates } from "../domain/format";
-import { PriorityBadge } from "./Primitives";
 import { ageOn, PRIORITY_PROVIDER } from "../domain/types";
 import { Mark, AccountHistory, AccountSignals, ContactHistory, date, SupplyAndCollections, SupportHistory, UtilityAccount } from "./AccountDetails";
 import { CaseGlance } from "./CaseGlance";
@@ -250,13 +249,8 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
   return (
     <article className="case-page" aria-labelledby="case-title">
       <header className="case-head">
-        <span className="eyebrow">Account · {person?.accountNumber ?? "Not recorded"}</span>
+        <span className="eyebrow">{person?.accountNumber ?? "No account number"} · {person?.suburb}, {person?.state} · Assigned to {assignedUser?.displayName ?? c.workflow.assignedToUserId ?? "nobody"}</span>
         <h1 id="case-title" tabIndex={-1} ref={heading}>{person?.displayName ?? "Unknown person"}</h1>
-        <p className="sub">{person?.suburb}, {person?.state}</p>
-        <div className="ov-row">
-          <PriorityBadge c={c} />
-          <span className="sub">Assigned to {assignedUser?.displayName ?? c.workflow.assignedToUserId ?? "nobody"}</span>
-        </div>
       </header>
 
       <CaseGlance item={item} data={data} plan={supportAi?.plan ?? null} planFailed={!!supportAi?.error} onOpen={setSection} client={props.client} />
