@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import type { ApiClient, EmergencyFeed, HazardKind, Outlook, OutlookCustomer } from "../data/api";
 import { accountHref, isModifiedClick } from "../route";
-import { PRIORITY_TEXT, STATUS_LABELS } from "../domain/format";
+import { PRIORITY_TEXT } from "../domain/format";
 import { band, percent } from "./predictionText";
 import { ALERT_LEVELS, GROUP_LABEL, HAZARD_HINT, HAZARD_ICON, HAZARD_LABEL, alertColor, dayDate, isWarning, dayName, tempColor } from "./outlookText";
 
@@ -228,7 +228,7 @@ export function OutlookPage({ client, navigate }: { client: Pick<ApiClient, "out
               <thead>
                 <tr>
                   <th scope="col">Outlook</th><th scope="col">Customer</th><th scope="col">Weather coming</th>
-                  <th scope="col">Why they’re vulnerable</th><th scope="col">Predicted risk <span className="sim">90 days</span></th><th scope="col">Case</th>
+                  <th scope="col">Why they’re vulnerable</th><th scope="col">Predicted risk <span className="sim">90 days</span></th><th scope="col">Priority</th>
                 </tr>
               </thead>
               <tbody>
@@ -260,7 +260,6 @@ export function OutlookPage({ client, navigate }: { client: Pick<ApiClient, "out
                       <td>{c.risk && b ? <span className={`pred-pill pred-${b.id}`} title={`${percent(c.risk.probability)} chance of any harm in 90 days`}>{b.text} · {percent(c.risk.probability)}</span> : <span className="sub">No score</span>}</td>
                       <td>
                         {c.priority ? <span className={`badge badge-${c.priority.label}`}>{PRIORITY_TEXT[c.priority.label as keyof typeof PRIORITY_TEXT] ?? c.priority.label}</span> : <span className="badge badge-none">No priority</span>}
-                        {c.status ? <span className={`sub status status-${c.status}`}>{STATUS_LABELS[c.status as keyof typeof STATUS_LABELS] ?? c.status}</span> : null}
                       </td>
                     </tr>
                   );
