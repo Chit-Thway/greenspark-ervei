@@ -580,3 +580,4 @@ select:not([multiple]) {
   background-repeat: no-repeat; background-position: right 12px center; background-size: 12px 8px;
 }
 select:not([multiple]):disabled { opacity: .6; }
+.map-keys .map-legend-symbols { order: 2; margin-left: auto; }
