@@ -637,3 +637,7 @@ select:not([multiple]):disabled { opacity: .6; }
 .pb-table tfoot th, .pb-table tfoot td { border-top: 2px solid var(--border); font-weight: 600; }
 .pb-rising { font-size: 12px; color: var(--urgent); font-weight: 600; white-space: nowrap; }
 .pb-table tbody th { color: var(--fg); font-weight: 500; white-space: normal; } .pb-table tfoot th { color: var(--fg); white-space: normal; }
+.case-wx-list li.has-icon { grid-template-columns: 26px minmax(0, 1fr); align-items: start; gap: 8px; }
+.case-wx-list li.has-icon > div { display: grid; gap: 1px; }
+.case-wx-list .wx-icon { font-size: 20px; line-height: 1.1; text-align: center; margin-top: 1px; }
+.case-wx-list strong { font-size: 13px; }

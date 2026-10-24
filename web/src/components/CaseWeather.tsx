@@ -7,6 +7,8 @@ import { HAZARD_ICON, HAZARD_LABEL, alertColor, dayDate, dayName, isWarning, km,
 const CaseWeatherMap = lazy(() => import("./CaseWeatherMap").then((m) => ({ default: m.CaseWeatherMap })));
 /** Warnings this close to the suburb (to its centre or any point of its area) are shown. */
 const NEAR_KM = 150;
+/** The outlook's symbols for the three weather signals. */
+const SIGNAL_ICON: Record<string, string> = { wx_extreme_heat: HAZARD_ICON.heat, wx_fire_danger: HAZARD_ICON.fire, wx_warning: HAZARD_ICON.warning };
 
 /** The customer's week of weather: the Bureau's forecast for their area, its weather signals, and Emergency WA warnings nearby. */
 export function CaseWeather({ item, client }: { item: CaseItem; client?: Pick<ApiClient, "emergency"> }) {
@@ -56,16 +58,17 @@ export function CaseWeather({ item, client }: { item: CaseItem; client?: Pick<Ap
 
           <p className="block-label">Weather signals</p>
           {signals.length ? (
-            <ul className="plain case-wx-list">{signals.map((s) => <li key={s.id}><strong>{s.name}</strong><span className="sub">{readableDates(s.evidence)}</span></li>)}</ul>
+            <ul className="plain case-wx-list">{signals.map((s) => <li key={s.id} className="has-icon"><span className="wx-icon" aria-hidden="true">{SIGNAL_ICON[s.id] ?? "•"}</span><div><strong>{s.name}</strong><span className="sub">{readableDates(s.evidence)}</span></div></li>)}</ul>
           ) : <p className="muted">None: nothing in the forecast reaches the signal limits.</p>}
 
           <p className="block-label">Emergency WA warnings within {NEAR_KM} km</p>
           {!feed ? <p className="muted">Loading warnings…</p> : !feed.available ? <p className="muted">Emergency WA isn’t available right now.</p> : near.length ? (
             <ul className="plain case-wx-list">
               {near.map(({ a, km: d }) => (
-                <li key={a.id}>
-                  <span className="case-wx-alert"><i style={{ background: alertColor(a.alertLevel) }} aria-hidden="true" /><strong>{a.headline || a.alertLevel}</strong></span>
-                  <span className="sub">{a.alertLevel} · {d < 1 ? "under 1 km away" : `${Math.round(d)} km away`}{a.web ? <> · <a href={a.web} target="_blank" rel="noreferrer">Details</a></> : null}</span>
+                <li key={a.id} className="has-icon">
+                  <svg className="wx-icon" viewBox="0 0 22 20" width="22" height="20" aria-hidden="true"><path d="M11 1.5 L20.5 18.5 H1.5 Z" fill={alertColor(a.alertLevel)} stroke="#253858" strokeWidth="1.5" strokeLinejoin="round" /><path d="M11 7v5" stroke="#253858" strokeWidth="2" strokeLinecap="round" /><circle cx="11" cy="15" r="1.1" fill="#253858" /></svg>
+                  <div><strong>{a.headline || a.alertLevel}</strong>
+                  <span className="sub">{a.alertLevel} · {d < 1 ? "under 1 km away" : `${Math.round(d)} km away`}{a.web ? <> · <a href={a.web} target="_blank" rel="noreferrer">Details</a></> : null}</span></div>
                 </li>
               ))}
             </ul>

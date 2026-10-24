@@ -4,8 +4,7 @@ import type { ApiClient, CaseItem, Catalog, ContactMethod, PlanKind, PlanStep, S
 import { CaseFlowModal } from "../admin/CaseFlowModal";
 import { RiskCard } from "./PredictionsPage";
 import { isModifiedClick } from "../route";
-import { describeFollowUp, PERIOD_TEXT, readableDates, STATUS_LABELS } from "../domain/format";
-import { isResolved } from "../domain/query";
+import { PERIOD_TEXT, readableDates } from "../domain/format";
 import { PriorityBadge } from "./Primitives";
 import { ageOn, PRIORITY_PROVIDER } from "../domain/types";
 import { Mark, AccountHistory, AccountSignals, ContactHistory, date, SupplyAndCollections, SupportHistory, UtilityAccount } from "./AccountDetails";
@@ -41,7 +40,6 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
   const heading = useRef<HTMLHeadingElement>(null);
   const field = (id: string) => data.evidenceFields.find((f) => f.id === id);
   const assignedUser = data.users.find((u) => u.id === c.workflow.assignedToUserId);
-  const fu = describeFollowUp(c.workflow.followUpAt, isResolved(c), data.asOf);
   const a = c.modelAssessment;
   const fromFlow = data.circumstanceSource === "flow";
   const [flowOpen, setFlowOpen] = useState(false);
@@ -257,8 +255,7 @@ export function CaseDetails(props: { data: Catalog; item: CaseItem; user: StaffU
         <p className="sub">{person?.suburb}, {person?.state}</p>
         <div className="ov-row">
           <PriorityBadge c={c} />
-          <span className={`sub follow-${fu.tone}`}>{fu.text}</span>
-          <span className="sub">Assigned to {assignedUser?.displayName ?? c.workflow.assignedToUserId ?? "nobody"} · {STATUS_LABELS[c.workflow.status]}</span>
+          <span className="sub">Assigned to {assignedUser?.displayName ?? c.workflow.assignedToUserId ?? "nobody"}</span>
         </div>
       </header>
 
