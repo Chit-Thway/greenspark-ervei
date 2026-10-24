@@ -243,7 +243,12 @@ export function OutlookPage({ client, navigate }: { client: Pick<ApiClient, "out
                       </td>
                       <td>
                         <span className="wx-kinds">{c.kinds.map((k) => <span key={k} title={HAZARD_LABEL[k]} aria-label={HAZARD_LABEL[k]}>{HAZARD_ICON[k]}</span>)}</span> {c.worst}
-                        {c.firstDate ? <span className="sub">From {c.firstDate === ready.today ? "today" : `${dayName(c.firstDate)} ${dayDate(c.firstDate)}`}</span> : null}
+                        {(() => {
+                          // A warning is in force now; the forecast's hot or dangerous days start on their own date.
+                          const when = c.firstDate ? (c.firstDate === ready.today ? "today" : `${dayName(c.firstDate)} ${dayDate(c.firstDate)}`) : null;
+                          const parts = [c.kinds.includes("warning") ? "Warning in place now" : null, when ? (c.kinds.includes("warning") ? `hot from ${when}` : `From ${when}`) : null].filter(Boolean);
+                          return parts.length ? <span className="sub">{parts.join(" · ")}</span> : null;
+                        })()}
                       </td>
                       <td>
                         <span className="need-chips">
