@@ -9,18 +9,19 @@ import { CaseTable } from "./components/CaseTable";
 import type { MapSummary } from "./data/api";
 // Leaflet only loads when the map view is first opened.
 const CaseMap = lazy(() => import("./components/CaseMap").then((m) => ({ default: m.CaseMap })));
-import { CaseDetails } from "./components/CaseDetails";
 import { accountHref, DATA_SOURCES_PATH, FLOWCHART_PATH, PRIORITY_MODEL_PATH, CASE_PAGE_PATH, RISK_MODEL_PATH, OUTLOOK_MODEL_PATH, QUEUE_PATH, FUNNEL_PATH, isModifiedClick, useRoute, type Page } from "./route";
-import { DataSourcesPage } from "./components/DataSourcesPage";
-import { PriorityModelPage } from "./components/PriorityModelPage";
-import { CasePageGuide } from "./components/CasePageGuide";
-import { PredictionsPage } from "./components/PredictionsPage";
-import { RiskModelPage } from "./components/RiskModelPage";
-import { OutlookModelPage } from "./components/OutlookModelPage";
 import { DemoSettings } from "./components/DemoSettings";
 import { OutlookPage } from "./components/OutlookPage";
-import { FunnelPage } from "./components/FunnelPage";
-import { AdminPage } from "./admin/AdminPage";
+// Pages other than the outlook load on first visit, which keeps the first download small.
+const CaseDetails = lazy(() => import("./components/CaseDetails").then((m) => ({ default: m.CaseDetails })));
+const DataSourcesPage = lazy(() => import("./components/DataSourcesPage").then((m) => ({ default: m.DataSourcesPage })));
+const PriorityModelPage = lazy(() => import("./components/PriorityModelPage").then((m) => ({ default: m.PriorityModelPage })));
+const CasePageGuide = lazy(() => import("./components/CasePageGuide").then((m) => ({ default: m.CasePageGuide })));
+const PredictionsPage = lazy(() => import("./components/PredictionsPage").then((m) => ({ default: m.PredictionsPage })));
+const RiskModelPage = lazy(() => import("./components/RiskModelPage").then((m) => ({ default: m.RiskModelPage })));
+const OutlookModelPage = lazy(() => import("./components/OutlookModelPage").then((m) => ({ default: m.OutlookModelPage })));
+const FunnelPage = lazy(() => import("./components/FunnelPage").then((m) => ({ default: m.FunnelPage })));
+const AdminPage = lazy(() => import("./admin/AdminPage").then((m) => ({ default: m.AdminPage })));
 
 interface Notice {
   kind: "success" | "error";
@@ -418,6 +419,7 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; o
         <DemoSettings client={client} users={catalog.users} user={user} onSwitchUser={props.onSwitchUser} />
       </header>
 
+      <Suspense fallback={<div className="state-screen" role="status"><p>Loading…</p></div>}>
       {props.page === "outlook" ? (
         <OutlookPage client={client} navigate={navigate} />
       ) : props.page === "funnel" ? (
@@ -587,6 +589,7 @@ function Workspace(props: { catalog: Catalog; user: StaffUser; client: Client; o
 
       </div>
       )}
+      </Suspense>
     </div>
   );
 }
