@@ -7,37 +7,37 @@ const QUESTIONS: Question[] = [
   {
     q: "How urgent is this?",
     answer: "A priority score out of 100 and a label (urgent, high, moderate, routine), worked out from what the case shows. A rising trend means something is getting worse: arrears growing, usage dropping, prepay credit running low or a disconnection warning. The line underneath names the circumstances that added the most.",
-    look: "Priority",
+    look: "How urgent; Priority and predicted risk",
   },
   {
     q: "What is going on with the account?",
     answer: "Warning signs found in the account, each with its evidence and dates, and an AI summary of what they show together. Whether power is on, warnings and disconnections, how bills and payments have gone, and whether usage has dropped compared with last year, which can mean the customer is going without.",
-    look: "Account signals, Bills, Collections and supply",
+    look: "The account; Account signals, Bills, Collections and supply",
   },
   {
     q: "Why do we think they need help?",
     answer: "Each circumstance flagged for this customer, such as a lost job or choosing between bills and food, with the signals behind it. A strong signal is good evidence on its own; supporting signals need another. Handling notes say how to raise sensitive topics.",
-    look: "Support areas and why",
+    look: "What's going on; Support areas and why",
   },
   {
     q: "What has the customer told us?",
     answer: "Every call, message and complaint, with the outcome, how the customer seemed, the words they used and the full transcript. Survey answers about their situation, and help they said they've had in the past year.",
-    look: "Contact history, Assistance already reported",
+    look: "Contact history; Support areas and why (Assistance already reported)",
   },
   {
     q: "What help have they already had?",
     answer: "Hardship programs (current and past, and why they ended), payment plans and whether they were kept, bill extensions, HUGS grants, and other help offered and whether it was accepted.",
-    look: "Support history, Utility account",
+    look: "Support history; Customer and account",
   },
   {
     q: "What can I offer, and when?",
     answer: "Every program, grant and referral that fits the flagged circumstances: what to do, who provides it, how to contact them and what to know about eligibility. The AI order ranks them for this customer, with a reason, a date to act by and how to get in touch.",
-    look: "Solutions to offer, Suggested plan",
+    look: "What to do first; Solutions to offer",
   },
   {
     q: "How should I contact them?",
     answer: "Their preferred channel, whether SMS and email are switched on, do not call, consent to proactive support contact, an interpreter, and anyone with authority to act for them.",
-    look: "Customer details, Utility account (Contact settings)",
+    look: "Customer and account (Customer details, Contact settings)",
   },
 ];
 
@@ -49,14 +49,16 @@ export function CasePageGuide() {
         <p className="eyebrow">BTS · Case page</p>
         <h1>Case page</h1>
         <p className="sub">
-          Each customer has one case, at <code>/accounts/:accountNumber</code>. The page brings together the account, what the flowchart
-          flags, what to offer, and the worker's own progress and notes. This page explains how a representative uses it and what happens behind it.
+          Each customer has one case, at <code>/accounts/:accountNumber</code>. The page opens on a summary of the case at a glance:
+          how urgent it is, the chance of harm, the account, what's going on, what to do first and electricity use. The full detail
+          sits in sections that open as modals, from a link on each card or the "More about this case" tiles. This page explains how a
+          representative uses it and what happens behind it.
         </p>
       </header>
 
       <section className="case-card" aria-labelledby="cp-info">
         <h2 id="cp-info">What the page tells you</h2>
-        <p className="hint">The page answers the questions you'd ask before getting in touch with a customer who may be struggling.</p>
+        <p className="hint">The page answers the questions you'd ask before getting in touch with a customer who may be struggling. "Where" names the summary card first, then the section to open for the detail.</p>
         <div className="table-scroll">
           <table className="mini-table ds-table">
             <thead><tr><th scope="col">Your question</th><th scope="col">What the page tells you</th><th scope="col">Where</th></tr></thead>
@@ -70,8 +72,8 @@ export function CasePageGuide() {
       <section className="case-card bts-facts" aria-labelledby="cp-before">
         <h2 id="cp-before">Before you get in touch</h2>
         <ul className="plain history">
-          <li><strong>Pick the case.</strong> The queue puts the most urgent first. Search by name, account number or suburb, or filter by priority, support need or status. Cases with a follow-up date show when it's due or overdue.</li>
-          <li><strong>Get the picture in a minute.</strong> Read the priority and why, then the Suggested plan. Together they say how urgent it is, what seems to be going on and what to do first.</li>
+          <li><strong>Pick the case.</strong> The Weather outlook lists customers this week's forecast could hurt, act now first. The case queue puts the most urgent first: search by name, account number or suburb, or filter by priority, support need or status. Cases with a follow-up date show when it's due or overdue.</li>
+          <li><strong>Get the picture in a minute.</strong> The summary cards say how urgent it is, what seems to be going on and what to do first, with the AI's plan and the top three solutions.</li>
           <li><strong>Check the evidence.</strong> Don't take the plan on trust. Look at the signals behind each circumstance: what was seen, when, and whether it is strong or supporting. Older evidence may no longer be true.</li>
           <li><strong>Check what's been tried.</strong> Support history shows a plan that broke or a program the customer left, which changes what to offer and how. Contact history shows what was said last time and whether anything was promised.</li>
           <li><strong>Decide what to offer and when.</strong> Use the AI order as a starting point, and the dates and contact methods as a guide. Check each solution's eligibility notes. Anything about being without power, or a safety risk, comes first.</li>
@@ -94,10 +96,8 @@ export function CasePageGuide() {
       <section className="case-card bts-facts" aria-labelledby="cp-after">
         <h2 id="cp-after">After you've been in touch</h2>
         <ul className="plain history">
-          <li><strong>Add a case note</strong> for every check-in, offer, referral and next step, so the next person knows what happened.</li>
-          <li><strong>Mark the suggestions reviewed</strong> once you've checked them, so others know they've been looked at.</li>
-          <li><strong>Set the status:</strong> In progress while you're working on it, Waiting when you're waiting on the customer or another organisation, Resolved when nothing more is needed.</li>
-          <li><strong>Hand it on if needed.</strong> A manager can assign the case to someone else.</li>
+          <li><strong>Set the status from the case queue:</strong> tick the case and use the bar above the list. In progress while you're working on it, Waiting when you're waiting on the customer or another organisation, Resolved when nothing more is needed. The case page shows who has the case and its status, but doesn't change them.</li>
+          <li><strong>Hand it on if needed.</strong> A manager can assign cases to someone else from the same bar.</li>
           <li><strong>Made a mistake?</strong> Assignment and status changes can be undone from the notice that appears for 20 seconds after saving.</li>
         </ul>
       </section>
@@ -115,18 +115,18 @@ export function CasePageGuide() {
       <section className="case-card bts-facts" aria-labelledby="cp-who">
         <h2 id="cp-who">Who can change what</h2>
         <ul className="plain history">
-          <li><strong>Assigned worker:</strong> review, status and notes on their own cases; edit their own notes.</li>
-          <li><strong>Manager:</strong> everything, on every case, plus assigning cases and editing anyone's notes.</li>
+          <li><strong>Assigned worker:</strong> the status of their own cases.</li>
+          <li><strong>Manager:</strong> the status of every case, and assigning cases.</li>
           <li><strong>Anyone else:</strong> can read the case but not change it.</li>
-          <li><strong>Demo view</strong> in the header switches who you are. It is a demo identity, not a real sign-in.</li>
+          <li><strong>Demo view</strong> in Demo settings (the gear in the header) switches who you are. It is a demo identity, not a real sign-in.</li>
         </ul>
       </section>
 
       <section className="case-card bts-facts" aria-labelledby="cp-data">
         <h2 id="cp-data">Behind the scenes: where the data lives</h2>
         <ul className="plain history">
-          <li><strong>Demo cases and people</strong> come from <code>data/synthetic/case-queue.v1.json</code>: 200 cases, 20 for each testing scenario, with fictional names, contact details and survey answers. The data's "today" is 16 Oct 2026.</li>
-          <li><strong>Utility accounts</strong> come from <code>data/synthetic/utility-accounts.v1.json</code>, taken from the synthetic WA dataset (see Data sources), with dates moved forward 473 days.</li>
+          <li><strong>Demo cases and people:</strong> one case for every open account in the synthetic WA dataset, 4,380 in all. 200 are testing scenarios (20 each) with fictional survey answers, from <code>data/synthetic/case-queue.v1.json</code>; the other 4,180 have no survey. Names, contact details and dates of birth are fictional. The data's "today" is 16 Oct 2026.</li>
+          <li><strong>Utility accounts</strong> come from the synthetic WA dataset (see Data sources), with dates moved forward 473 days. They are kept in their own database table and loaded only when a case is opened; each person stores a short summary of the signals their account raises, which is all the queue needs. The full import's files are too big for Git and are built by <code>scripts/generate-all-cases.mts</code>.</li>
           <li><strong>The flowchart</strong> is <code>data/admin/utility_hardship_mapping.json</code>: 110 signals (50 from account data, 57 asked of the customer, 3 from weather forecasts), 99 circumstances and 49 solutions. Edits on the Flowchart page are written straight back to this file.</li>
           <li><strong>Workers' changes</strong> are kept in a SQLite database on the server's disk (on Fly, the <code>/data</code> volume). Tables: <code>cases</code> (status, assignee, review, version), <code>notes</code>, <code>note_edits</code> (every earlier version of an edited note), and <code>workflow_actions</code> with <code>workflow_action_items</code> (the before and after of each change, for undo). The demo files are copied in on first start and never edited.</li>
         </ul>
@@ -137,7 +137,8 @@ export function CasePageGuide() {
         <ul className="plain history">
           <li><strong>One request,</strong> <code>GET /api/accounts/:accountNumber</code>, returns the case and the person with their whole utility account. Every request carries an <code>X-Demo-User</code> header naming the Demo view user, and the server refuses requests without a known user. Responses are gzipped.</li>
           <li><strong>The server enriches the case</strong> before sending it: it runs the flowchart over the case (below) and adds the flagged circumstances, support areas, solutions and priority. The result is kept in memory per case version and flowchart version, so opening the case again, or listing it in the queue, doesn't work it out again.</li>
-          <li><strong>The page then makes two AI requests</strong> (below) and draws the sections. The Account signals list is worked out again in the browser from the account, with the same rules as the server.</li>
+          <li><strong>The page then draws the summary</strong> and asks for the Suggested plan (below), which the What to do first card and the Solutions to offer section share. The sections are only drawn when opened; the Account signals list is worked out again in the browser from the account, with the same rules as the server, and its AI summary is asked for then.</li>
+          <li><strong>The open section is in the address</strong> as <code>#customer</code>, <code>#priority</code>, <code>#signals</code>, <code>#support</code>, <code>#solutions</code>, <code>#bills</code>, <code>#support-history</code>, <code>#supply</code> or <code>#contacts</code>, so a link can open it directly and Back closes it. Old <code>/accounts/:accountNumber/visual</code> links open the case page.</li>
         </ul>
       </section>
 
@@ -167,7 +168,7 @@ export function CasePageGuide() {
       <section className="case-card bts-facts" aria-labelledby="cp-ai">
         <h2 id="cp-ai">Behind the scenes: the AI</h2>
         <ul className="plain history">
-          <li><strong>Two requests per case:</strong> <code>GET /api/cases/:id/plan?kind=support</code> (the Suggested plan and solution order) and <code>kind=signals</code> (the Account signals summary). The browser asks the app's server, and the server calls the AI service with a key stored as a Fly secret, so the key never reaches the browser.</li>
+          <li><strong>Two requests per case:</strong> <code>GET /api/cases/:id/plan?kind=support</code> (the Suggested plan and solution order, when the case opens) and <code>kind=signals</code> (the Account signals summary, when that section opens). The browser asks the app's server, and the server calls the AI service with a key stored as a Fly secret, so the key never reaches the browser.</li>
           <li><strong>AI service:</strong> Claude (Anthropic) or Gemini (Google). The setting <code>AI_PROVIDER</code> (<code>claude</code> or <code>gemini</code>) picks one; without it, Claude is used when <code>ANTHROPIC_API_KEY</code> is set, otherwise Gemini with <code>GEMINI_API_KEY</code>. Either way there is a 30-second timeout.</li>
           <li><strong>Claude:</strong> Claude Haiku 5.5 (<code>claude-haiku-5-5</code>) at low effort, paid per use. <code>CLAUDE_MODEL</code> (plan) and <code>CLAUDE_SIGNALS_MODEL</code> (signals) change the model without a code change.</li>
           <li><strong>Gemini:</strong> Gemini Flash-Lite (<code>gemini-flash-lite-latest</code>) on the free tier, temperature 0.3. <code>GEMINI_MODEL</code> (plan) and <code>GEMINI_SIGNALS_MODEL</code> (signals) change the model.</li>
@@ -185,9 +186,9 @@ export function CasePageGuide() {
         <h2 id="cp-save">Behind the scenes: saving changes</h2>
         <ul className="plain history">
           <li><strong>Every change sends the case version the page loaded.</strong> If someone else changed the case since, the server refuses with a conflict and sends the latest version, which the page shows, so nobody overwrites another person's work. Each saved change adds 1 to the version.</li>
-          <li><strong>Permissions are checked on the server,</strong> not just hidden on the page: only the assigned worker or a manager can change a case, only managers can assign, and only a note's author or a manager can edit it.</li>
+          <li><strong>Permissions are checked on the server,</strong> not just hidden on the page: only the assigned worker or a manager can change a case, and only managers can assign.</li>
           <li><strong>Assignment and status changes can be undone</strong> from the notice shown for 20 seconds after saving, by the person who made them or a manager. Undo is refused if the case has changed since.</li>
-          <li><strong>Note edits keep history:</strong> the earlier text is saved in <code>note_edits</code> with who edited it and when.</li>
+          <li><strong>Notes and review:</strong> the server still keeps case notes (with every edit in <code>note_edits</code>) and the review status, but the case page no longer shows or changes them.</li>
           <li><strong>Changing a case clears its saved AI results,</strong> because the version changes, so the next view drafts fresh ones.</li>
         </ul>
       </section>

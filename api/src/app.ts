@@ -1,4 +1,6 @@
 import { timingSafeEqual } from "node:crypto";
+import { GroupTasks } from "./groupTasks";
+import { SOLUTIONS, type SolutionId } from "@greenspark/shared";
 import { join } from "node:path";
 import compression from "compression";
 import express, { type NextFunction, type Request, type Response } from "express";
@@ -12,12 +14,13 @@ import { MAX_BULK_ITEMS, WorkflowService, type MutationResult } from "./service"
 import type { Store } from "./store";
 import type { Clock } from "./clock";
 import { FlowFile } from "./flow";
+import type { Predictions } from "./predictions";
 import { draftPlan, PLAN_KINDS, perthToday, planFacts, type AiConfig, type ContactRules, type PlanKind, type SupportPlan } from "./plan";
-import { FlowError, detectWeatherSignals, evaluateCase, flowCatalog, parseOp, type FlowDoc, type WeatherSignal, type WeatherSnapshot } from "@greenspark/shared";
+import { FlowError, POSTCODE_LOCATION, POSTCODE_TOWN, customerOutlook, townHazards, detectWeatherSignals, evaluateCase, flowCatalog, parseOp, primarySupportGroup, supportGroupNeeds, type FlowDoc, type WeatherSignal, type WeatherSnapshot } from "@greenspark/shared";
 import { SyntheticModelAdapter, withAssessments, type ModelAdapter } from "./adapters";
 
 const STATUSES = ["new", "in_progress", "waiting", "resolved"] as const;
-const SORTS = ["priority_desc", "priority_asc", "followup", "name", "updated"] as const;
+const SORTS = ["priority_desc", "priority_asc", "risk_desc", "followup", "name", "updated"] as const;
 const VIEWS = ["all", "mine", "needs_review"] as const;
 
 const item = z.object({ caseId: z.string().min(1), expectedVersion: z.number().int().min(1) }).strict();
@@ -31,6 +34,14 @@ const noteBody = z.object({ text: z.string().trim().min(1), expectedVersion: z.n
 const reviewBody = z.object({ reviewStatus: z.enum(["needs_review", "reviewed"]), expectedVersion: z.number().int().min(1) }).strict();
 // The worker for a new case: required from a manager; a support worker's new case is theirs.
 const assignee = { assigneeUserId: z.string().min(1).optional() };
+const taskDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine((s) => { const d = new Date(`${s}T00:00:00Z`); return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === s; }, "Choose a valid date");
+const taskPeople = z.array(z.string().min(1).max(100)).min(1).max(50000).refine((ids) => new Set(ids).size === ids.length, "Duplicate customers");
+const taskSelection = z.object({ groupId: z.enum(["health", "supply", "bills", "concessions", "coaching", "monitor"]),
+  solutionId: z.enum(Object.keys(SOLUTIONS) as [SolutionId, ...SolutionId[]]), eventDate: taskDate,
+  scope: z.string().trim().min(1).max(150), personIds: taskPeople }).strict();
+const taskCreate = taskSelection.extend({ assigneeUserId: z.string().min(1), dueDate: taskDate }).strict();
+const taskProgress = z.object({ expectedVersion: z.number().int().min(1), personIds: taskPeople, completed: z.boolean() }).strict();
+const taskCancel = z.object({ expectedVersion: z.number().int().min(1) }).strict();
 const newCaseBody = z.union([
   z.object({ personId: z.string().min(1), ...assignee }).strict(),
   z.object({ displayName: z.string().trim().min(1).max(100), suburb: z.string().trim().min(1).max(100), ...assignee }).strict(),
@@ -65,14 +76,20 @@ export interface AppOptions {
   basicAuth?: string | null;
   /** AI service (Claude or Gemini), key and models for the AI summaries. No key turns them off. */
   ai?: AiConfig | null;
+  /** Keys for each AI service, so managers can switch the model while the server runs (demo settings). */
+  aiKeys?: Partial<Record<"claude" | "gemini", string>>;
   /** Bureau of Meteorology forecasts and warnings for weather signals. Without it there are none. */
   weather?: { current(): WeatherSnapshot | null; status(): unknown; setMode(mode: "live" | "demo" | "off"): Promise<void> };
+  /** The 90-day risk model's scores and model card. Without it there are no predictions. */
+  predictions?: Predictions | null;
+  /** Emergency WA warnings (DFES) for the outlook map. Without it the map has none. */
+  emergency?: { current(): { available: boolean; fetchedAt: string | null; error: string | null; alerts: unknown[] } };
 }
 
-/** A person as the case list needs them: everything but the utility account. */
+/** A person as the case list needs them: everything but the utility account and its signal summary. */
 function listPerson(p: Person | undefined): Person | null {
   if (!p) return null;
-  const { account: _account, ...rest } = p;
+  const { account: _account, signalSummary: _summary, ...rest } = p;
   return rest;
 }
 
@@ -83,6 +100,7 @@ export function createApp(store: Store, options: AppOptions = {}) {
   const model = options.modelAdapter ?? new SyntheticModelAdapter(store);
   const useModel = async () => !!options.modelAdapter || !(await currentFlowDoc());
   const service = new WorkflowService(store, clock);
+  const groupTasks = new GroupTasks(store, clock);
   const flow = options.flowFile ? new FlowFile(options.flowFile) : null;
   async function currentFlowDoc() { return flow ? flow.current() : null; }
   // Circumstances and solutions come from the Admin flow file when it is configured and valid; otherwise the
@@ -90,10 +108,47 @@ export function createApp(store: Store, options: AppOptions = {}) {
   const catalogs = new WeakMap<FlowDoc, ReturnType<typeof flowCatalog>>();
   const catalogOf = (doc: FlowDoc) => { let c = catalogs.get(doc); if (!c) catalogs.set(doc, (c = flowCatalog(doc))); return c; };
   const currentFlow = currentFlowDoc;
+  /** The 90-day risk scores for a person, by their dataset customer ID; null without an account or a score. */
+  const predictionFor = (person: Person | null) => {
+    const p = options.predictions;
+    const id = person && p ? store.sourceCustomerId(person.id) : null;
+    const score = id ? p!.byCustomer.get(id) ?? null : null;
+    if (!score) return null;
+    // Each outcome's average rate (on held-out customers), so the page can say how this customer compares.
+    const outcomes = Object.fromEntries(Object.entries(score.outcomes).map(([k, o]) => [k, { ...o, baseRate: p!.model.outcomes[k]?.test.baseRate ?? null }]));
+    return { ...score, outcomes, modelId: p!.model.id, horizonDays: p!.model.horizonDays };
+  };
+  /** Just the chance of any harm, for a queue row. */
+  const riskFor = (person: Person | null) => {
+    const p = predictionFor(person)?.outcomes.any_adverse;
+    return p ? { probability: p.probability, baseRate: p.baseRate } : null;
+  };
   /** The weather signals for a person's postcode, from the latest forecast, looking ahead from today in Perth. */
   const weatherFor = (person: Person | null): WeatherSignal[] => {
     const w = options.weather?.current() ?? null;
-    return person ? detectWeatherSignals(person.address?.postcode, person.account?.region.northOf26th ?? false, w, perthToday(clock())) : [];
+    return person ? detectWeatherSignals(person.address?.postcode, (person.account?.region.northOf26th ?? person.signalSummary?.northOf26th ?? false), w, perthToday(clock())) : [];
+  };
+  /** Where a person sits on the weather outlook (act now, watch or neither) and why, the same way the outlook works it out. */
+  const outlookFor = (person: Person, w: WeatherSnapshot, today: string) => {
+    const risk = riskFor(person);
+    const highRisk = !!risk && risk.baseRate !== null && risk.probability >= 4 * risk.baseRate;
+    const o = customerOutlook(person, w, today, highRisk, risk?.probability ?? 0);
+    return o ? { tier: o.tier, exposure: o.exposure, highRisk, sensitivity: o.sensitivity.map(({ id, group, label }) => ({ id, group, label })) } : null;
+  };
+  /** The week's forecast for a person's nearest forecast town, with its hazards, for the case page's weather card. */
+  const forecastFor = (person: Person | null) => {
+    const w = options.weather?.current() ?? null;
+    const postcode = person?.address?.postcode;
+    const townId = postcode ? POSTCODE_TOWN[postcode] : undefined;
+    const t = townId && w ? w.towns[townId] : undefined;
+    if (!w || !t || !townId) return null;
+    const today = perthToday(clock());
+    const north = person?.account?.region.northOf26th ?? person?.signalSummary?.northOf26th ?? false;
+    return {
+      townId, town: t.name, district: w.districts[t.district] ?? t.district, demo: w.demo, issuedAt: w.issuedAt,
+      location: POSTCODE_LOCATION[postcode!] ?? null, days: t.days.filter((d) => d.date >= today).slice(0, 7), hazards: townHazards(w, townId, north, today),
+      outlook: outlookFor(person!, w, today),
+    };
   };
   const weatherKey = () => { const w = options.weather?.current(); return w ? `${w.fetchedAt}` : ""; };
   // Each case's result is kept per flowchart version until the case changes (every change bumps its version)
@@ -146,6 +201,7 @@ export function createApp(store: Store, options: AppOptions = {}) {
       res.set("WWW-Authenticate", 'Basic realm="GreenSpark demo"').status(401).send("Authentication required.");
     });
   }
+  app.use("/api/group-tasks", express.json({ limit: "6mb" }));
   app.use(express.json({ limit: "100kb" }));
 
   app.get("/api/health", (_req, res) => { res.json({ ok: true, demo: true }); });
@@ -160,6 +216,27 @@ export function createApp(store: Store, options: AppOptions = {}) {
   const auth = (req: Request, res: Response, next: NextFunction) => { res.locals.actor = actorOf(req); next(); };
   app.use("/api", auth);
   const actor = (res: Response) => res.locals.actor as StaffUser;
+
+  app.get("/api/group-tasks", (req, res) => {
+    const eventDate = parse(taskDate, req.query.eventDate);
+    const a = actor(res);
+    res.json({ tasks: groupTasks.list(eventDate), actorId: a.id,
+      canAssignOthers: a.role === "manager", users: store.catalog.users.filter((u) => u.role === "support_worker") });
+  });
+  app.post("/api/group-tasks/preview", (req, res) => { res.json(groupTasks.preview(parse(taskSelection, req.body))); });
+  app.post("/api/group-tasks", (req, res) => {
+    res.status(201).json(groupTasks.create(actor(res), parse(taskCreate, req.body)));
+  });
+  app.get("/api/group-tasks/:taskId", (req, res) => {
+    const page = parse(z.coerce.number().int().min(1).max(100000), req.query.page ?? 1);
+    res.json(groupTasks.detail(String(req.params.taskId), page));
+  });
+  app.patch("/api/group-tasks/:taskId/progress", (req, res) => {
+    res.json({ task: groupTasks.update(actor(res), String(req.params.taskId), parse(taskProgress, req.body)) });
+  });
+  app.post("/api/group-tasks/:taskId/cancel", (req, res) => {
+    res.json({ task: groupTasks.cancel(actor(res), String(req.params.taskId), parse(taskCancel, req.body).expectedVersion) });
+  });
 
   app.get("/api/session", (_req, res) => {
     res.json({ user: actor(res), demoIdentity: true, isSynthetic: store.catalog.isSynthetic, asOf: store.catalog.asOf });
@@ -215,6 +292,104 @@ export function createApp(store: Store, options: AppOptions = {}) {
     res.json(await flow.apply(ops));
   });
 
+  // The map view: every case matching the filters, grouped by postcode, most urgent first in each.
+  app.get("/api/cases/map", async (req, res) => {
+    const data = await dataset();
+    const matches = sortCases(applyFilters(data, queryOf(req), actor(res).id), data.people, "priority_desc");
+    const people = new Map(data.people.map((p) => [p.id, p]));
+    const places = new Map<string, { postcode: string; suburb: string; lat: number; lng: number; count: number; labels: Record<string, number>; cases: { accountNumber: string | null; displayName: string; score: number | null; label: string | null; status: string }[] }>();
+    let unplaced = 0;
+    for (const c of matches) {
+      const p = people.get(c.personId);
+      const postcode = p?.address?.postcode ?? "";
+      const at = POSTCODE_LOCATION[postcode];
+      if (!p || !at) { unplaced++; continue; }
+      let place = places.get(postcode);
+      if (!place) places.set(postcode, (place = { postcode, suburb: p.suburb, lat: at[0], lng: at[1], count: 0, labels: {}, cases: [] }));
+      place.count++;
+      const label = c.modelAssessment.priority?.label ?? "none";
+      place.labels[label] = (place.labels[label] ?? 0) + 1;
+      // Enough to list in the panel; the rest are counted.
+      if (place.cases.length < 50) place.cases.push({ accountNumber: p.accountNumber ?? null, displayName: p.displayName, score: c.modelAssessment.priority?.score ?? null, label: c.modelAssessment.priority?.label ?? null, status: c.workflow.status });
+    }
+    res.json({ total: matches.length, unplaced, places: [...places.values()] });
+  });
+
+  let outlookCache: { key: string; body: unknown } | null = null;
+  const docIds = new WeakMap<FlowDoc, number>();
+  let nextDocId = 0;
+  // A flowchart edit is a new FlowDoc, so its identity is enough to tell versions apart.
+  const docId = (doc: FlowDoc) => { let n = docIds.get(doc); if (n === undefined) docIds.set(doc, (n = ++nextDocId)); return n; };
+  // The weather outlook: the next week's forecast for each town, and the customers it puts at risk, most at risk first.
+  app.get("/api/outlook", async (_req, res) => {
+    const w = options.weather?.current() ?? null;
+    const status = options.weather?.status() ?? { mode: "off" };
+    if (!w) return res.json({ available: false, weather: status });
+    const today = perthToday(clock());
+    // The same forecast, day, flowchart and case versions give the same outlook, so it is worked out once.
+    const doc = await currentFlow();
+    const key = `${w.fetchedAt}|${today}|${doc ? docId(doc) : "fixture"}|${store.casesSignature()}`;
+    if (outlookCache?.key === key) return res.json(outlookCache.body);
+    const data = await dataset();
+    const cases = new Map(data.cases.map((c) => [c.personId, c]));
+    let uncovered = 0;
+    const forecastDates = [...new Set(Object.values(w.towns).flatMap((t) => t.days.filter((d) => d.date >= today).map((d) => d.date)))].sort().slice(0, 7);
+    const rows = data.people.flatMap((p) => {
+      const risk = riskFor(p);
+      const highRisk = !!risk && risk.baseRate !== null && risk.probability >= 4 * risk.baseRate;
+      const o = customerOutlook(p, w, today, highRisk, risk?.probability ?? 0);
+      if (!o) { uncovered++; return []; }
+      const c = cases.get(p.id);
+      const supportSignals = [...o.sensitivity, ...(p.signalSummary?.account ?? []), ...(p.signalSummary?.selfReport ?? [])];
+      // The town's hazards are sent once with the town, so each row only says when it starts and the worst of it.
+      const worst = o.hazards.reduce<typeof o.hazards[number] | null>((a, h) => (!a || h.severity > a.severity ? h : a), null);
+      return [{
+        personId: o.personId, townId: o.townId, tier: o.tier, score: o.score, exposure: o.exposure,
+        // For the funnel: hot or dangerous weather and something that makes it harder to cope with.
+        vulnerable: o.exposure > 0 && (o.sensitivity.length > 0 || highRisk),
+        kinds: [...new Set(o.hazards.map((h) => h.kind))], dates: [...new Set(o.hazards.map((h) => h.date))], firstDate: o.hazards.find((h) => h.kind !== "warning")?.date ?? null, firstKind: o.hazards.find((h) => h.kind !== "warning")?.kind ?? null, worst: worst?.text ?? null,
+        sensitivity: o.sensitivity.map(({ id, group, label }) => ({ id, group, label })), accountNumber: p.accountNumber ?? null, displayName: p.displayName, suburb: p.suburb, postcode: p.address?.postcode ?? null, risk,
+        priority: c?.modelAssessment.priority ? { label: c.modelAssessment.priority.label, score: c.modelAssessment.priority.score } : null, status: c?.workflow.status ?? null,
+        group: primarySupportGroup(supportSignals), supportNeeds: supportGroupNeeds(supportSignals),
+        location: p.address?.postcode ? POSTCODE_LOCATION[p.address.postcode] ?? null : null,
+        assignedTo: c?.workflow.assignedToUserId ?? null,
+        daily: forecastDates.map((date) => {
+          const day = customerOutlook(p, w, date, highRisk, risk?.probability ?? 0, date)!;
+          return { date, tier: day.tier, exposure: day.exposure, score: day.score };
+        }),
+      }];
+    });
+    // Each town sits at the average of its postcodes; its own hazards use the north's heat limits above the 26th parallel.
+    const towns = Object.entries(w.towns).flatMap(([id, t]) => {
+      const spots = Object.entries(POSTCODE_TOWN).filter(([, town]) => town === id).flatMap(([pc]) => (POSTCODE_LOCATION[pc] ? [POSTCODE_LOCATION[pc]!] : []));
+      if (!spots.length) return [];
+      const lat = spots.reduce((n, s) => n + s[0], 0) / spots.length, lng = spots.reduce((n, s) => n + s[1], 0) / spots.length;
+      const here = rows.filter((r) => r.townId === id);
+      return [{
+        id, name: t.name, district: t.district, districtName: w.districts[t.district] ?? t.district, lat, lng, days: t.days.filter((d) => d.date >= today),
+        hazards: townHazards(w, id, lat > -26, today), customers: here.length, exposed: here.filter((r) => r.exposure > 0).length,
+        act: here.filter((r) => r.tier === "act").length, watch: here.filter((r) => r.tier === "watch").length,
+      }];
+    });
+    const dates = [...new Set(towns.flatMap((t) => t.days.map((d) => d.date)))].sort().slice(0, 7);
+    const days = dates.map((date) => {
+      const peak = towns.flatMap((t) => t.days.filter((d) => d.date === date && d.max !== null).map((d) => ({ max: d.max!, town: t.name }))).sort((a, b) => b.max - a.max)[0] ?? null;
+      const on = rows.filter((r) => r.dates.includes(date));
+      return { date, peak, exposed: on.length, act: on.filter((r) => r.tier === "act").length, watch: on.filter((r) => r.tier === "watch").length };
+    });
+    const listed = rows.filter((r) => r.tier).sort((a, b) => (a.tier === b.tier ? 0 : a.tier === "act" ? -1 : 1) || b.score - a.score);
+    const body = {
+      available: true, weather: status, today, demo: w.demo, issuedAt: w.issuedAt, days, towns,
+      warnings: w.warnings.filter((x) => x.districts.length).map((x) => ({ title: x.title, districts: x.districts.map((d) => w.districts[d] ?? d), expires: x.expires })),
+      totals: { covered: rows.length, uncovered, exposed: rows.filter((r) => r.exposure > 0).length, vulnerable: rows.filter((r) => r.vulnerable).length, act: listed.filter((r) => r.tier === "act").length, watch: listed.filter((r) => r.tier === "watch").length },
+      customers: listed.map(({ dates: _dates, vulnerable: _vulnerable, ...r }) => r),
+      // Group planning includes covered customers outside the priority list, without changing the funnel contract.
+      groupCustomers: rows.map(({ dates: _dates, vulnerable: _vulnerable, ...r }) => r),
+    };
+    outlookCache = { key, body };
+    res.json(body);
+  });
+
   app.get("/api/cases/ids", async (req, res) => {
     const data = await dataset();
     res.json({ ids: applyFilters(data, queryOf(req), actor(res).id).map((c) => c.id) });
@@ -224,13 +399,14 @@ export function createApp(store: Store, options: AppOptions = {}) {
     const q = queryOf(req);
     const me = actor(res).id;
     const data = await dataset();
-    const matches = sortCases(applyFilters(data, q, me), data.people, q.sort);
+    const byPerson = new Map(data.people.map((p) => [p.id, p]));
+    const matches = sortCases(applyFilters(data, q, me), data.people, q.sort, (c) => riskFor(byPerson.get(c.personId) ?? null)?.probability ?? null);
     const page = paginate(matches, q.page, q.pageSize);
     const people = new Map(data.people.map((x) => [x.id, x]));
     const f = facetCounts(data, q, me);
     res.json({
       // The list leaves out each person's utility account (the case page fetches it), which keeps pages small.
-      items: page.items.map((c) => ({ case: c, person: listPerson(people.get(c.personId)) })),
+      items: page.items.map((c) => ({ case: c, person: listPerson(people.get(c.personId)), risk: riskFor(people.get(c.personId) ?? null) })),
       total: page.total, page: page.page, pageSize: q.pageSize, pageCount: page.pageCount, from: page.from, to: page.to,
       counters: overviewCounters(data.cases, me),
       facets: {
@@ -245,27 +421,59 @@ export function createApp(store: Store, options: AppOptions = {}) {
 
   // The account number is the customer's main ID; each account has one case.
   app.get("/api/accounts/:accountNumber", async (req, res) => {
-    const person = store.getPersonByAccount(String(req.params.accountNumber));
+    const found = store.getPersonByAccount(String(req.params.accountNumber));
+    const person = found && store.getPersonWithAccount(found.id);
     const c = person && store.getCaseForPerson(person.id);
     if (!person || !c) throw new ApiError("not_found", "No case was found for that account number.");
-    res.json({ case: await enrichOne(c), person, weatherSignals: weatherFor(person) });
+    res.json({ case: await enrichOne(c), person, weatherSignals: weatherFor(person), forecast: forecastFor(person), prediction: predictionFor(person) });
   });
 
   app.get("/api/cases/:caseId/overview", async (req, res) => {
     const c = store.getCase(String(req.params.caseId));
     if (!c) throw new ApiError("not_found", "Case not found.");
-    const person = store.getPerson(c.personId);
-    res.json({ case: await enrichOne(c), person, weatherSignals: weatherFor(person) });
+    const person = store.getPersonWithAccount(c.personId);
+    res.json({ case: await enrichOne(c), person, weatherSignals: weatherFor(person), forecast: forecastFor(person), prediction: predictionFor(person) });
   });
 
+  // The risk model: what it predicts, how it was trained and how well it did on held-out customers.
+  app.get("/api/model/risk", (_req, res) => {
+    const m = options.predictions?.model;
+    if (!m) throw new ApiError("not_found", "No risk model is loaded on this server.");
+    res.json({ model: m, scoredCustomers: options.predictions!.byCustomer.size });
+  });
+
+  app.get("/api/emergency", (_req, res) => { res.json(options.emergency?.current() ?? { available: false, fetchedAt: null, error: null, alerts: [] }); });
   app.get("/api/weather", (_req, res) => { res.json(options.weather?.status() ?? { mode: "off", available: false }); });
-  // Managers switch the weather source for everyone: the sample heatwave, the Bureau's live data, or off.
+  // Anyone can switch the weather source for everyone: the sample heatwave, the Bureau's live data, or off.
   app.post("/api/weather/mode", async (req, res) => {
-    if (actor(res).role !== "manager") throw new ApiError("forbidden", "Only managers can change the weather source.");
     if (!options.weather) throw new ApiError("not_found", "Weather signals aren't set up on this server.");
-    const { mode } = parse(z.object({ mode: z.enum(["live", "demo", "off"]) }), req.body);
+    const { mode } = parse(z.object({ mode: z.enum(["live", "demo"]) }), req.body); // "off" is only for the WEATHER_MODE setting (tests)
     await options.weather.setMode(mode);
     res.json(options.weather.status());
+  });
+
+  // The AI model in use; anyone can switch it in the demo settings until the server restarts.
+  let ai: AiConfig | null = options.ai ?? null;
+  const AI_MODELS: { provider: "claude" | "gemini"; model: string; label: string }[] = [
+    { provider: "claude", model: "claude-haiku-5-5", label: "Claude Haiku 5.5 · fast, cheapest" },
+    { provider: "claude", model: "claude-sonnet-5-5", label: "Claude Sonnet 5.5 · stronger, costs more" },
+    { provider: "gemini", model: "gemini-flash-lite-latest", label: "Gemini Flash-Lite · free tier" },
+    { provider: "gemini", model: "gemini-flash-latest", label: "Gemini Flash · free tier, often busy" },
+  ];
+  const keyFor = (p: "claude" | "gemini") => options.aiKeys?.[p] ?? (ai?.provider === p ? ai.apiKey : null);
+  const aiStatus = () => ({
+    provider: ai?.provider ?? null, model: ai?.models.support ?? null, on: !!ai?.apiKey,
+    options: AI_MODELS.map((m) => ({ ...m, available: !!keyFor(m.provider) })),
+  });
+  app.get("/api/ai", (_req, res) => { res.json(aiStatus()); });
+  app.post("/api/ai", (req, res) => {
+    const { model } = parse(z.object({ model: z.string() }), req.body);
+    const choice = AI_MODELS.find((m) => m.model === model);
+    if (!choice) throw new ApiError("validation_failed", "That model isn't one of the options.");
+    const apiKey = keyFor(choice.provider);
+    if (!apiKey) throw new ApiError("validation_failed", `No ${choice.provider === "claude" ? "Anthropic" : "Gemini"} API key is set on the server.`);
+    ai = { provider: choice.provider, apiKey, models: { support: model, signals: model } };
+    res.json(aiStatus());
   });
 
   // Plans are kept per case version and flowchart version, so each case calls the AI once until it changes.
@@ -280,12 +488,13 @@ export function createApp(store: Store, options: AppOptions = {}) {
     const kind = (PLAN_KINDS.includes(req.query.kind as PlanKind) ? req.query.kind : "support") as PlanKind;
     // Weather signals change with the forecast, so they are part of the key: a new heat forecast drafts a new plan.
     const wxSignals = weatherFor(store.getPerson(raw.personId));
-    const key = `${kind}:${raw.id}@${raw.version}:${wxSignals.map((s) => s.evidence).join("|")}`;
+    // The model is part of the key too, so switching it drafts fresh summaries.
+    const key = `${kind}:${raw.id}@${raw.version}:${ai ? `${ai.provider}/${ai.models[kind]}` : "off"}:${wxSignals.map((s) => s.evidence).join("|")}`;
     let plan = byDoc.get(key);
     if (!plan) {
       const c = await enrichOne(raw);
       const cat = doc ? catalogOf(doc) : store.catalog;
-      const person = store.getPerson(c.personId);
+      const person = store.getPersonWithAccount(c.personId);
       const facts = planFacts(kind, c, person, cat, store.catalog.asOf, wxSignals);
       const acct = person?.account;
       const contact: ContactRules | undefined = acct ? {
@@ -293,7 +502,7 @@ export function createApp(store: Store, options: AppOptions = {}) {
         doNotCall: acct.contactPreferences.doNotCall, interpreter: acct.interpreterRequired,
       } : undefined;
       if (!facts) throw new ApiError("not_found", "Nothing to summarise for this case.");
-      plan = draftPlan(kind, facts, options.ai ?? null, c.recommendations.map((r) => r.recommendationId), contact, perthToday(clock()));
+      plan = draftPlan(kind, facts, ai, c.recommendations.map((r) => r.recommendationId), contact, perthToday(clock()));
       byDoc.set(key, plan);
       plan.catch(() => byDoc.delete(key)); // failures are retried on the next load
     }
@@ -302,7 +511,7 @@ export function createApp(store: Store, options: AppOptions = {}) {
 
   app.post("/api/cases", async (req, res) => {
     const c = service.createCase(actor(res), parse(newCaseBody, req.body));
-    res.status(201).json({ case: await enrichOne(c), person: store.getPerson(c.personId) });
+    res.status(201).json({ case: await enrichOne(c), person: store.getPersonWithAccount(c.personId) });
   });
 
   app.post("/api/cases/bulk/assignment", async (req, res) => {

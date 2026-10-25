@@ -136,7 +136,7 @@ describe("entities", () => {
       { type: "updateEntity", kind: "signal", id: "ask_lost_job", patch: { source: "rumour" } },
     ];
     expect(() => applyOp(base, { type: "batch", ops })).toThrow(FlowError);
-    expect(sig(base, "ask_lost_job").name).toBe("Lost job"); // the input document is never changed
+    expect(sig(base, "ask_lost_job").name).toBe("Says: lost job"); // the input document is never changed
   });
 });
 

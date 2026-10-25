@@ -22,7 +22,8 @@ test("Flowchart and Data sources are in the BTS menu", async ({ page }) => {
   await page.addInitScript((u) => localStorage.setItem("greenspark.demoUser", u), "staff-manager");
   await page.goto("/");
   const nav = page.getByRole("navigation", { name: "Main" });
-  await expect(nav.getByRole("link", { name: "Case queue" })).toHaveCount(0); // the logo leads to the queue
+  await expect(nav.getByRole("link", { name: "Weather outlook" })).toHaveAttribute("aria-current", "page"); // the home page
+  await expect(nav.getByRole("link", { name: "Case queue" })).toHaveAttribute("href", "/queue");
   await nav.getByRole("button", { name: /BTS/ }).click();
   await nav.getByRole("link", { name: "Flowchart" }).click();
   await expect(page).toHaveURL(/\/bts\/flowchart$/);
@@ -52,7 +53,7 @@ test("search finds an item and the utility filter narrows the board", async ({ p
   await openAdmin(page);
   await page.getByLabel("Find a signal, circumstance or solution").fill("lost job");
   await page.getByRole("list", { name: "Search results" }).getByRole("button").first().click();
-  await expect(page.getByRole("heading", { name: "Lost job" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Says: lost job" })).toBeVisible();
   await details(page).getByRole("button", { name: "Close details" }).click();
   const before = Number(await page.getByTestId("count-circumstances").innerText());
   await page.locator(`label[for="u-water"]`).click();

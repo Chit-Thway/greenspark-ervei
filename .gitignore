@@ -16,3 +16,10 @@ test-results/
 data/runtime/
 e2e/.runtime/
 e2e/test-results/
+
+# Full dataset import (large; regenerate with scripts/import-utility-dataset.mts --all and scripts/generate-all-cases.mts).
+# Only the compressed copies are committed (accounts.all.jsonl.gz, case-queue.all.json.gz), so Fly can build from GitHub;
+# after regenerating, recompress with: gzip -9 -k -f data/synthetic/accounts.all.jsonl data/synthetic/case-queue.all.json
+data/synthetic/utility-accounts.all.jsonl
+data/synthetic/case-queue.all.json
+data/synthetic/accounts.all.jsonl

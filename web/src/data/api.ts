@@ -1,4 +1,7 @@
 import type { FlowDoc, FlowOp, WeatherSignal } from "@greenspark/shared";
+import type { CreateGroupTask, GroupTask, GroupTaskDetail, GroupTaskPreview, GroupTaskSelection } from "@greenspark/shared";
+
+export interface GroupTaskList { tasks: GroupTask[]; users: StaffUser[]; actorId: string; canAssignOthers: boolean }
 import type {
   AssessmentStatus, CaseStatus, CircumstanceDefinition, EvidenceFieldDefinition, Person, QueueCase,
   QueueQuery, RecommendationDefinition, ReviewStatus, StaffUser, SupportArea,
@@ -17,7 +20,30 @@ export interface Catalog {
 }
 
 /** `weatherSignals`: the customer's weather signals from the latest forecast (case page only). */
-export interface CaseItem { case: QueueCase; person: Person | null; weatherSignals?: WeatherSignal[] }
+export interface CaseItem {
+  case: QueueCase; person: Person | null; weatherSignals?: WeatherSignal[]; prediction?: Prediction | null;
+  /** Case page only: the week's forecast for the customer's nearest forecast town, and the suburb's location. */
+  forecast?: CaseForecast | null;
+  /** Queue rows only: the predicted chance of any harm in 90 days, and its average. */
+  risk?: { probability: number; baseRate: number | null } | null;
+}
+
+/** The 90-day risk model's scores for one customer (case page only). */
+export interface Prediction {
+  modelId: string; horizonDays: number; sourceMonthEnd: string;
+  outcomes: Record<string, { probability: number; percentile: number; baseRate: number | null }>;
+  factors: { id: string; label: string; value: string | null; weight: number }[];
+}
+export interface RiskModelCard {
+  scoredCustomers: number;
+  model: {
+    id: string; type: string; horizonDays: number; trainingMonths: number; testMonths: number; heldOut: string; caveat: string;
+    inputs: { id: string; label: string; missing: boolean }[];
+    outcomes: Record<string, { label: string; weights: Record<string, number>; test: {
+      baseRate: number; auc: number; top5: { precision: number; recall: number }; calibration: { predicted: number; actual: number }[];
+    } }>;
+  };
+}
 
 export interface Facets {
   view: Record<"all" | "mine" | "needs_review", number>;
@@ -48,17 +74,34 @@ export interface FlowSnapshot { doc: FlowDoc | null; hash: string; problems: str
 export interface FlowSaved { hash: string; previousHash: string; changed: boolean }
 
 export interface ApiClient {
+  groupTasks?(eventDate: string): Promise<GroupTaskList>;
+  previewGroupTask?(selection: GroupTaskSelection): Promise<GroupTaskPreview>;
+  createGroupTask?(input: CreateGroupTask): Promise<{ task: GroupTask; preview: GroupTaskPreview }>;
+  groupTask?(id: string, page?: number): Promise<GroupTaskDetail>;
+  updateGroupTask?(id: string, input: { expectedVersion: number; personIds: string[]; completed: boolean }): Promise<{ task: GroupTask }>;
+  cancelGroupTask?(id: string, expectedVersion: number): Promise<{ task: GroupTask }>;
   /** The utility hardship flow behind the Flowchart page (a JSON file on the server). */
   flow(): Promise<FlowSnapshot>;
   weather?(): Promise<WeatherStatus>;
+  /** The AI model behind the summaries, and switching it (managers). */
+  ai?(): Promise<AiStatus>;
+  setAi?(model: string): Promise<AiStatus>;
   setWeatherMode?(mode: WeatherMode): Promise<WeatherStatus>;
   flowOps(ops: FlowOp[]): Promise<FlowSaved>;
   catalog(): Promise<Catalog>;
   list(q: QueueQuery): Promise<CaseListResponse>;
   matchingIds(q: QueueQuery): Promise<string[]>;
+  /** Every matching case grouped by postcode, for the map view. Optional so test clients can leave it out. */
+  mapSummary?(q: QueueQuery): Promise<MapSummary>;
   overview(caseId: string): Promise<CaseItem>;
   /** The case for an account number (each account has one case). */
   account(accountNumber: string): Promise<CaseItem>;
+  /** The weather outlook: the week's forecast and the customers it puts at risk. Optional so test clients can leave it out. */
+  outlook?(): Promise<Outlook>;
+  /** Current Emergency WA warnings, for the outlook map. Optional so test clients can leave it out. */
+  emergency?(): Promise<EmergencyFeed>;
+  /** The risk model's card. Optional so test clients can leave it out. */
+  riskModel?(): Promise<RiskModelCard>;
   assign(assigneeUserId: string, items: VersionedId[]): Promise<MutationResult>;
   setStatus(status: CaseStatus, items: VersionedId[]): Promise<MutationResult>;
   addNote(caseId: string, text: string, expectedVersion: number): Promise<QueueCase>;
@@ -74,8 +117,60 @@ export type ContactMethod = "phone" | "sms" | "email" | "letter";
 export interface PlanStep { id: string; reason: string; due?: string; method?: ContactMethod }
 export interface SupportPlan { text: string; model: string; generatedAt: string; order?: PlanStep[]; interpreter?: boolean }
 
+export interface AiStatus { provider: string | null; model: string | null; on: boolean; options: { provider: string; model: string; label: string; available: boolean }[] }
 export type WeatherMode = "live" | "demo" | "off";
 export interface WeatherStatus { mode: WeatherMode; fetchedAt: string | null; issuedAt: string | null; towns: number; warnings: string[]; error: string | null; available?: boolean }
+
+export interface MapPlace {
+  postcode: string; suburb: string; lat: number; lng: number; count: number; labels: Record<string, number>;
+  cases: { accountNumber: string | null; displayName: string; score: number | null; label: string | null; status: string }[];
+}
+export interface MapSummary { total: number; unplaced: number; places: MapPlace[] }
+
+export type HazardKind = "heat" | "hot" | "fire" | "warning";
+export interface OutlookHazard { kind: HazardKind; date: string; severity: number; text: string }
+export interface OutlookTown {
+  id: string; name: string; district: string; districtName: string; lat: number; lng: number;
+  days: { date: string; max: number | null; min: number | null; precis: string }[];
+  hazards: OutlookHazard[]; customers: number; exposed: number; act: number; watch: number;
+}
+export interface OutlookCustomer {
+  personId: string; townId: string; tier: "act" | "watch" | null; score: number; exposure: number;
+  /** `firstDate`: the first hot or dangerous forecast day (a warning is in force from today, so it is left out). */
+  kinds: HazardKind[]; firstDate: string | null; firstKind: HazardKind | null; worst: string | null;
+  sensitivity: { id: string; group: "health" | "supply" | "cost" | "isolation"; label: string }[];
+  accountNumber: string | null; displayName: string; suburb: string; postcode: string | null;
+  risk: { probability: number; baseRate: number | null } | null;
+  priority: { label: string; score: number } | null; status: string | null;
+  group?: import("@greenspark/shared").SupportGroupId;
+  supportNeeds?: import("@greenspark/shared").SupportGroupId[];
+  location?: [number, number] | null;
+  assignedTo?: string | null;
+  daily?: { date: string; tier: "act" | "watch" | null; exposure: number; score: number }[];
+}
+export type Outlook =
+  | { available: false; weather: WeatherStatus }
+  | {
+    available: true; weather: WeatherStatus; today: string; demo: boolean; issuedAt: string | null;
+    days: { date: string; peak: { max: number; town: string } | null; exposed: number; act: number; watch: number }[];
+    towns: OutlookTown[];
+    warnings: { title: string; districts: string[]; expires: string | null }[];
+    totals: { covered: number; uncovered: number; exposed: number; vulnerable: number; act: number; watch: number };
+    customers: OutlookCustomer[];
+    groupCustomers?: OutlookCustomer[];
+  };
+
+export interface CaseForecast {
+  townId: string; town: string; district: string; demo: boolean; issuedAt: string | null; location: [number, number] | null;
+  days: { date: string; max: number | null; min: number | null; precis: string }[]; hazards: OutlookHazard[];
+  /** Where the customer sits on the weather outlook this week, and the needs behind it. */
+  outlook: { tier: "act" | "watch" | null; exposure: number; highRisk: boolean; sensitivity: OutlookCustomer["sensitivity"] } | null;
+}
+export interface EmergencyAlert {
+  id: string; headline: string; event: string; category: string; alertLevel: string; severity: string; sent: string | null;
+  areaDesc: string; web: string | null; polygons: [number, number][][]; centre: [number, number] | null;
+}
+export interface EmergencyFeed { available: boolean; fetchedAt: string | null; error: string | null; alerts: EmergencyAlert[] }
 
 export interface VersionedId { caseId: string; expectedVersion: number }
 
@@ -119,8 +214,16 @@ export function createApiClient(getUser: () => string, base = ""): ApiClient {
     return json as T;
   }
   return {
+    groupTasks: (eventDate) => req("GET", `/api/group-tasks?eventDate=${encodeURIComponent(eventDate)}`),
+    previewGroupTask: (selection) => req("POST", "/api/group-tasks/preview", selection),
+    createGroupTask: (input) => req("POST", "/api/group-tasks", input),
+    groupTask: (id, page = 1) => req("GET", `/api/group-tasks/${encodeURIComponent(id)}?page=${page}`),
+    updateGroupTask: (id, input) => req("PATCH", `/api/group-tasks/${encodeURIComponent(id)}/progress`, input),
+    cancelGroupTask: (id, expectedVersion) => req("POST", `/api/group-tasks/${encodeURIComponent(id)}/cancel`, { expectedVersion }),
     flow: () => req("GET", "/api/admin/flow"),
     weather: () => req("GET", "/api/weather"),
+    ai: () => req("GET", "/api/ai"),
+    setAi: (model) => req("POST", "/api/ai", { model }),
     setWeatherMode: (mode) => req("POST", "/api/weather/mode", { mode }),
     flowOps: (ops) => req("POST", "/api/admin/flow/ops", { ops }),
     async catalog() {
@@ -131,8 +234,12 @@ export function createApiClient(getUser: () => string, base = ""): ApiClient {
       return { ...c, users: u.users, assignableUserIds: u.assignableUserIds };
     },
     list: (q) => req("GET", `/api/cases?${queryString(q)}`),
+    mapSummary: (q) => req("GET", `/api/cases/map?${queryString(q, false)}`),
     matchingIds: async (q) => (await req<{ ids: string[] }>("GET", `/api/cases/ids?${queryString(q, false)}`)).ids,
     overview: (id) => req("GET", `/api/cases/${encodeURIComponent(id)}/overview`),
+    riskModel: () => req("GET", "/api/model/risk"),
+    outlook: () => req("GET", "/api/outlook"),
+    emergency: () => req("GET", "/api/emergency"),
     account: (accountNumber) => req("GET", `/api/accounts/${encodeURIComponent(accountNumber)}`),
     assign: (assigneeUserId, items) => req("POST", "/api/cases/bulk/assignment", { assigneeUserId, items }),
     setStatus: (status, items) =>

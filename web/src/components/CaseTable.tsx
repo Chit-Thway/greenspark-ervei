@@ -4,6 +4,7 @@ import { describeFollowUp, shortName, STATUS_LABELS } from "../domain/format";
 import { isResolved } from "../domain/query";
 import { accountHref, isModifiedClick } from "../route";
 import { PriorityBadge } from "./Primitives";
+import { band, percent } from "./predictionText";
 
 export function CaseTable(props: {
   data: Catalog;
@@ -41,14 +42,15 @@ export function CaseTable(props: {
               />
             </th>
             <th scope="col">Person / case</th>
-            <th scope="col">Priority{data.circumstanceSource === "flow" ? null : <> <span className="sim">simulated</span></>}</th>
+            <th scope="col">Priority</th>
+            <th scope="col">Predicted risk <span className="sim">90 days</span></th>
             <th scope="col">Support needs</th>
             <th scope="col">Assigned to</th>
             <th scope="col">Status / follow-up</th>
           </tr>
         </thead>
         <tbody>
-          {rows.map(({ case: c, person }) => {
+          {rows.map((row) => { const { case: c, person } = row;
             const assignee = c.workflow.assignedToUserId ? users.get(c.workflow.assignedToUserId) : null;
             const fu = describeFollowUp(c.workflow.followUpAt, isResolved(c), data.asOf);
             const labels = c.circumstances
@@ -92,6 +94,12 @@ export function CaseTable(props: {
                 </td>
                 <td data-label="Priority">
                   <PriorityBadge c={c} />
+                </td>
+                <td data-label="Predicted risk">
+                  {row.risk ? (() => {
+                    const b = band(row.risk.probability, row.risk.baseRate);
+                    return <span className={`pred-pill pred-${b.id}`} title={`${percent(row.risk.probability)} chance of any harm in 90 days`}>{b.text} · {percent(row.risk.probability)}</span>;
+                  })() : <span className="muted">No prediction</span>}
                 </td>
                 <td data-label="Support needs">
                   {labels.length ? (

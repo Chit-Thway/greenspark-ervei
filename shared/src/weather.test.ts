@@ -45,6 +45,6 @@ describe("weather signals", () => {
   it("maps every postcode to a forecast town, and the sample heatwave reaches Perth", () => {
     for (const town of Object.values(POSTCODE_TOWN)) expect(town).toMatch(/^WA_PT\d{3}$/);
     expect(ids("6064", sampleWeather(today))).toEqual(["wx_extreme_heat", "wx_fire_danger", "wx_warning"]);
-    expect(detectWeatherSignals("6064", false, sampleWeather(today), today)[0]!.evidence).toContain("sample forecast");
+    expect(detectWeatherSignals("6064", false, sampleWeather(today), today)[0]!.evidence).not.toContain("sample"); // everything is a demo, so sample evidence isn't marked
   });
 });

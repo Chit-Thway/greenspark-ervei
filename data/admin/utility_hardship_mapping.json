@@ -1414,7 +1414,7 @@
     },
     {
       "id": "ask_lost_job",
-      "name": "Lost job",
+      "name": "Says: lost job",
       "source": "self_report",
       "detect": "I've lost my job or been stood down.",
       "example_rule": "answer == yes",
@@ -1434,7 +1434,7 @@
     },
     {
       "id": "ask_less_hours",
-      "name": "Less hours or income",
+      "name": "Says: less hours or income",
       "source": "self_report",
       "detect": "My hours or income have dropped.",
       "example_rule": "answer == yes",
@@ -1454,7 +1454,7 @@
     },
     {
       "id": "ask_irregular_income",
-      "name": "Irregular income",
+      "name": "Says: irregular income",
       "source": "self_report",
       "detect": "My income changes week to week (casual, gig, seasonal or FIFO work).",
       "example_rule": "answer == yes",
@@ -1474,7 +1474,7 @@
     },
     {
       "id": "ask_payment_problem",
-      "name": "Government payment problem",
+      "name": "Says: government payment problem",
       "source": "self_report",
       "detect": "My government payment is delayed, reduced or stopped.",
       "example_rule": "answer == yes",
@@ -1494,7 +1494,7 @@
     },
     {
       "id": "ask_concession_card",
-      "name": "Holds a concession card",
+      "name": "Says: holds a concession card",
       "source": "self_report",
       "detect": "I have a pension, health care or other concession card.",
       "example_rule": "answer == yes",
@@ -1518,7 +1518,7 @@
     },
     {
       "id": "ask_fixed_income",
-      "name": "Fixed income",
+      "name": "Says: fixed income",
       "source": "self_report",
       "detect": "I live on a pension or other fixed income.",
       "example_rule": "answer == yes",
@@ -1542,7 +1542,7 @@
     },
     {
       "id": "ask_business",
-      "name": "Small business struggling",
+      "name": "Says: small business struggling",
       "source": "self_report",
       "detect": "I run a small business that's struggling.",
       "example_rule": "answer == yes",
@@ -1566,7 +1566,7 @@
     },
     {
       "id": "ask_student",
-      "name": "Studying or apprenticeship",
+      "name": "Says: studying or apprenticeship",
       "source": "self_report",
       "detect": "I'm studying or doing an apprenticeship.",
       "example_rule": "answer == yes",
@@ -1590,7 +1590,7 @@
     },
     {
       "id": "ask_wage_issue",
-      "name": "Not paid properly",
+      "name": "Says: not paid properly",
       "source": "self_report",
       "detect": "My employer hasn't paid me what I'm owed.",
       "example_rule": "answer == yes",
@@ -1610,7 +1610,7 @@
     },
     {
       "id": "ask_housing_costs",
-      "name": "Housing costs up",
+      "name": "Says: housing costs up",
       "source": "self_report",
       "detect": "My rent or mortgage has gone up.",
       "example_rule": "answer == yes",
@@ -1630,7 +1630,7 @@
     },
     {
       "id": "ask_other_debts",
-      "name": "Other debts",
+      "name": "Says: other debts",
       "source": "self_report",
       "detect": "I have other debts (credit cards, buy now pay later, loans).",
       "example_rule": "answer == yes",
@@ -1650,7 +1650,7 @@
     },
     {
       "id": "ask_unexpected_cost",
-      "name": "Big unexpected cost",
+      "name": "Says: big unexpected cost",
       "source": "self_report",
       "detect": "I've had a big unexpected cost (car, vet, funeral, repairs).",
       "example_rule": "answer == yes",
@@ -1670,7 +1670,7 @@
     },
     {
       "id": "ask_support_family",
-      "name": "Supporting family",
+      "name": "Says: supporting family",
       "source": "self_report",
       "detect": "I'm supporting family members financially.",
       "example_rule": "answer == yes",
@@ -1690,7 +1690,7 @@
     },
     {
       "id": "ask_illness",
-      "name": "Serious illness or injury",
+      "name": "Says: serious illness or injury",
       "source": "self_report",
       "detect": "Someone in my home has a serious illness, injury or hospital stay.",
       "example_rule": "answer == yes",
@@ -1714,7 +1714,7 @@
     },
     {
       "id": "ask_medical_equipment",
-      "name": "Medical equipment at home",
+      "name": "Says: medical equipment at home",
       "source": "self_report",
       "detect": "We use medical or life support equipment at home.",
       "example_rule": "answer == yes",
@@ -1737,7 +1737,7 @@
     },
     {
       "id": "ask_temperature_need",
-      "name": "Medical need for heating/cooling",
+      "name": "Says: medical need for heating/cooling",
       "source": "self_report",
       "detect": "Someone needs heating or cooling because of a medical condition.",
       "example_rule": "answer == yes",
@@ -1755,7 +1755,7 @@
     },
     {
       "id": "ask_hard_to_manage",
-      "name": "Hard to manage bills right now",
+      "name": "Says: hard to manage bills right now",
       "source": "self_report",
       "detect": "Stress or my mental health makes it hard to deal with bills.",
       "example_rule": "answer == yes",
@@ -1775,7 +1775,7 @@
     },
     {
       "id": "ask_gambling_substance",
-      "name": "Gambling, alcohol or drugs affecting money",
+      "name": "Says: gambling, alcohol or drugs affecting money",
       "source": "self_report",
       "detect": "Gambling, alcohol or drugs are affecting our money.",
       "example_rule": "answer == yes",
@@ -1795,7 +1795,7 @@
     },
     {
       "id": "ask_disability",
-      "name": "Disability",
+      "name": "Says: disability",
       "source": "self_report",
       "detect": "Someone in my home has a disability.",
       "example_rule": "answer == yes",
@@ -1815,7 +1815,7 @@
     },
     {
       "id": "ask_new_baby",
-      "name": "New baby",
+      "name": "Says: new baby",
       "source": "self_report",
       "detect": "We're expecting or have a new baby.",
       "example_rule": "answer == yes",
@@ -1835,7 +1835,7 @@
     },
     {
       "id": "ask_household_grew",
-      "name": "Household grew",
+      "name": "Says: household grew",
       "source": "self_report",
       "detect": "More people are living with us now.",
       "example_rule": "answer == yes",
@@ -1859,7 +1859,7 @@
     },
     {
       "id": "ask_separated",
-      "name": "Separated",
+      "name": "Says: separated",
       "source": "self_report",
       "detect": "I've recently separated.",
       "example_rule": "answer == yes",
@@ -1879,7 +1879,7 @@
     },
     {
       "id": "ask_bereaved",
-      "name": "Bereaved",
+      "name": "Says: bereaved",
       "source": "self_report",
       "detect": "My partner or the account holder has died.",
       "example_rule": "answer == yes",
@@ -1903,7 +1903,7 @@
     },
     {
       "id": "ask_unsafe",
-      "name": "Unsafe at home or money controlled",
+      "name": "Says: unsafe at home or money controlled",
       "source": "self_report",
       "detect": "I don't feel safe at home, or someone controls my money.",
       "example_rule": "answer == yes",
@@ -1931,7 +1931,7 @@
     },
     {
       "id": "ask_debts_not_mine",
-      "name": "Debts I didn't agree to",
+      "name": "Says: debts I didn't agree to",
       "source": "self_report",
       "detect": "There are accounts or debts in my name I didn't agree to.",
       "example_rule": "answer == yes",
@@ -1955,7 +1955,7 @@
     },
     {
       "id": "ask_carer",
-      "name": "Carer",
+      "name": "Says: carer",
       "source": "self_report",
       "detect": "I care for someone.",
       "example_rule": "answer == yes",
@@ -1975,7 +1975,7 @@
     },
     {
       "id": "ask_single_parent",
-      "name": "Single parent",
+      "name": "Says: single parent",
       "source": "self_report",
       "detect": "I'm a single parent.",
       "example_rule": "answer == yes",
@@ -1995,7 +1995,7 @@
     },
     {
       "id": "ask_renting",
-      "name": "Renting",
+      "name": "Says: renting",
       "source": "self_report",
       "detect": "I rent my home.",
       "example_rule": "answer == yes",
@@ -2027,7 +2027,7 @@
     },
     {
       "id": "ask_inefficient_home",
-      "name": "Inefficient home",
+      "name": "Says: inefficient home",
       "source": "self_report",
       "detect": "My home is hard to heat or cool, has mould or damp, or old appliances.",
       "example_rule": "answer == yes",
@@ -2054,7 +2054,7 @@
     },
     {
       "id": "ask_moving",
-      "name": "Moving",
+      "name": "Says: moving",
       "source": "self_report",
       "detect": "I've just moved or am about to move.",
       "example_rule": "answer == yes",
@@ -2074,7 +2074,7 @@
     },
     {
       "id": "ask_embedded",
-      "name": "Pays building or park for power",
+      "name": "Says: pays building or park for power",
       "source": "self_report",
       "detect": "I live in an apartment, caravan park or retirement village and pay the building or park for power.",
       "example_rule": "answer == yes",
@@ -2091,7 +2091,7 @@
     },
     {
       "id": "ask_homeless",
-      "name": "No stable housing",
+      "name": "Says: no stable housing",
       "source": "self_report",
       "detect": "I don't have stable housing right now.",
       "example_rule": "answer == yes",
@@ -2115,7 +2115,7 @@
     },
     {
       "id": "ask_bill_higher",
-      "name": "Bill much higher",
+      "name": "Says: bill much higher",
       "source": "self_report",
       "detect": "My bill is much higher than usual.",
       "example_rule": "answer == yes",
@@ -2143,7 +2143,7 @@
     },
     {
       "id": "ask_bill_wrong",
-      "name": "Bill or meter seems wrong",
+      "name": "Says: bill or meter seems wrong",
       "source": "self_report",
       "detect": "I think my bill or meter is wrong.",
       "example_rule": "answer == yes",
@@ -2171,7 +2171,7 @@
     },
     {
       "id": "ask_leak",
-      "name": "Possible water leak",
+      "name": "Says: possible water leak",
       "source": "self_report",
       "detect": "I think I have a water leak.",
       "example_rule": "answer == yes",
@@ -2192,7 +2192,7 @@
     },
     {
       "id": "ask_rationing",
-      "name": "Going without",
+      "name": "Says: going without",
       "source": "self_report",
       "detect": "I go without heating, cooling, showers or internet to save money.",
       "example_rule": "answer == yes",
@@ -2212,7 +2212,7 @@
     },
     {
       "id": "ask_trade_offs",
-      "name": "Bills vs food or medicine",
+      "name": "Says: bills vs food or medicine",
       "source": "self_report",
       "detect": "I've had to choose between bills, food or medicine.",
       "example_rule": "answer == yes",
@@ -2240,7 +2240,7 @@
     },
     {
       "id": "ask_language",
-      "name": "Prefers another language",
+      "name": "Says: prefers another language",
       "source": "self_report",
       "detect": "I'd prefer to talk in a language other than English.",
       "example_rule": "answer == yes",
@@ -2264,7 +2264,7 @@
     },
     {
       "id": "ask_sensory",
-      "name": "Hearing, vision or speech needs",
+      "name": "Says: hearing, vision or speech needs",
       "source": "self_report",
       "detect": "I have hearing, vision or speech difficulties.",
       "example_rule": "answer == yes",
@@ -2284,7 +2284,7 @@
     },
     {
       "id": "ask_reading",
-      "name": "Bills hard to understand",
+      "name": "Says: bills hard to understand",
       "source": "self_report",
       "detect": "Bills are hard to read or understand.",
       "example_rule": "answer == yes",
@@ -2304,7 +2304,7 @@
     },
     {
       "id": "ask_no_internet",
-      "name": "No internet or phone credit",
+      "name": "Says: no internet or phone credit",
       "source": "self_report",
       "detect": "I don't have reliable internet, a smartphone or phone credit.",
       "example_rule": "answer == yes",
@@ -2328,7 +2328,7 @@
     },
     {
       "id": "ask_afraid_to_call",
-      "name": "Worried about contacting the company",
+      "name": "Says: worried about contacting the company",
       "source": "self_report",
       "detect": "I feel embarrassed or worried about contacting the company.",
       "example_rule": "answer == yes",
@@ -2348,7 +2348,7 @@
     },
     {
       "id": "ask_bad_experience",
-      "name": "Bad experience or unresolved complaint",
+      "name": "Says: bad experience or unresolved complaint",
       "source": "self_report",
       "detect": "I've had a bad experience with the company, or a complaint that wasn't fixed.",
       "example_rule": "answer == yes",
@@ -2376,7 +2376,7 @@
     },
     {
       "id": "ask_disaster",
-      "name": "Disaster or long outage",
+      "name": "Says: disaster or long outage",
       "source": "self_report",
       "detect": "I've been affected by fire, flood, storm or a long outage.",
       "example_rule": "answer == yes",
@@ -2400,7 +2400,7 @@
     },
     {
       "id": "ask_older",
-      "name": "Older person",
+      "name": "Says: older person",
       "source": "self_report",
       "detect": "I'm an older person.",
       "example_rule": "answer == yes",
@@ -2428,7 +2428,7 @@
     },
     {
       "id": "ask_new_to_australia",
-      "name": "New to Australia",
+      "name": "Says: new to Australia",
       "source": "self_report",
       "detect": "I'm new to Australia or an international student.",
       "example_rule": "answer == yes",
@@ -2452,7 +2452,7 @@
     },
     {
       "id": "ask_leaving_institution",
-      "name": "Recently left prison or care",
+      "name": "Says: recently left prison or care",
       "source": "self_report",
       "detect": "I've recently left prison or out-of-home care.",
       "example_rule": "answer == yes",
@@ -2476,7 +2476,7 @@
     },
     {
       "id": "ask_bill_other_name",
-      "name": "Bill in someone else's name",
+      "name": "Says: bill in someone else's name",
       "source": "self_report",
       "detect": "The bill is in someone else's name (ex-partner, housemate, landlord or someone who has died).",
       "example_rule": "answer == yes",
@@ -2508,7 +2508,7 @@
     },
     {
       "id": "ask_scam",
-      "name": "Suspicious bill or wrong payment",
+      "name": "Says: suspicious bill or wrong payment",
       "source": "self_report",
       "detect": "I got a suspicious bill, text or email, or paid the wrong account.",
       "example_rule": "answer == yes",
@@ -2528,7 +2528,7 @@
     },
     {
       "id": "ask_prepay",
-      "name": "Prepaid meter credit runs out",
+      "name": "Says: prepaid meter credit runs out",
       "source": "self_report",
       "detect": "My prepaid meter credit runs out.",
       "example_rule": "answer == yes",
@@ -2545,7 +2545,7 @@
     },
     {
       "id": "ask_work_from_home",
-      "name": "Work or study from home",
+      "name": "Says: work or study from home",
       "source": "self_report",
       "detect": "I work, study or run a business from home.",
       "example_rule": "answer == yes",
@@ -2569,7 +2569,7 @@
     },
     {
       "id": "ask_no_id",
-      "name": "No ID",
+      "name": "Says: no ID",
       "source": "self_report",
       "detect": "I don't have the ID needed to open an account.",
       "example_rule": "answer == yes",
@@ -2589,7 +2589,7 @@
     },
     {
       "id": "ask_pool_ev",
-      "name": "Pool, spa or electric car",
+      "name": "Says: pool, spa or electric car",
       "source": "self_report",
       "detect": "We have a pool or spa, or charge an electric car.",
       "example_rule": "answer == yes",
@@ -2607,7 +2607,7 @@
     },
     {
       "id": "ask_first_setup",
-      "name": "First time setting up utilities",
+      "name": "Says: first time setting up utilities",
       "source": "self_report",
       "detect": "This is my first time setting up utilities.",
       "example_rule": "answer == yes",
@@ -2627,7 +2627,7 @@
     },
     {
       "id": "ask_remote_community",
-      "name": "Remote community",
+      "name": "Says: remote community",
       "source": "self_report",
       "detect": "I live in a remote community.",
       "example_rule": "answer == yes",
@@ -2651,7 +2651,7 @@
     },
     {
       "id": "ask_bankruptcy",
-      "name": "Bankrupt or in a debt agreement",
+      "name": "Says: bankrupt or in a debt agreement",
       "source": "self_report",
       "detect": "I'm bankrupt or in a debt agreement.",
       "example_rule": "answer == yes",
@@ -2671,7 +2671,7 @@
     },
     {
       "id": "ask_attorney",
-      "name": "Managing bills for someone else",
+      "name": "Says: managing bills for someone else",
       "source": "self_report",
       "detect": "I manage bills for someone else (power of attorney or guardian).",
       "example_rule": "answer == yes",
@@ -5704,7 +5704,7 @@
     },
     {
       "id": "debt_spiral",
-      "name": "Debt spiral",
+      "name": "Possible debt spiral",
       "type": "knockon",
       "category": "knockon",
       "description": "Fees and arrears compound.",
@@ -5738,7 +5738,7 @@
     },
     {
       "id": "avoidance",
-      "name": "Avoiding bills until crisis",
+      "name": "Possibly avoiding bills until crisis",
       "type": "knockon",
       "category": "knockon",
       "description": "No engagement until disconnection.",

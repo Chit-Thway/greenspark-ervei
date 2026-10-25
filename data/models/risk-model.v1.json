@@ -1,0 +1,710 @@
+{
+ "id": "risk-90d-v1",
+ "type": "L2 logistic regression (one per outcome)",
+ "trainedOn": "customer_month_panel.csv, months with a complete 90-day outcome window",
+ "sourceEnd": "2025-06-30",
+ "horizonDays": 90,
+ "trainingMonths": 78266,
+ "testMonths": 19580,
+ "heldOut": "20% of customers (all their months), by a hash of the customer ID",
+ "inputs": [
+  {
+   "id": "account_age_days",
+   "label": "Years as a customer",
+   "missing": false,
+   "mean": 5.9574,
+   "sd": 2.89053
+  },
+  {
+   "id": "balance",
+   "label": "Balance owing",
+   "missing": false,
+   "mean": 1.43237,
+   "sd": 2.37293
+  },
+  {
+   "id": "overdue",
+   "label": "Amount overdue",
+   "missing": false,
+   "mean": 0.42455,
+   "sd": 1.40285
+  },
+  {
+   "id": "days_overdue_oldest",
+   "label": "Days the oldest bill is overdue",
+   "missing": false,
+   "mean": 0.39912,
+   "sd": 1.20501
+  },
+  {
+   "id": "late_bills_last_3",
+   "label": "Late bills (last 3)",
+   "missing": false,
+   "mean": 0.40807,
+   "sd": 0.85411
+  },
+  {
+   "id": "failed_direct_debits_90d",
+   "label": "Failed direct debits (90 days)",
+   "missing": false,
+   "mean": 0.00494,
+   "sd": 0.07051
+  },
+  {
+   "id": "disconnection_warnings_90d",
+   "label": "Disconnection warnings (90 days)",
+   "missing": false,
+   "mean": 0.12993,
+   "sd": 0.5767
+  },
+  {
+   "id": "extensions_this_fy",
+   "label": "Bill extensions this year",
+   "missing": false,
+   "mean": 0.0444,
+   "sd": 0.21786
+  },
+  {
+   "id": "on_payment_plan",
+   "label": "On a payment plan",
+   "missing": false,
+   "mean": 0.01388,
+   "sd": 0.11698
+  },
+  {
+   "id": "plans_broken_180d",
+   "label": "Payment plans broken (180 days)",
+   "missing": false,
+   "mean": 0.00879,
+   "sd": 0.09957
+  },
+  {
+   "id": "in_hardship_program",
+   "label": "In the hardship program",
+   "missing": false,
+   "mean": 0.01748,
+   "sd": 0.13105
+  },
+  {
+   "id": "concession_active",
+   "label": "Concession on the account",
+   "missing": false,
+   "mean": 0.30873,
+   "sd": 0.46197
+  },
+  {
+   "id": "life_support",
+   "label": "Life support registered",
+   "missing": false,
+   "mean": 0.03266,
+   "sd": 0.17774
+  },
+  {
+   "id": "medical_cooling_subsidy",
+   "label": "Medical cooling subsidy",
+   "missing": false,
+   "mean": 0.01014,
+   "sd": 0.10021
+  },
+  {
+   "id": "inbound_contacts_30d",
+   "label": "Contacts from the customer (30 days)",
+   "missing": false,
+   "mean": 0.07035,
+   "sd": 0.26912
+  },
+  {
+   "id": "payment_related_contacts_90d",
+   "label": "Payment-related contacts (90 days)",
+   "missing": false,
+   "mean": 0.07532,
+   "sd": 0.29125
+  },
+  {
+   "id": "complaints_90d",
+   "label": "Complaints (90 days)",
+   "missing": false,
+   "mean": 0.00645,
+   "sd": 0.08102
+  },
+  {
+   "id": "mean_contact_sentiment_90d",
+   "label": "Contact sentiment (90 days)",
+   "missing": false,
+   "mean": 0.01603,
+   "sd": 0.14724
+  },
+  {
+   "id": "mean_contact_sentiment_90d_missing",
+   "label": "Contact sentiment (90 days): not recorded",
+   "missing": true,
+   "mean": 0.79145,
+   "sd": 0.40627
+  },
+  {
+   "id": "import_kwh_30d",
+   "label": "Usage, last 30 days",
+   "missing": false,
+   "mean": 5.82541,
+   "sd": 0.42266
+  },
+  {
+   "id": "import_kwh_30d_vs_prior_90d_avg",
+   "label": "Usage vs the 3 months before",
+   "missing": false,
+   "mean": 1.12843,
+   "sd": 0.43398
+  },
+  {
+   "id": "import_kwh_30d_vs_prior_90d_avg_missing",
+   "label": "Usage vs the 3 months before: not recorded",
+   "missing": true,
+   "mean": 0,
+   "sd": 1
+  },
+  {
+   "id": "import_kwh_30d_vs_same_period_last_year",
+   "label": "Usage vs a year earlier",
+   "missing": false,
+   "mean": 0.40022,
+   "sd": 0.48585
+  },
+  {
+   "id": "import_kwh_30d_vs_same_period_last_year_missing",
+   "label": "Usage vs a year earlier: not recorded",
+   "missing": true,
+   "mean": 0.59031,
+   "sd": 0.49178
+  },
+  {
+   "id": "hot_days_90d",
+   "label": "Hot days (90 days)",
+   "missing": false,
+   "mean": 5.87136,
+   "sd": 8.96747
+  },
+  {
+   "id": "near_zero_usage_days_30d",
+   "label": "Days with almost no usage (30 days)",
+   "missing": false,
+   "mean": 0.0019,
+   "sd": 0.06694
+  },
+  {
+   "id": "disconnected_days_30d",
+   "label": "Days disconnected (30 days)",
+   "missing": false,
+   "mean": 0.01156,
+   "sd": 0.43864
+  },
+  {
+   "id": "outage_hours_30d",
+   "label": "Outage hours (30 days)",
+   "missing": false,
+   "mean": 0.10133,
+   "sd": 0.4371
+  }
+ ],
+ "features": [
+  {
+   "id": "account_age_days",
+   "label": "Years as a customer",
+   "kind": "days"
+  },
+  {
+   "id": "balance",
+   "label": "Balance owing",
+   "kind": "money"
+  },
+  {
+   "id": "overdue",
+   "label": "Amount overdue",
+   "kind": "money"
+  },
+  {
+   "id": "days_overdue_oldest",
+   "label": "Days the oldest bill is overdue",
+   "kind": "count"
+  },
+  {
+   "id": "late_bills_last_3",
+   "label": "Late bills (last 3)",
+   "kind": "plain"
+  },
+  {
+   "id": "failed_direct_debits_90d",
+   "label": "Failed direct debits (90 days)",
+   "kind": "plain"
+  },
+  {
+   "id": "disconnection_warnings_90d",
+   "label": "Disconnection warnings (90 days)",
+   "kind": "plain"
+  },
+  {
+   "id": "extensions_this_fy",
+   "label": "Bill extensions this year",
+   "kind": "plain"
+  },
+  {
+   "id": "on_payment_plan",
+   "label": "On a payment plan",
+   "kind": "flag"
+  },
+  {
+   "id": "plans_broken_180d",
+   "label": "Payment plans broken (180 days)",
+   "kind": "plain"
+  },
+  {
+   "id": "in_hardship_program",
+   "label": "In the hardship program",
+   "kind": "flag"
+  },
+  {
+   "id": "concession_active",
+   "label": "Concession on the account",
+   "kind": "flag"
+  },
+  {
+   "id": "life_support",
+   "label": "Life support registered",
+   "kind": "flag"
+  },
+  {
+   "id": "medical_cooling_subsidy",
+   "label": "Medical cooling subsidy",
+   "kind": "flag"
+  },
+  {
+   "id": "inbound_contacts_30d",
+   "label": "Contacts from the customer (30 days)",
+   "kind": "plain"
+  },
+  {
+   "id": "payment_related_contacts_90d",
+   "label": "Payment-related contacts (90 days)",
+   "kind": "plain"
+  },
+  {
+   "id": "complaints_90d",
+   "label": "Complaints (90 days)",
+   "kind": "plain"
+  },
+  {
+   "id": "mean_contact_sentiment_90d",
+   "label": "Contact sentiment (90 days)",
+   "kind": "ratio"
+  },
+  {
+   "id": "import_kwh_30d",
+   "label": "Usage, last 30 days",
+   "kind": "count"
+  },
+  {
+   "id": "import_kwh_30d_vs_prior_90d_avg",
+   "label": "Usage vs the 3 months before",
+   "kind": "ratio"
+  },
+  {
+   "id": "import_kwh_30d_vs_same_period_last_year",
+   "label": "Usage vs a year earlier",
+   "kind": "ratio"
+  },
+  {
+   "id": "hot_days_90d",
+   "label": "Hot days (90 days)",
+   "kind": "plain"
+  },
+  {
+   "id": "near_zero_usage_days_30d",
+   "label": "Days with almost no usage (30 days)",
+   "kind": "plain"
+  },
+  {
+   "id": "disconnected_days_30d",
+   "label": "Days disconnected (30 days)",
+   "kind": "plain"
+  },
+  {
+   "id": "outage_hours_30d",
+   "label": "Outage hours (30 days)",
+   "kind": "count"
+  }
+ ],
+ "outcomes": {
+  "any_adverse": {
+   "label": "Any of these harms",
+   "column": "label_any_adverse_next_90d",
+   "intercept": -6.44905,
+   "weights": {
+    "account_age_days": -0.04346,
+    "balance": 0.82336,
+    "overdue": 0.58803,
+    "days_overdue_oldest": 0.22187,
+    "late_bills_last_3": 0.14866,
+    "failed_direct_debits_90d": -0.01866,
+    "disconnection_warnings_90d": 0.06554,
+    "extensions_this_fy": 0.08292,
+    "on_payment_plan": 0.12709,
+    "plans_broken_180d": 0.0328,
+    "in_hardship_program": -0.01386,
+    "concession_active": 0.0935,
+    "life_support": -0.01921,
+    "medical_cooling_subsidy": 0.0185,
+    "inbound_contacts_30d": -0.0221,
+    "payment_related_contacts_90d": -0.05902,
+    "complaints_90d": 0.04811,
+    "mean_contact_sentiment_90d": -0.11399,
+    "mean_contact_sentiment_90d_missing": 0.02482,
+    "import_kwh_30d": 0.33787,
+    "import_kwh_30d_vs_prior_90d_avg": 0.15287,
+    "import_kwh_30d_vs_prior_90d_avg_missing": 0,
+    "import_kwh_30d_vs_same_period_last_year": 0.36827,
+    "import_kwh_30d_vs_same_period_last_year_missing": 0.51374,
+    "hot_days_90d": 0.05739,
+    "near_zero_usage_days_30d": 0.01265,
+    "disconnected_days_30d": -0.00022,
+    "outage_hours_30d": -0.05218
+   },
+   "test": {
+    "months": 19580,
+    "positives": 319,
+    "baseRate": 0.0163,
+    "auc": 0.961,
+    "top5": {
+     "share": 0.05,
+     "precision": 0.266,
+     "recall": 0.815
+    },
+    "top10": {
+     "share": 0.1,
+     "precision": 0.148,
+     "recall": 0.909
+    },
+    "calibration": [
+     {
+      "predicted": 0.1408,
+      "actual": 0.1481
+     },
+     {
+      "predicted": 0.0056,
+      "actual": 0.0051
+     },
+     {
+      "predicted": 0.0023,
+      "actual": 0.002
+     },
+     {
+      "predicted": 0.0012,
+      "actual": 0.0051
+     },
+     {
+      "predicted": 0.0009,
+      "actual": 0.001
+     },
+     {
+      "predicted": 0.0008,
+      "actual": 0.0005
+     },
+     {
+      "predicted": 0.0006,
+      "actual": 0.0005
+     },
+     {
+      "predicted": 0.0005,
+      "actual": 0.0005
+     },
+     {
+      "predicted": 0.0004,
+      "actual": 0
+     },
+     {
+      "predicted": 0.0003,
+      "actual": 0
+     }
+    ]
+   }
+  },
+  "disconnected": {
+   "label": "Disconnected for non-payment",
+   "column": "label_disconnected_next_90d",
+   "intercept": -7.85592,
+   "weights": {
+    "account_age_days": -0.0928,
+    "balance": 0.63107,
+    "overdue": 0.52596,
+    "days_overdue_oldest": 0.18527,
+    "late_bills_last_3": 0.23487,
+    "failed_direct_debits_90d": -0.02566,
+    "disconnection_warnings_90d": 0.03394,
+    "extensions_this_fy": 0.08666,
+    "on_payment_plan": -0.10325,
+    "plans_broken_180d": 0.08281,
+    "in_hardship_program": -0.70747,
+    "concession_active": -0.0034,
+    "life_support": -0.73548,
+    "medical_cooling_subsidy": 0.02925,
+    "inbound_contacts_30d": -0.05556,
+    "payment_related_contacts_90d": -0.06789,
+    "complaints_90d": -0.06767,
+    "mean_contact_sentiment_90d": -0.08667,
+    "mean_contact_sentiment_90d_missing": -0.21224,
+    "import_kwh_30d": 0.68598,
+    "import_kwh_30d_vs_prior_90d_avg": -0.31111,
+    "import_kwh_30d_vs_prior_90d_avg_missing": 0,
+    "import_kwh_30d_vs_same_period_last_year": 0.7734,
+    "import_kwh_30d_vs_same_period_last_year_missing": 1.02744,
+    "hot_days_90d": 0.0031,
+    "near_zero_usage_days_30d": -0.13176,
+    "disconnected_days_30d": 0.0048,
+    "outage_hours_30d": -0.04534
+   },
+   "test": {
+    "months": 19580,
+    "positives": 81,
+    "baseRate": 0.0041,
+    "auc": 0.976,
+    "top5": {
+     "share": 0.05,
+     "precision": 0.075,
+     "recall": 0.901
+    },
+    "top10": {
+     "share": 0.1,
+     "precision": 0.04,
+     "recall": 0.963
+    },
+    "calibration": [
+     {
+      "predicted": 0.0302,
+      "actual": 0.0398
+     },
+     {
+      "predicted": 0.0016,
+      "actual": 0.001
+     },
+     {
+      "predicted": 0.0008,
+      "actual": 0.0005
+     },
+     {
+      "predicted": 0.0005,
+      "actual": 0
+     },
+     {
+      "predicted": 0.0003,
+      "actual": 0
+     },
+     {
+      "predicted": 0.0003,
+      "actual": 0
+     },
+     {
+      "predicted": 0.0002,
+      "actual": 0
+     },
+     {
+      "predicted": 0.0001,
+      "actual": 0
+     },
+     {
+      "predicted": 0.0001,
+      "actual": 0
+     },
+     {
+      "predicted": 0,
+      "actual": 0
+     }
+    ]
+   }
+  },
+  "overdue_1000": {
+   "label": "Overdue debt passes $1,000",
+   "column": "label_overdue_over_1000_next_90d",
+   "intercept": -31.39125,
+   "weights": {
+    "account_age_days": 0.0367,
+    "balance": 8.40077,
+    "overdue": 2.29894,
+    "days_overdue_oldest": 0.57605,
+    "late_bills_last_3": -0.45351,
+    "failed_direct_debits_90d": -0.23057,
+    "disconnection_warnings_90d": -0.1036,
+    "extensions_this_fy": 0.12711,
+    "on_payment_plan": -0.1164,
+    "plans_broken_180d": 0.04888,
+    "in_hardship_program": 0.03583,
+    "concession_active": -0.10874,
+    "life_support": 0.03224,
+    "medical_cooling_subsidy": -0.16038,
+    "inbound_contacts_30d": -0.00824,
+    "payment_related_contacts_90d": -0.16221,
+    "complaints_90d": -0.06488,
+    "mean_contact_sentiment_90d": -0.01164,
+    "mean_contact_sentiment_90d_missing": -0.06753,
+    "import_kwh_30d": 0.75934,
+    "import_kwh_30d_vs_prior_90d_avg": -0.02905,
+    "import_kwh_30d_vs_prior_90d_avg_missing": 0,
+    "import_kwh_30d_vs_same_period_last_year": -0.07815,
+    "import_kwh_30d_vs_same_period_last_year_missing": 0.10728,
+    "hot_days_90d": 0.06143,
+    "near_zero_usage_days_30d": 0.08896,
+    "disconnected_days_30d": -0.0069,
+    "outage_hours_30d": -0.0453
+   },
+   "test": {
+    "months": 19580,
+    "positives": 90,
+    "baseRate": 0.0046,
+    "auc": 0.998,
+    "top5": {
+     "share": 0.05,
+     "precision": 0.091,
+     "recall": 0.989
+    },
+    "top10": {
+     "share": 0.1,
+     "precision": 0.046,
+     "recall": 1
+    },
+    "calibration": [
+     {
+      "predicted": 0.0396,
+      "actual": 0.046
+     },
+     {
+      "predicted": 0,
+      "actual": 0
+     },
+     {
+      "predicted": 0,
+      "actual": 0
+     },
+     {
+      "predicted": 0,
+      "actual": 0
+     },
+     {
+      "predicted": 0,
+      "actual": 0
+     },
+     {
+      "predicted": 0,
+      "actual": 0
+     },
+     {
+      "predicted": 0,
+      "actual": 0
+     },
+     {
+      "predicted": 0,
+      "actual": 0
+     },
+     {
+      "predicted": 0,
+      "actual": 0
+     },
+     {
+      "predicted": 0,
+      "actual": 0
+     }
+    ]
+   }
+  },
+  "plan_broken": {
+   "label": "A payment plan breaks",
+   "column": "label_plan_broken_next_90d",
+   "intercept": -7.50414,
+   "weights": {
+    "account_age_days": -0.05964,
+    "balance": 0.5543,
+    "overdue": 0.24513,
+    "days_overdue_oldest": 0.20832,
+    "late_bills_last_3": 0.30117,
+    "failed_direct_debits_90d": -0.02877,
+    "disconnection_warnings_90d": 0.09837,
+    "extensions_this_fy": 0.08994,
+    "on_payment_plan": 0.32806,
+    "plans_broken_180d": 0.03045,
+    "in_hardship_program": -0.79455,
+    "concession_active": 0.126,
+    "life_support": -0.11346,
+    "medical_cooling_subsidy": 0.01372,
+    "inbound_contacts_30d": 0.0078,
+    "payment_related_contacts_90d": 0.01503,
+    "complaints_90d": 0.09407,
+    "mean_contact_sentiment_90d": -0.11932,
+    "mean_contact_sentiment_90d_missing": -0.085,
+    "import_kwh_30d": -0.2692,
+    "import_kwh_30d_vs_prior_90d_avg": 0.26752,
+    "import_kwh_30d_vs_prior_90d_avg_missing": 0,
+    "import_kwh_30d_vs_same_period_last_year": 0.04247,
+    "import_kwh_30d_vs_same_period_last_year_missing": 0.15312,
+    "hot_days_90d": 0.22245,
+    "near_zero_usage_days_30d": -0.12529,
+    "disconnected_days_30d": -0.0199,
+    "outage_hours_30d": -0.09348
+   },
+   "test": {
+    "months": 19580,
+    "positives": 119,
+    "baseRate": 0.0061,
+    "auc": 0.955,
+    "top5": {
+     "share": 0.05,
+     "precision": 0.1,
+     "recall": 0.824
+    },
+    "top10": {
+     "share": 0.1,
+     "precision": 0.055,
+     "recall": 0.908
+    },
+    "calibration": [
+     {
+      "predicted": 0.0439,
+      "actual": 0.0552
+     },
+     {
+      "predicted": 0.0013,
+      "actual": 0.002
+     },
+     {
+      "predicted": 0.0008,
+      "actual": 0.001
+     },
+     {
+      "predicted": 0.0006,
+      "actual": 0.0005
+     },
+     {
+      "predicted": 0.0004,
+      "actual": 0.0005
+     },
+     {
+      "predicted": 0.0004,
+      "actual": 0
+     },
+     {
+      "predicted": 0.0003,
+      "actual": 0.0005
+     },
+     {
+      "predicted": 0.0003,
+      "actual": 0.0005
+     },
+     {
+      "predicted": 0.0002,
+      "actual": 0.0005
+     },
+     {
+      "predicted": 0.0001,
+      "actual": 0
+     }
+    ]
+   }
+  }
+ },
+ "caveat": "Trained and tested on a synthetic dataset: these measures show how well the model ranks customers in this data, not how it would do on real customers."
+}

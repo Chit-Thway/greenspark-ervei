@@ -3,6 +3,7 @@ import { caseSignals, type FlowDoc, type Person, type QueueCase, type WeatherSig
 import type { ApiClient, Catalog } from "../data/api";
 import { readableDates } from "../domain/format";
 import { FlowBoard } from "./FlowBoard";
+import { DATA_SOURCE_GROUPS } from "./dataSources";
 import { SOURCE_LABEL, buildIndex, nodeKey, trace as traceOf, type FlowIndex, type Ref, type Trace } from "./flowModel";
 import "./admin.css";
 
@@ -162,6 +163,7 @@ export function CaseFlowModal({ client, data, c, person, weather, onClose }: Pro
             <FlowBoard
               doc={doc} index={index} selected={selected} trace={highlight} utility="all" showAllLinks strongOnly={false}
               matches={new Set()} readOnly hideAdd only={path.trace.nodes} onSelect={setSelected} onAdd={() => {}}
+              sources={DATA_SOURCE_GROUPS} onSourceSelect={() => setSelected(null)}
             />
           </div>
           <aside className="cf-panel" aria-label="Case details for the flowchart">

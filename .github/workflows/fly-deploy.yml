@@ -1,0 +1,25 @@
+# Optional deployment to your own Fly app. Configure repository variable FLY_APP_NAME
+# and secret FLY_API_TOKEN; without an app name this workflow safely skips deployment.
+name: Deploy to Fly.io
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# One deploy at a time; a newer push waits for the running one rather than cancelling it mid-release.
+concurrency:
+  group: fly-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: ${{ vars.FLY_APP_NAME != '' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - run: flyctl deploy --remote-only --app "$FLY_APP_NAME"
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+          FLY_APP_NAME: ${{ vars.FLY_APP_NAME }}

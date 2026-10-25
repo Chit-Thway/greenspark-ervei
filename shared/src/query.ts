@@ -91,7 +91,8 @@ export function applyFilters(
 
 const PRIORITY_RANK: Record<PriorityLabel, number> = { urgent: 0, high: 1, moderate: 2, routine: 3 };
 
-export function sortCases(cases: QueueCase[], people: Person[], sort: SortKey): QueueCase[] {
+/** `riskOf` gives a case's predicted chance of harm, for "risk_desc"; cases without one sort last. */
+export function sortCases(cases: QueueCase[], people: Person[], sort: SortKey, riskOf: (c: QueueCase) => number | null = () => null): QueueCase[] {
   const name = new Map(people.map((p) => [p.id, p.displayName]));
   const score = (c: QueueCase) => c.modelAssessment.priority?.score ?? null;
   const out = [...cases];
@@ -105,6 +106,13 @@ export function sortCases(cases: QueueCase[], people: Person[], sort: SortKey): 
         if (sa === null) return 1; // unscored cases always sort last
         if (sb === null) return -1;
         return (sort === "priority_desc" ? sb - sa : sa - sb) || byId(a, b);
+      }
+      case "risk_desc": {
+        const ra = riskOf(a), rb = riskOf(b);
+        if (ra === null && rb === null) return byId(a, b);
+        if (ra === null) return 1;
+        if (rb === null) return -1;
+        return rb - ra || (score(b) ?? -1) - (score(a) ?? -1) || byId(a, b);
       }
       case "followup": {
         const fa = isResolved(a) ? null : a.workflow.followUpAt;

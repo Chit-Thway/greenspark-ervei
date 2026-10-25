@@ -3,9 +3,17 @@ import { useCallback, useEffect, useState } from "react";
 /** Each customer's case lives at /accounts/:accountNumber; the account number is the main ID on screen. */
 export const accountHref = (accountNumber: string) => `/accounts/${encodeURIComponent(accountNumber)}`;
 
-/** The account number in an /accounts/:accountNumber path, or null for any other path. */
+/** The account number in an /accounts/:accountNumber path, or null for any other path. Old /visual links (the
+ * at-a-glance page, now the case page itself) still work. */
 export function accountFromPath(path: string): string | null {
-  const m = /^\/accounts\/([^/]+)\/?$/.exec(path);
+  const m = /^\/accounts\/([^/]+)(?:\/visual)?\/?$/.exec(path);
+  if (!m) return null;
+  try { return decodeURIComponent(m[1]!); } catch { return null; }
+}
+
+/** The account number in an /accounts/:accountNumber/predictions path, or null. */
+export function predictionsAccountFromPath(path: string): string | null {
+  const m = /^\/accounts\/([^/]+)\/predictions\/?$/.exec(path);
   if (!m) return null;
   try { return decodeURIComponent(m[1]!); } catch { return null; }
 }
@@ -15,23 +23,34 @@ export function isModifiedClick(e: { metaKey: boolean; ctrlKey: boolean; shiftKe
   return e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0;
 }
 
-export type Page = "queue" | "case" | "admin" | "data" | "priority" | "casepage";
+export type Page = "outlook" | "funnel" | "queue" | "case" | "admin" | "data" | "priority" | "casepage" | "riskmodel" | "outlookmodel" | "predictions";
+
+/** The home page is the weather outlook; the case queue has its own page. */
+export const QUEUE_PATH = "/queue";
+export const FUNNEL_PATH = "/funnel";
 
 /** Behind-the-scenes pages, under the BTS menu. */
 export const FLOWCHART_PATH = "/bts/flowchart";
 export const DATA_SOURCES_PATH = "/bts/data-sources";
 export const PRIORITY_MODEL_PATH = "/bts/priority-model";
 export const CASE_PAGE_PATH = "/bts/case-page";
+export const RISK_MODEL_PATH = "/bts/risk-model";
+export const OUTLOOK_MODEL_PATH = "/bts/weather-outlook";
 
 export function pageFromPath(path: string): Page {
   if (/^\/(bts\/flowchart|flowchart|admin)\/?$/.test(path)) return "admin"; // the Flowchart page; old /flowchart and /admin links still work
   if (/^\/bts\/data-sources\/?$/.test(path)) return "data";
   if (/^\/bts\/priority-model\/?$/.test(path)) return "priority";
   if (/^\/bts\/case-page\/?$/.test(path)) return "casepage";
-  return accountFromPath(path) ? "case" : "queue";
+  if (/^\/bts\/risk-model\/?$/.test(path)) return "riskmodel";
+  if (/^\/bts\/weather-outlook\/?$/.test(path)) return "outlookmodel";
+  if (predictionsAccountFromPath(path)) return "predictions";
+  if (/^\/funnel\/?$/.test(path)) return "funnel";
+  if (accountFromPath(path)) return "case";
+  return /^\/queue\/?$/.test(path) ? "queue" : "outlook";
 }
 
-/** Minimal path router: the queue lives at "/", each case at "/accounts/:accountNumber" and the BTS pages under "/bts/". */
+/** Minimal path router: the outlook lives at "/", the queue at "/queue", each case at "/accounts/:accountNumber" and the BTS pages under "/bts/". */
 export function useRoute() {
   const [path, setPath] = useState(() => window.location.pathname);
   useEffect(() => {
@@ -44,5 +63,5 @@ export function useRoute() {
     setPath(window.location.pathname);
     window.scrollTo(0, 0);
   }, []);
-  return { accountNumber: accountFromPath(path), page: pageFromPath(path), navigate };
+  return { accountNumber: accountFromPath(path), predictionsAccount: predictionsAccountFromPath(path), page: pageFromPath(path), navigate };
 }

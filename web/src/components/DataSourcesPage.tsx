@@ -35,7 +35,7 @@ const SOURCES: Source[] = [
   { file: "contacts.csv", rows: "11,110", contains: "Every contact: channel, direction, reason, outcome, sentiment, complaint, agent notes.",
     extracted: "All contacts, shown as Contact history; used for repeat contact, complaints and unanswered outreach." },
   { file: "contact_transcripts.jsonl", rows: "4,406", contains: "Conversation transcripts for some contacts.",
-    extracted: "Attached to their contacts. What customers said in the last 12 months raises matching self-report signals (for example \"I lost my job a few weeks ago\" for Lost job)." },
+    extracted: "Attached to their contacts. What customers said in the last 12 months raises matching self-report signals (for example \"I lost my job a few weeks ago\" for Says: lost job)." },
   { file: "collection_events.csv", rows: "44,604", contains: "Collection notices: reminders, warnings, missed instalments, referrals, disconnections.",
     extracted: "All notices (disconnection warnings, plans broken, debt collection referrals and more)." },
   { file: "disconnections.csv", rows: "121", contains: "Disconnections for non-payment and reconnections.", extracted: "All disconnections; supply is \"disconnected\" when the latest has no reconnection." },
@@ -50,13 +50,12 @@ const SOURCES: Source[] = [
 ];
 
 const MODES: [WeatherMode, string, string][] = [
-  ["demo", "Sample heatwave", "A built-in heatwave over the Perth, South West and Wheatbelt districts for the next few days, so the signals always show."],
+  ["demo", "Sample heatwave", "A made-up week with a three-day heatwave over Perth and the Lower West, so there’s always weather to act on."],
   ["live", "Live Bureau data", "The Bureau's real forecasts and warnings, refreshed every hour. Usually quiet unless hot weather is coming."],
-  ["off", "Off", "No weather signals."],
 ];
 
-/** Shows which weather source the server is using, and lets managers switch it for everyone. */
-function WeatherSource({ client, isManager }: { client: ApiClient; isManager: boolean }) {
+/** Shows which weather source the server is using, and lets anyone switch it for everyone. */
+export function WeatherSource({ client }: { client: ApiClient }) {
   const [status, setStatus] = useState<WeatherStatus | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -74,10 +73,10 @@ function WeatherSource({ client, isManager }: { client: ApiClient; isManager: bo
     <div className="wx-source">
       <div className="wx-modes" role="radiogroup" aria-label="Weather source">
         {MODES.map(([mode, label]) => (
-          <button key={mode} type="button" role="radio" aria-checked={status.mode === mode} disabled={!isManager || busy} onClick={() => void choose(mode)}>{label}</button>
+          <button key={mode} type="button" role="radio" aria-checked={status.mode === mode} disabled={busy} onClick={() => void choose(mode)}>{label}</button>
         ))}
       </div>
-      <p className="hint">{MODES.find((m) => m[0] === status.mode)?.[2]} {isManager ? "Switching applies to everyone, straight away." : "Only managers can switch it."}</p>
+      <p className="hint">{MODES.find((m) => m[0] === status.mode)?.[2]} Switching applies to everyone, straight away.</p>
       {status.mode !== "off" ? (
         <p className="hint">
           {busy ? "Loading the forecast…" : <>Forecast loaded {when(status.fetchedAt)}{status.mode === "live" && status.issuedAt ? `, issued by the Bureau ${when(status.issuedAt)}` : ""}. {status.towns} towns.
@@ -90,7 +89,7 @@ function WeatherSource({ client, isManager }: { client: ApiClient; isManager: bo
   );
 }
 
-export function DataSourcesPage({ client, isManager }: { client: ApiClient; isManager: boolean }) {
+export function DataSourcesPage({ client }: { client: ApiClient }) {
   useEffect(() => { document.title = "Data sources · ERVEI"; }, []);
   return (
     <main id="queue" className="bts-page" tabIndex={-1}>
@@ -99,8 +98,10 @@ export function DataSourcesPage({ client, isManager }: { client: ApiClient; isMa
         <h1>Data sources</h1>
         <p className="sub">
           Customer accounts come from a synthetic WA electricity retail dataset: 22 files covering 5,150 customers from 1 Jul 2023 to
-          30 Jun 2025. 200 customers were taken, 20 for each testing scenario, by <code>scripts/import-utility-dataset.mts</code>, into
-          {" "}<code>data/synthetic/utility-accounts.v1.json</code>.
+          30 Jun 2025. The demo has every open account, 4,380 customers: 200 chosen as testing scenarios (20 each, with fictional
+          survey answers), and the other 4,180 with no survey, so all they show comes from their account. Imported by
+          {" "}<code>scripts/import-utility-dataset.mts --all</code> and <code>scripts/generate-all-cases.mts</code>. The 770 closed
+          accounts are left out.
         </p>
       </header>
 
@@ -114,11 +115,51 @@ export function DataSourcesPage({ client, isManager }: { client: ApiClient; isMa
         </ul>
       </section>
 
+      <section className="case-card" aria-labelledby="ds-ai">
+        <h2 id="ds-ai">Written by AI</h2>
+        <p className="hint">Drafted by Claude or Gemini (whichever the server is set to) when a case or its section is opened, from the case's facts only. Each is labelled "AI draft · check before acting" on the page.</p>
+        <div className="table-scroll">
+          <table className="mini-table ds-table">
+            <thead><tr><th scope="col">What</th><th scope="col">Where it appears</th><th scope="col">Made from</th></tr></thead>
+            <tbody>
+              <tr><th scope="row">Suggested plan</th><td>Case page, What to do first; top of Support areas and why</td><td>Priority, flagged circumstances and their signals, solutions, contact settings</td></tr>
+              <tr><th scope="row">What the signals say</th><td>Case page, Account signals section</td><td>The account and weather signals and their evidence</td></tr>
+              <tr><th scope="row">Order of Solutions to offer, and each reason</th><td>Case page, What to do first (the top three) and the Solutions to offer section</td><td>The same call as the Suggested plan</td></tr>
+              <tr><th scope="row">Date to act by and contact method</th><td>Solutions to offer and its Timeline</td><td>The AI picks working days and a method; the server turns them into dates and checks the method against the contact settings</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section className="case-card" aria-labelledby="ds-made">
+        <h2 id="ds-made">Not from the data files</h2>
+        <p className="hint">Not written by AI either: invented by the demo's scripts, or worked out by the app from the data.</p>
+        <div className="table-scroll">
+          <table className="mini-table ds-table">
+            <thead><tr><th scope="col">What</th><th scope="col">How it is made</th></tr></thead>
+            <tbody>
+              <tr><th scope="row">Names, gender, preferred name, address, phone, email</th><td>Invented by <code>scripts/generate-synthetic-cases.mjs</code> and <code>generate-all-cases.mts</code>. Phone numbers are from ranges reserved for fiction and emails use example.com. Suburb and postcode do come from the dataset.</td></tr>
+              <tr><th scope="row">Dates of birth</th><td>Invented (the dataset has none); every holder is an adult.</td></tr>
+              <tr><th scope="row">Survey answers</th><td>Invented for the 200 scenario cases to fit each testing scenario; answers about a concession, life support and hardship enrolment are set from the account so they agree. The other customers have none.</td></tr>
+              <tr><th scope="row">Account numbers (DEMO-7xxxxx) and case IDs</th><td>Numbered by the scripts.</td></tr>
+              <tr><th scope="row">Workers, case status, assignments and starting notes</th><td>Invented for the demo; changes made in the app are real and saved.</td></tr>
+              <tr><th scope="row">Signals, circumstances and solutions</th><td>Worked out by the app's rules and the Flowchart file from the data.</td></tr>
+              <tr><th scope="row">Priority</th><td>Worked out by the Priority model's points (see Priority model).</td></tr>
+              <tr><th scope="row">Predicted risk</th><td>A statistical model trained on the monthly panel (see Risk model). Not generative AI.</td></tr>
+              <tr><th scope="row">Weather outlook, act now and watch, and the funnel</th><td>Worked out by the app from the forecast and each customer's signals (see Weather outlook).</td></tr>
+              <tr><th scope="row">Sample heatwave</th><td>Built into the app, used when the weather source is set to Sample heatwave: a hand-written week for each forecast town, with a three-day heatwave over the Lower West.</td></tr>
+              <tr><th scope="row">Map locations and groups</th><td>Approximate postcode centres; the dataset has no household coordinates. Each circle counts one primary support group in a postcode. Hue identifies the group; shade shows its highest weather-response urgency. Translucent fills and small symbol offsets reveal overlapping groups. No customer is counted in two primary groups.</td></tr>
+              <tr><th scope="row">Temperature map shading</th><td>A fixed °C scale of town forecast daily maximums, estimated between up to four nearby towns within 120 km. Town labels show source values. Whole week shows each town’s peak; select a date for the same-day comparison. This is an estimated temperature surface, not the Bureau’s official heatwave-severity product. Values are fictional when Sample heatwave is selected. Public BoM district boundaries (IDM00001) mask out the ocean.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
       <section className="case-card" aria-labelledby="ds-weather">
         <h2 id="ds-weather">Live data: Bureau of Meteorology</h2>
-        <p className="hint">Fetched by the server every hour, matched to each customer's postcode, and used for the three weather signals. Free anonymous products, under the Bureau's copyright terms.</p>
+        <p className="hint">Fetched by the server every hour, matched to each customer's postcode, and used for the three weather signals and the Weather outlook. Free anonymous products, under the Bureau's copyright terms.</p>
         <p className="block-label">Weather source</p>
-        <WeatherSource client={client} isManager={isManager} />
+        <WeatherSource client={client} />
         <div className="table-scroll">
           <table className="mini-table ds-table">
             <thead><tr><th scope="col">Product</th><th scope="col">What's in it</th><th scope="col">What is used</th></tr></thead>
@@ -129,7 +170,24 @@ export function DataSourcesPage({ client, isManager }: { client: ApiClient; isMa
             </tbody>
           </table>
         </div>
-        <p className="hint">Each dataset postcode is matched to its nearest forecast town (Perth suburbs to the nearest metro point). The server starts with the sample heatwave (set <code>WEATHER_MODE</code> to <code>live</code> or <code>off</code> to change that); a switch above lasts until the server restarts. Sample evidence is marked "(sample forecast)".</p>
+        <p className="hint">Each dataset postcode is matched to its nearest forecast town (Perth suburbs to the nearest metro point). The server starts with the sample heatwave (set <code>WEATHER_MODE</code> to <code>live</code> or <code>off</code> to change that); a switch above lasts until the server restarts.</p>
+      </section>
+
+      <section className="case-card" aria-labelledby="ds-ewa">
+        <h2 id="ds-ewa">Live data: Emergency WA</h2>
+        <p className="hint">
+          The Department of Fire and Emergency Services' public warnings feed (<code>api.emergency.wa.gov.au/v1/capau</code>), in the
+          CAP-AU format, fetched by the server every 5 minutes. Shown on the Weather outlook map as a layer that can be switched off;
+          it doesn't change any signal, priority or outlook tier.
+        </p>
+        <div className="table-scroll">
+          <table className="mini-table ds-table">
+            <thead><tr><th scope="col">What's in it</th><th scope="col">What is used</th></tr></thead>
+            <tbody>
+              <tr><td>Every current warning in WA (bushfires, floods, storms, closures and more), each with its alert level, the area it covers as an outline or a centre point, instructions and a link.</td><td>Headline, alert level (coloured as Emergency WA does: yellow advice, orange watch and act, red emergency warning), the area's outline and centre, area description and the link to the warning. Cancelled alerts are left out.</td></tr>
+            </tbody>
+          </table>
+        </div>
       </section>
 
       <section className="case-card" aria-labelledby="ds-files">

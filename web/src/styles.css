@@ -3,7 +3,7 @@
   --brand: #00875a; --brand-hover: #006b47; --on-brand: #fff;
   --bg: #f7f9fa; --surface: #fff; --sidebar: #f4faf7; --selected: #e3fcef;
   --fg: #253858; --muted: #5e6c84; --border: #dfe1e6; --focus: #00875a;
-  --urgent: #ae2e24; --urgent-bg: #ffecea; --high: #974f0c; --high-bg: #fff4e5;
+  --urgent: #ae2e24; --urgent-bg: #ffecea; --high: #a95a0d; --high-bg: #fff4e5;
   --moderate: #2458a6; --moderate-bg: #e9f2ff; --routine: #52645b; --routine-bg: #eef3f0;
   --suggest: #6e5a91; --suggest-bg: #f3eff8;
   --sidebar-w: 232px; --pad: 24px; --r-control: 6px; --r-panel: 10px;
@@ -78,7 +78,7 @@ select, input[type="search"], input:not([type]), input[type="text"], textarea { 
 .bulkbar { display: flex; align-items: center; gap: 10px; padding: 8px 16px; background: var(--selected); border-top: 1px solid var(--border); flex-wrap: wrap; }
 
 .table-wrap { position: relative; /* keeps visually hidden text inside the scroll area */ overflow-x: auto; border-top: 1px solid var(--border); }
-.case-table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 760px; }
+.case-table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 880px; }
 .case-table th { text-align: left; font-size: 12px; color: var(--muted); font-weight: 600; padding: 10px 12px; background: #fafbfc; border-bottom: 1px solid var(--border); white-space: nowrap; }
 .case-table td { padding: 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
 .case-table tbody tr { cursor: pointer; }
@@ -289,7 +289,7 @@ textarea { resize: vertical; }
 .usage-key .key-line { width: 14px; border-top: 2px dashed var(--muted); margin-left: 8px; }
 .contact-prefs { list-style: none; padding: 0; margin: 4px 0 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 6px; }
 .contact-prefs li { display: grid; gap: 1px; padding: 6px 8px; border: 1px solid var(--border); border-radius: var(--r-control); }
-.contact-prefs span { font-size: 12px; color: var(--muted); }
+.contact-prefs li > span { font-size: 12px; color: var(--muted); }
 .contact-prefs strong { font-weight: 600; font-size: 13px; }
 .ai-plan { margin: 8px 0 12px; padding: 10px 12px; border: 1px solid var(--border); border-left: 3px solid var(--brand); border-radius: var(--r-control); background: var(--surface); }
 .ai-plan .block-label { margin-top: 0; }
@@ -311,8 +311,7 @@ ol.suggest-list.solutions { list-style: none; padding-left: 0; }
   .topbar .mainnav { margin-left: auto; }
   .bts-btn { padding: 6px 10px; }
   .bts-btn .sub-inline { display: none; }
-  .topbar .mainnav + .whoami { margin-left: 0; width: 100%; }
-  .whoami select { flex: 1; min-width: 0; }
+  .topbar .demo-settings { margin-left: 0; }
 }
 
 .timeline { margin: 4px 0 14px; padding-bottom: 14px; border-bottom: 1px solid var(--border); }
@@ -338,3 +337,356 @@ ol.suggest-list.solutions { list-style: none; padding-left: 0; }
 .wx-modes button[aria-checked="true"] { background: var(--brand); color: var(--on-brand); }
 .wx-modes button:disabled { cursor: default; }
 .wx-modes button:disabled:not([aria-checked="true"]) { color: var(--muted); }
+
+/* List / Map switch and the map view of the queue */
+.view-switch { display: inline-flex; border: 1px solid var(--border); border-radius: var(--r-control); overflow: hidden; }
+.view-switch button { background: var(--surface); border: 0; padding: 4px 14px; font: inherit; font-size: 13px; color: var(--fg); cursor: pointer; }
+.view-switch button + button { border-left: 1px solid var(--border); }
+.view-switch button[aria-pressed="true"] { background: var(--brand); color: var(--on-brand); }
+.case-map { border-top: 1px solid var(--border); }
+.map-bar { display: flex; align-items: center; justify-content: space-between; gap: 8px 16px; flex-wrap: wrap; padding: 8px 16px; }
+.map-bar .hint { margin: 0; }
+.map-legend { display: flex; gap: 12px; flex-wrap: wrap; font-size: 12px; color: var(--muted); }
+.map-legend span { display: inline-flex; align-items: center; gap: 4px; }
+.map-legend i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.map-zoom { display: inline-flex; gap: 12px; font-size: 13px; }
+.map-body { display: grid; grid-template-columns: minmax(0, 1fr) 320px; min-height: 520px; }
+.map-canvas { min-height: 520px; z-index: 0; }
+.map-panel { border-left: 1px solid var(--border); padding: 12px 16px; overflow-y: auto; max-height: 560px; }
+.map-panel h3 { margin: 0 0 4px; font-size: 16px; }
+.map-cases { list-style: none; padding: 0; margin: 8px 0 0; display: grid; gap: 8px; }
+.map-cases li { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; font-size: 13px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+.map-cases li .sub { grid-column: 1 / -1; color: var(--muted); font-size: 12px; }
+@media (max-width: 899px) {
+  .map-body { grid-template-columns: minmax(0, 1fr); }
+  .map-canvas { min-height: 380px; }
+  .map-panel { border-left: 0; border-top: 1px solid var(--border); max-height: none; }
+}
+.panel-head .sim { margin-left: auto; }
+
+/* Risk predictions: the case page card and the customer's predictions page */
+.pred-mini { list-style: none; padding: 0; margin: 4px 0 10px; display: grid; gap: 6px; }
+.pred-mini li { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; }
+.pred-pill { font-size: 12px; font-weight: 600; border-radius: 4px; padding: 1px 8px; white-space: nowrap; }
+.pred-very_high { --pred: var(--urgent); --pred-bg: var(--urgent-bg); }
+.pred-high { --pred: var(--high); --pred-bg: var(--high-bg); }
+.pred-raised { --pred: var(--moderate); --pred-bg: var(--moderate-bg); }
+.pred-low { --pred: var(--routine); --pred-bg: var(--routine-bg); }
+.pred-pill { color: var(--pred); background: var(--pred-bg); }
+.pred-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-bottom: 16px; }
+.pred-grid .pred-card { margin: 0; border-top: 4px solid var(--pred); }
+.pred-card h2 { font-size: 15px; margin: 0 0 6px; }
+.pred-band { margin: 0; font-weight: 700; color: var(--pred); font-size: 18px; }
+.pred-prob { margin: 2px 0 8px; }
+.pred-prob strong { font-size: 22px; }
+.pred-meter { height: 6px; border-radius: 3px; background: var(--border); overflow: hidden; margin-bottom: 6px; }
+.pred-meter span { display: block; height: 100%; background: var(--pred); }
+.pred-factors { margin: 6px 0 0; padding-left: 20px; display: grid; gap: 6px; }
+.pred-factors li .sub { display: block; color: var(--muted); font-size: 13px; }
+
+/* At a glance: one case in pictures */
+.vis-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.vis-grid .vis-card { margin: 0; }
+.vis-grid .vis-wide { grid-column: 1 / -1; }
+.vis-card h2 { font-size: 15px; margin: 0 0 8px; }
+.vis-gauge { width: 180px; display: block; }
+.vis-gauge-n { font-size: 30px; font-weight: 700; fill: var(--fg); }
+.vis-big { font-size: 20px; font-weight: 700; margin: 0; }
+.vis-bars { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
+.vis-bars li { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 76px; align-items: center; gap: 10px; font-size: 13px; }
+.vis-bar { height: 10px; border-radius: 5px; background: var(--border); overflow: hidden; }
+.vis-bar i { display: block; height: 100%; background: var(--pred); }
+.vis-bars strong { color: var(--pred); text-align: right; white-space: nowrap; }
+.vis-facts { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.vis-facts li { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: var(--r-control); border: 1px solid var(--border); font-weight: 600; font-size: 14px; }
+.vis-icon { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; font-size: 13px; color: #fff; background: var(--muted); }
+.vis-bad .vis-icon { background: var(--urgent); } .vis-bad { background: var(--urgent-bg); }
+.vis-warn .vis-icon { background: var(--high); } .vis-warn { background: var(--high-bg); }
+.vis-ok .vis-icon { background: var(--routine); }
+.vis-info .vis-icon { background: var(--brand); }
+.vis-areas { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.vis-area .block-label { margin-top: 0; }
+.vis-chips { list-style: none; padding: 0; margin: 4px 0 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.vis-chips li { padding: 4px 10px; border-radius: 99px; background: var(--selected); font-size: 13px; }
+.vis-chips li.vis-sensitive { background: var(--high-bg); color: var(--high); }
+.vis-chips li.vis-safety { background: var(--urgent-bg); color: var(--urgent); font-weight: 600; }
+.vis-plan { font-size: 15px; line-height: 1.5; margin: 0 0 12px; }
+.vis-steps { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+.vis-steps li { display: flex; align-items: flex-start; gap: 8px; font-size: 14px; }
+@media (max-width: 899px) { .vis-grid { grid-template-columns: minmax(0, 1fr); } }
+
+/* Demo settings: a gear at the right of the header, opening a small panel below it */
+.demo-settings { position: relative; margin-left: 4px; }
+.settings-btn { display: grid; place-items: center; width: 38px; height: 38px; color: var(--muted); }
+.settings-btn[aria-expanded="true"], .settings-btn:hover { color: var(--fg); background: var(--selected); }
+.settings-pop { position: absolute; right: 0; top: calc(100% + 8px); z-index: 60; width: min(360px, calc(100vw - 24px)); background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-panel); box-shadow: 0 16px 40px rgba(9, 30, 66, .22); padding: 16px; display: grid; gap: 14px; }
+.settings-pop h2 { margin: 0; font-size: 16px; }
+.settings-pop .field { display: grid; gap: 6px; }
+.settings-pop .field > span:first-child { font-size: 13px; font-weight: 600; }
+.settings-pop .hint { margin: 0; font-size: 12px; }
+.settings-pop .wx-modes { margin: 0; }
+.settings-pop .wx-source .hint + .hint { margin-top: 4px; }
+
+/* Weather outlook (home page) */
+.outlook { max-width: 1400px; margin: 0 auto; padding: var(--pad); outline: 0; display: grid; gap: 16px; }
+.outlook .page-head { margin-bottom: 0; }
+.outlook .page-head .hint { max-width: 720px; font-size: 13px; }
+.outlook-source { display: grid; justify-items: end; gap: 4px; text-align: right; flex: none; }
+.outlook-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.kpi { display: grid; gap: 2px; align-content: start; text-align: left; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-panel); padding: 14px 16px; font: inherit; color: inherit; }
+button.kpi { cursor: pointer; }
+button.kpi:hover { border-color: #b3bac5; }
+.kpi strong { font-size: 28px; line-height: 1.1; }
+.kpi span { font-weight: 600; }
+.kpi small { color: var(--muted); font-size: 12px; }
+.kpi-act { border-left: 4px solid var(--urgent); } .kpi-act strong { color: var(--urgent); }
+.kpi-watch { border-left: 4px solid #e0a030; } .kpi-watch strong { color: var(--high); }
+.kpi.is-on { background: var(--selected); border-color: var(--brand); }
+.outlook-days .panel-head .hint, .outlook-places .panel-head .map-legend { margin: 0; }
+.day-strip { list-style: none; margin: 0; padding: 12px 16px 16px; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; }
+.day-strip li { display: grid; grid-template-rows: auto auto auto 70px auto; gap: 4px; justify-items: center; text-align: center; padding: 10px 6px; border-radius: var(--r-control); border: 1px solid var(--border); }
+.day-strip li.is-today { border-color: var(--brand); }
+.day-name { font-weight: 600; } .day-name .sub { display: inline; font-weight: 400; }
+.day-peak { font-size: 15px; font-weight: 700; border-radius: 99px; min-width: 44px; padding: 2px 8px; }
+.day-bar { display: flex; flex-direction: column-reverse; width: 28px; height: 70px; background: #f4f5f7; border-radius: 4px; overflow: hidden; }
+.day-bar i { display: block; width: 100%; }
+.bar-act { background: var(--urgent); } .bar-watch { background: #e0a030; }
+.day-count { display: grid; gap: 2px; font-size: 12px; }
+.day-tiers { font-size: 13px; } .day-tiers strong { font-size: 15px; }
+.n-act { color: var(--urgent); } .n-watch { color: var(--high); }
+.outlook-places-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); border-top: 1px solid var(--border); margin-top: 12px; }
+.outlook-map-wrap { display: flex; flex-direction: column; min-width: 0; }
+.outlook-map { flex: 1; min-height: 460px; z-index: 0; display: grid; place-items: center; color: var(--muted); }
+.outlook-zoom { padding: 8px 16px; }
+.town-table-wrap { border-left: 1px solid var(--border); max-height: 500px; overflow: auto; }
+.town-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.town-table th, .town-table td { padding: 6px 8px; border-bottom: 1px solid var(--border); }
+.town-table thead th { position: sticky; top: 0; background: #fafbfc; font-size: 12px; color: var(--muted); text-align: left; z-index: 1; }
+.town-table tbody th { text-align: left; font-weight: 400; }
+.town-table .t-day { text-align: center; width: 36px; font-variant-numeric: tabular-nums; font-weight: 600; }
+.town-table .t-num { text-align: right; width: 44px; font-variant-numeric: tabular-nums; }
+.town-table tbody tr.is-selected th { background: var(--selected); }
+.town-btn { background: none; border: 0; padding: 0; font: inherit; font-weight: 600; color: var(--fg); cursor: pointer; text-align: left; }
+.town-btn:hover, .town-btn[aria-pressed="true"] { color: var(--brand-hover); text-decoration: underline; }
+.outlook-filters { flex-wrap: wrap; align-items: flex-end; }
+.outlook-filters label { display: grid; gap: 2px; width: 190px; }
+.outlook-table { min-width: 960px; }
+.wx-kinds { letter-spacing: 2px; }
+.need-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.need { font-size: 12px; border-radius: 99px; padding: 1px 8px; white-space: nowrap; background: #f1f2f4; }
+.need-health { background: var(--urgent-bg); color: var(--urgent); }
+.need-supply { background: var(--high-bg); color: var(--high); }
+.need-cost { background: var(--moderate-bg); color: var(--moderate); }
+.need-isolation { background: var(--suggest-bg); color: var(--suggest); }
+.need-more { color: var(--muted); }
+.outlook-how { padding: 12px 16px; }
+.outlook-how summary { cursor: pointer; font-weight: 600; }
+.outlook-how ul { margin: 8px 0 0; padding-left: 20px; display: grid; gap: 6px; font-size: 13px; color: var(--muted); }
+@media (max-width: 1099px) {
+  .outlook-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .outlook-places-body { grid-template-columns: minmax(0, 1fr); }
+  .outlook-map { min-height: 360px; }
+  .town-table-wrap { border-left: 0; border-top: 1px solid var(--border); }
+}
+@media (max-width: 699px) {
+  .outlook { padding: 16px; }
+  .outlook-source { justify-items: start; text-align: left; }
+  .day-strip { grid-template-columns: repeat(7, minmax(84px, 1fr)); overflow-x: auto; }
+  .outlook-filters label { width: 100%; }
+}
+.outlook-table td:nth-child(3) { min-width: 190px; }
+.outlook-table td:last-child .status { white-space: nowrap; }
+
+/* Outlook funnel */
+.funnel { list-style: none; margin: 0; padding: 16px; display: grid; gap: 4px; }
+.funnel-row { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 16px; align-items: center; }
+.funnel-track { display: flex; justify-content: center; }
+.funnel-bar { height: 64px; display: grid; place-items: center; color: #fff; font-weight: 700; font-size: 18px; font-variant-numeric: tabular-nums; }
+.funnel-label { display: grid; gap: 2px; }
+.funnel-label strong { font-size: 15px; }
+@media (max-width: 699px) {
+  .funnel-row { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+  .funnel-label { text-align: center; padding-bottom: 8px; }
+}
+
+/* Case page: the at-a-glance summary, with each detailed section in a modal */
+.case-page .vis-grid { margin-bottom: 16px; }
+.vis-more { display: inline-block; margin-top: 10px; padding-left: 0; font-weight: 600; text-decoration: none; }
+.vis-more:hover { text-decoration: underline; }
+.vis-links { display: flex; flex-wrap: wrap; gap: 0 16px; }
+.case-more h2 { font-size: 15px; margin: 0 0 8px; }
+.more-tiles { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; }
+.more-tile { display: grid; gap: 2px; width: 100%; height: 100%; text-align: left; padding: 12px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-panel); color: var(--fg); text-decoration: none; font: inherit; cursor: pointer; }
+.more-tile:hover { border-color: var(--brand); background: #f9fcfa; }
+.more-tile strong { color: var(--brand-hover); }
+.case-modal { border: 0; border-radius: var(--r-panel); padding: 0; width: min(880px, calc(100vw - 24px)); max-height: calc(100vh - 48px); color: var(--fg); background: var(--bg); box-shadow: 0 24px 64px rgba(9, 30, 66, .35); }
+.case-modal[open] { display: flex; flex-direction: column; }
+.case-modal::backdrop { background: rgba(9, 30, 66, .45); }
+.case-modal-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; padding: 16px 20px; background: var(--surface); border-bottom: 1px solid var(--border); }
+.case-modal-head h2 { font-size: 20px; margin: 2px 0 0; }
+.case-modal-body { padding: 16px 20px 4px; overflow-y: auto; }
+@media (max-width: 699px) {
+  .case-modal { width: 100vw; max-width: 100vw; height: 100vh; max-height: 100vh; border-radius: 0; }
+  .case-modal-head, .case-modal-body { padding-left: 16px; padding-right: 16px; }
+}
+.map-layers { display: flex; flex-wrap: wrap; gap: 4px 16px; margin-right: auto; }
+.outlook-zoom { flex-wrap: wrap; align-items: center; }
+.map-layers .check { padding: 2px 0; font-size: 13px; flex: none; }
+.map-keys { padding-top: 6px; gap: 6px 16px; justify-content: flex-start; }
+.map-keys:empty { display: none; }
+.alert-tri { background: none; border: 0; }
+.map-legend svg.tri { flex: none; }
+.alert-pop { display: grid; gap: 4px; max-width: 260px; font-size: 13px; }
+.alert-pop p { margin: 0; }
+.map-full { margin-left: 4px; }
+.outlook-map-wrap.is-full:not(:fullscreen) { position: fixed; inset: 0; z-index: 1000; }
+.outlook-map-wrap.is-full, .outlook-map-wrap:fullscreen { display: flex; flex-direction: column; background: var(--surface); }
+.outlook-map-wrap.is-full .outlook-map, .outlook-map-wrap:fullscreen .outlook-map { flex: 1; min-height: 0; }
+
+/* Case page: weather and warnings card */
+.case-wx { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+.case-wx-map { min-height: 320px; height: 100%; border-radius: var(--r-control); z-index: 0; display: grid; place-items: center; color: var(--muted); }
+.case-wx-info .block-label:first-child { margin-top: 0; }
+.case-wx-days { list-style: none; margin: 4px 0 8px; padding: 0; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; text-align: center; }
+.case-wx-days li { display: grid; gap: 2px; justify-items: center; }
+.case-wx-max { font-weight: 700; border-radius: 99px; padding: 2px 8px; font-variant-numeric: tabular-nums; }
+.case-wx-kinds { display: flex; flex-wrap: wrap; gap: 4px 12px; margin: 0 0 4px; font-size: 13px; }
+.case-wx-list { display: grid; gap: 6px; margin: 4px 0 0; }
+.case-wx-list li { display: grid; gap: 1px; }
+.case-wx-alert { display: inline-flex; align-items: center; gap: 6px; }
+.case-wx-alert i { width: 10px; height: 10px; border-radius: 2px; flex: none; }
+@media (max-width: 799px) {
+  .case-wx { grid-template-columns: minmax(0, 1fr); }
+  .case-wx-map { min-height: 260px; }
+  .case-wx-days .sub { font-size: 11px; }
+}
+.vis-card .usage-chart { max-width: 560px; }
+/* Ticks, crosses and flags on the account details */
+.mark { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; font-size: 11px; font-weight: 700; margin-right: 6px; vertical-align: 1px; color: #fff; }
+.mark-yes { background: var(--brand); }
+.mark-no { background: #c1c7d0; }
+.mark-bad { background: var(--urgent); }
+.mark-warn { background: var(--high); }
+.mark-ask { background: var(--moderate); }
+/* Each solution: what to do and when, set apart from the reference facts below */
+.suggest-list.solutions .solution { padding: 0 0 10px; overflow: hidden; }
+.solution-top { background: var(--selected); border-bottom: 1px solid #b7e8cf; padding: 10px 12px; }
+.solution-top > strong { font-size: 15px; }
+.solution-top .rank-when { margin-bottom: 0; }
+.solutions .solution-facts { padding: 8px 12px 0; gap: 4px; }
+.solutions .solution > a.sub { padding: 4px 12px 0; }
+/* One chevron for every dropdown, with room beside it (browsers draw their own tight to the edge) */
+select:not([multiple]) {
+  appearance: none; -webkit-appearance: none; padding-right: 34px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%235e6c84' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 12px center; background-size: 12px 8px;
+}
+select:not([multiple]):disabled { opacity: .6; }
+.outlook-places .panel-head.map-keys .map-legend-symbols { order: 2; margin-left: auto; }
+/* Full-screen map: the chosen town's week as a bottom panel */
+.map-town-panel { border-top: 1px solid var(--border); padding: 12px 16px; background: var(--surface); }
+.mtp-head { display: flex; align-items: flex-start; gap: 16px; margin-bottom: 10px; }
+.mtp-head h2 { font-size: 22px; margin: 0; }
+.mtp-head > div:first-child { flex: 1; }
+.mtp-counts { display: flex; gap: 16px; font-size: 14px; color: var(--muted); }
+.mtp-counts strong { font-size: 22px; color: var(--fg); margin-right: 4px; }
+.mtp-days { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+.mtp-days li { display: grid; justify-items: center; gap: 2px; padding: 10px 4px; border-radius: var(--r-control); }
+.mtp-days strong { font-size: 32px; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.mtp-day { font-size: 13px; font-weight: 600; }
+.mtp-min { font-size: 13px; opacity: .8; }
+@media (max-width: 699px) { .mtp-days strong { font-size: 20px; } .mtp-day { font-size: 11px; } }
+.mtp-hazards { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.mtp-hazards li { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 99px; background: var(--bg); border: 1px solid var(--border); font-size: 16px; font-weight: 600; }
+.mtp-hazards li span { font-size: 22px; line-height: 1; }
+/* Like the outlook's act now and watch tiles */
+.mtp-counts { gap: 10px; }
+.mtp-counts > span { display: grid; gap: 0; min-width: 96px; padding: 6px 12px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-panel); font-weight: 600; color: var(--fg); font-size: 13px; }
+.mtp-counts strong { font-size: 26px; line-height: 1.1; margin: 0; }
+.mtp-act { border-left: 4px solid var(--urgent) !important; } .mtp-act strong { color: var(--urgent); }
+.mtp-watch { border-left: 4px solid #e0a030 !important; } .mtp-watch strong { color: var(--high); }
+/* A thin, quiet scrollbar for the town table */
+.town-table-wrap { scrollbar-width: thin; scrollbar-color: #c1c7d0 transparent; }
+.town-table-wrap::-webkit-scrollbar { width: 8px; height: 8px; }
+.town-table-wrap::-webkit-scrollbar-track { background: transparent; }
+.town-table-wrap::-webkit-scrollbar-thumb { background: #dfe1e6; border-radius: 99px; border: 2px solid var(--surface); }
+.town-table-wrap:hover::-webkit-scrollbar-thumb { background: #c1c7d0; }
+.town-table-wrap::-webkit-scrollbar-button { display: none; }
+.hz-icon { cursor: help; margin-right: 3px; }
+.case-wx-map-wrap { position: relative; min-height: 320px; }
+.case-wx-map-wrap .case-wx-map { position: absolute; inset: 0; min-height: 0; height: auto; }
+.map-wheel-hint { position: absolute; inset: 0; z-index: 500; display: grid; place-items: center; background: rgba(9, 30, 66, .45); color: #fff; font-size: 16px; font-weight: 600; border-radius: var(--r-control); opacity: 0; pointer-events: none; transition: opacity .2s; }
+.map-wheel-hint.is-on { opacity: 1; }
+@media (max-width: 799px) { .case-wx-map-wrap { min-height: 260px; } }
+
+/* Priority breakdown */
+.pb { margin-top: 8px; }
+.pb-meter { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-panel); padding: 12px 14px 10px; margin-bottom: 4px; }
+.pb-track { position: relative; height: 14px; border-radius: 7px; background: #e9ebef; overflow: hidden; display: flex; }
+.pb-part { height: 100%; }
+.pb-circ { background: var(--suggest); }
+.pb-sig { background: #b6a5d1; }
+.pb-tick { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--surface); }
+.pb-scale { position: relative; height: 16px; font-size: 11px; color: var(--muted); }
+.pb-scale span { position: absolute; transform: translateX(-50%); white-space: nowrap; top: 2px; }
+.pb-sum { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin: 6px 0 0; font-size: 13px; }
+.pb-sum .badge { margin-left: auto; }
+.pb-key { display: inline-block; width: 10px; height: 10px; border-radius: 2px; }
+.pb-table { width: 100%; background: var(--surface); }
+.pb-table .num { text-align: right; white-space: nowrap; }
+.pb-table tfoot th, .pb-table tfoot td { border-top: 2px solid var(--border); font-weight: 600; }
+.pb-rising { font-size: 12px; color: var(--urgent); font-weight: 600; white-space: nowrap; }
+.pb-table tbody th { color: var(--fg); font-weight: 500; white-space: normal; } .pb-table tfoot th { color: var(--fg); white-space: normal; }
+.case-wx-list li.has-icon { grid-template-columns: 26px minmax(0, 1fr); align-items: start; gap: 8px; }
+.case-wx-list li.has-icon > div { display: grid; gap: 1px; }
+.case-wx-list .wx-icon { font-size: 20px; line-height: 1.1; text-align: center; margin-top: 1px; }
+.case-wx-list strong { font-size: 13px; }
+/* Light circles behind the account fact icons, with the symbol in the tone's colour */
+.vis-icon { background: #eceef1; color: var(--muted); }
+.vis-ok .vis-icon { background: #dff3e8; color: var(--brand-hover); }
+.vis-bad .vis-icon { background: #fff; color: var(--urgent); }
+.vis-warn .vis-icon { background: #fff; color: var(--high); }
+.vis-info .vis-icon { background: var(--selected); color: var(--brand-hover); }
+.case-meta { display: block; font-size: 13px; color: var(--muted); margin-top: 2px; }
+
+/* Case weather card: three blocks (forecast, signals, Emergency WA), each with the same heading */
+.case-wx-info { display: grid; gap: 0; align-content: start; }
+.wx-block { padding: 12px 0; border-top: 1px solid var(--border); }
+.wx-block:first-child { padding-top: 0; border-top: 0; }
+.wx-head { display: flex; align-items: baseline; gap: 8px; margin: 0 0 8px; font-size: 13px; font-weight: 700; color: var(--muted); }
+.wx-head .sub { font-weight: 400; font-size: 12px; }
+.wx-head .pill { margin-left: 0; }
+.case-wx-days { margin: 0; padding: 8px 6px; background: var(--bg); border-radius: var(--r-control); }
+.wx-day { font-size: 12px; font-weight: 600; } .wx-day .sub { display: inline; font-weight: 400; font-size: 11px; }
+.wx-items { display: grid; gap: 8px; margin: 0; }
+.wx-items li { display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: 8px; align-items: start; padding: 8px 10px; border: 1px solid var(--border); border-radius: var(--r-control); background: var(--surface); }
+.wx-items li > div { display: grid; gap: 1px; }
+.wx-items strong { font-size: 13px; }
+.wx-items .wx-icon { font-size: 15px; line-height: 1.3; text-align: center; }
+.wx-none { margin: 0; font-size: 13px; }
+.vis-plan { max-width: 75ch; }
+/* The AI summary stands out from the rest of the card */
+.vis-plan { background: var(--suggest-bg); border-left: 4px solid var(--suggest); border-radius: var(--r-control); padding: 12px 16px; margin: 0 0 14px; max-width: 80ch; }
+.vis-plan p:not(.vis-plan-label) { font-size: 15px; line-height: 1.5; margin: 0 0 8px; color: var(--fg); }
+.vis-plan p:last-child { margin-bottom: 0; }
+.vis-plan-label { margin: 0 0 4px; font-size: 12px; font-weight: 700; color: var(--suggest); }
+.wx-items svg.wx-icon { width: 17px; height: 15px; margin-top: 2px; }
+
+/* Outlook list on phones: one card per customer. Badge and name on top, then the weather and needs, then
+   predicted risk and priority side by side. */
+@media (max-width: 640px) {
+  .case-table.outlook-table { min-width: 0; }
+  .outlook-table tr { grid-template-columns: 72px auto minmax(0, 1fr); gap: 6px 8px; align-items: start; }
+  .outlook-table td:nth-child(1) { grid-column: 1; grid-row: 1; padding-top: 2px; }
+  .outlook-table td:nth-child(2) { grid-column: 2 / -1; grid-row: 1; }
+  .outlook-table td:nth-child(3), .outlook-table td:nth-child(4) { grid-column: 1 / -1; }
+  .outlook-table td:nth-child(5) { grid-column: 1 / span 2; }
+  .outlook-table td:nth-child(6) { grid-column: 3; }
+}
+
+/* Case page: where the customer sits on the weather outlook */
+.outlook-banner { display: grid; gap: 8px; padding: 10px 12px; margin: 0 0 12px; border-radius: var(--r-control); border: 1px solid var(--border); border-left-width: 4px; background: var(--surface); }
+.outlook-act { border-left-color: var(--urgent); background: var(--urgent-bg); }
+.outlook-watch { border-left-color: #e0a030; background: var(--high-bg); }
+.outlook-none { border-left-color: #c1c7d0; }
+.ob-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; font-size: 14px; }

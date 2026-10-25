@@ -4,7 +4,7 @@ export const MANAGER = "staff-manager";
 
 export async function openQueue(page: Page, user = MANAGER) {
   await page.addInitScript((u) => localStorage.setItem("greenspark.demoUser", u), user);
-  await page.goto("/");
+  await page.goto("/queue");
   await expect(page.locator(".case-table")).toBeVisible();
 }
 
@@ -17,7 +17,11 @@ export async function expectTotal(page: Page, n: number) {
 }
 
 export async function switchUser(page: Page, id: string) {
-  await page.getByLabel("Demo user (not real sign-in)").selectOption(id);
+  // Demo view lives in the Demo settings panel, opened from the gear in the header.
+  const select = page.getByLabel("Demo user (not real sign-in)");
+  if (!(await select.isVisible())) await page.getByRole("button", { name: "Demo settings" }).click();
+  await select.selectOption(id);
+  await page.keyboard.press("Escape");
   await expect(page.locator(".case-table")).toBeVisible();
 }
 

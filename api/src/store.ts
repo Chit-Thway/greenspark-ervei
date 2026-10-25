@@ -1,17 +1,31 @@
 import { DatabaseSync } from "node:sqlite";
-import { mkdirSync, readFileSync } from "node:fs";
+import { closeSync, mkdirSync, openSync, readFileSync, readSync } from "node:fs";
 import { dirname } from "node:path";
-import { toDataset, type CaseNote, type Person, type QueueCase, type QueueDataset, type RawFixture } from "@greenspark/shared";
+import { accountSignalSummary, toDataset, type CaseNote, type CustomerAccount, type Person, type QueueCase, type QueueDataset, type RawFixture } from "@greenspark/shared";
 
 const SCHEMA = `
+CREATE TABLE IF NOT EXISTS group_tasks (
+ id TEXT PRIMARY KEY, group_id TEXT NOT NULL, solution_id TEXT NOT NULL, event_date TEXT NOT NULL,
+ scope TEXT NOT NULL, assignee_user_id TEXT NOT NULL, due_date TEXT NOT NULL, created_by TEXT NOT NULL,
+ created_at TEXT NOT NULL, version INTEGER NOT NULL DEFAULT 1, cancelled INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE IF NOT EXISTS group_task_members (
+ task_id TEXT NOT NULL REFERENCES group_tasks(id) ON DELETE CASCADE, person_id TEXT NOT NULL,
+ case_id TEXT NOT NULL, completed INTEGER NOT NULL DEFAULT 0, updated_by TEXT, updated_at TEXT,
+ PRIMARY KEY(task_id, person_id)
+);
+CREATE INDEX IF NOT EXISTS group_task_member_person ON group_task_members(person_id);
+CREATE INDEX IF NOT EXISTS group_task_event_solution ON group_tasks(event_date, solution_id, cancelled);
 CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS people (seq INTEGER PRIMARY KEY AUTOINCREMENT, id TEXT UNIQUE NOT NULL, doc TEXT NOT NULL, is_created INTEGER NOT NULL DEFAULT 0);
+CREATE TABLE IF NOT EXISTS accounts (person_id TEXT PRIMARY KEY, doc TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS cases (
   seq INTEGER PRIMARY KEY AUTOINCREMENT, id TEXT UNIQUE NOT NULL, person_id TEXT NOT NULL,
   static_doc TEXT NOT NULL, is_created INTEGER NOT NULL DEFAULT 0,
   version INTEGER NOT NULL, status TEXT NOT NULL, assigned_to TEXT, follow_up_at TEXT,
   review_status TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL
 );
+CREATE INDEX IF NOT EXISTS cases_person_seq ON cases(person_id, seq);
 CREATE TABLE IF NOT EXISTS notes (seq INTEGER PRIMARY KEY AUTOINCREMENT, id TEXT UNIQUE NOT NULL, case_id TEXT NOT NULL, author_id TEXT NOT NULL, text TEXT NOT NULL, created_at TEXT NOT NULL, edited_at TEXT, edited_by TEXT);
 CREATE TABLE IF NOT EXISTS note_edits (seq INTEGER PRIMARY KEY AUTOINCREMENT, note_id TEXT NOT NULL, previous_text TEXT NOT NULL, edited_by TEXT NOT NULL, edited_at TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS workflow_actions (id TEXT PRIMARY KEY, type TEXT NOT NULL, actor_id TEXT NOT NULL, created_at TEXT NOT NULL, undone_at TEXT, undone_by TEXT);
@@ -27,11 +41,17 @@ export interface WorkflowSnapshot {
   followUpAt?: string | null;
 }
 
+/**
+ * Utility accounts are kept in their own table and read one at a time (the case page). People are stored without
+ * them, with a signal summary instead, so the queue never loads thousands of accounts into memory.
+ * `accountsPath` is an optional JSON Lines file of { personId, account } for fixtures too big to hold their
+ * accounts inline (the full dataset import).
+ */
 export class Store {
   readonly db: DatabaseSync;
   readonly catalog: QueueDataset; // read-only fixture data: catalogs, users
 
-  constructor(dbPath: string, fixturePath: string) {
+  constructor(dbPath: string, fixturePath: string, private readonly accountsPath: string | null = null) {
     const raw = JSON.parse(readFileSync(fixturePath, "utf8")) as RawFixture;
     // People and cases are always read from the database, so the catalog keeps only the fixed catalogs.
     this.catalog = { ...toDataset(raw), people: [], cases: [] };
@@ -47,6 +67,7 @@ export class Store {
     if (seeded && seeded !== raw.metadata.datasetId) this.clear();
     if (!this.getMeta("seeded_dataset")) this.seed(raw);
     else this.refreshSeededPeople(raw);
+    this.moveInlineAccounts();
     this.assignCasesWithoutWorker(raw);
     this.numberAccountsWithoutOne();
   }
@@ -109,9 +130,63 @@ export class Store {
    */
   private refreshSeededPeople(raw: RawFixture) {
     const update = this.db.prepare("UPDATE people SET doc = ? WHERE id = ? AND is_created = 0 AND doc <> ?");
+    const current = this.db.prepare("SELECT doc FROM people WHERE id = ?");
     this.transaction(() => {
-      for (const p of raw.people) { const doc = JSON.stringify(p); update.run(doc, p.id, doc); }
+      for (const p of raw.people) {
+        if (p.account) { this.putAccount(p); continue; }
+        // No inline account (it is in the accounts file): keep the summary already stored.
+        const old = current.get(p.id) as Row | undefined;
+        const summary = old ? (JSON.parse(old.doc as string) as Person).signalSummary ?? null : null;
+        const doc = JSON.stringify({ ...p, signalSummary: summary });
+        update.run(doc, p.id, doc);
+      }
     });
+  }
+
+  /** Stores a person's account in the accounts table, and the person without it but with its signal summary. */
+  private putAccount(p: Person) {
+    const { account, ...rest } = p;
+    if (!account) return;
+    this.db.prepare("INSERT INTO accounts (person_id, doc) VALUES (?, ?) ON CONFLICT(person_id) DO UPDATE SET doc = excluded.doc").run(p.id, JSON.stringify(account));
+    this.sourceIds = null;
+    const doc = JSON.stringify({ ...rest, signalSummary: accountSignalSummary(p, this.catalog.asOf) });
+    this.db.prepare("UPDATE people SET doc = ? WHERE id = ? AND doc <> ?").run(doc, p.id, doc);
+    this.peopleCache = null;
+  }
+
+  /** Databases from before the accounts table hold accounts inside people; move them out. */
+  private moveInlineAccounts() {
+    const rows = this.db.prepare("SELECT doc FROM people WHERE json_extract(doc, '$.account') IS NOT NULL").all() as Row[];
+    if (!rows.length) return;
+    this.transaction(() => { for (const r of rows) this.putAccount(JSON.parse(r.doc as string) as Person); });
+  }
+
+  /**
+   * Loads the accounts file into the accounts table, with each person's summary. It is JSON Lines of
+   * { personId, account }, read a megabyte at a time so a large file never sits in memory whole.
+   */
+  private loadAccountsFile() {
+    if (!this.accountsPath) return;
+    const people = new Map((this.db.prepare("SELECT id, doc FROM people").all() as Row[]).map((r) => [r.id as string, r.doc as string]));
+    const fd = openSync(this.accountsPath, "r");
+    const chunk = Buffer.alloc(1 << 20);
+    let rest = "";
+    const take = (line: string) => {
+      if (!line.trim()) return;
+      const { personId, account } = JSON.parse(line) as { personId: string; account: CustomerAccount };
+      const doc = people.get(personId);
+      if (doc) this.putAccount({ ...(JSON.parse(doc) as Person), account });
+    };
+    try {
+      this.transaction(() => {
+        for (let n = readSync(fd, chunk); n > 0; n = readSync(fd, chunk)) {
+          const lines = (rest + chunk.toString("utf8", 0, n)).split("\n");
+          rest = lines.pop()!;
+          lines.forEach(take);
+        }
+        take(rest);
+      });
+    } finally { closeSync(fd); }
   }
 
   close() { this.db.close(); }
@@ -124,14 +199,19 @@ export class Store {
   /** Empties every table, ready to seed a new dataset. */
   private clear() {
     this.transaction(() => {
-      for (const t of ["workflow_action_items", "workflow_actions", "note_edits", "notes", "cases", "people", "meta"]) this.db.exec(`DELETE FROM ${t}`);
+      for (const t of ["group_task_members", "group_tasks", "workflow_action_items", "workflow_actions", "note_edits", "notes", "cases", "accounts", "people", "meta"]) this.db.exec(`DELETE FROM ${t}`);
     });
   }
 
   private seed(raw: RawFixture) {
     this.transaction(() => {
       const addPerson = this.db.prepare("INSERT INTO people (id, doc) VALUES (?, ?)");
-      for (const p of raw.people) addPerson.run(p.id, JSON.stringify(p));
+      const addAccount = this.db.prepare("INSERT INTO accounts (person_id, doc) VALUES (?, ?)");
+      for (const p of raw.people) {
+        const { account, ...rest } = p;
+        addPerson.run(p.id, JSON.stringify(account ? { ...rest, signalSummary: accountSignalSummary(p, this.catalog.asOf) } : rest));
+        if (account) addAccount.run(p.id, JSON.stringify(account));
+      }
       const addCase = this.db.prepare(
         "INSERT INTO cases (id, person_id, static_doc, version, status, assigned_to, follow_up_at, review_status, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?)",
       );
@@ -143,6 +223,7 @@ export class Store {
       }
       this.db.prepare("INSERT INTO meta (key, value) VALUES ('seeded_dataset', ?)").run(raw.metadata.datasetId);
     });
+    this.loadAccountsFile();
   }
 
   /** Runs fn in one SQLite transaction; any throw rolls everything back. */
@@ -158,8 +239,11 @@ export class Store {
     }
   }
 
+  /** Each case's fixed part, parsed once: static docs never change after they are written. */
+  private statics = new Map<string, Omit<QueueCase, "version" | "workflow">>();
   private assemble(row: Row, notes: CaseNote[]): QueueCase {
-    const rest = JSON.parse(row.static_doc as string) as Omit<QueueCase, "version" | "workflow">;
+    let rest = this.statics.get(row.id as string);
+    if (!rest) { rest = JSON.parse(row.static_doc as string) as Omit<QueueCase, "version" | "workflow">; this.statics.set(row.id as string, rest); }
     return {
       ...rest,
       version: row.version as number,
@@ -220,6 +304,30 @@ export class Store {
 
   getPerson(id: string): Person | null {
     return this.people().byId.get(id) ?? null;
+  }
+
+  /** Each person's customer ID in the source dataset, from their account (for the risk model's scores). */
+  private sourceIds: Map<string, string> | null = null;
+  sourceCustomerId(personId: string): string | null {
+    if (!this.sourceIds) {
+      const rows = this.db.prepare("SELECT person_id, json_extract(doc, '$.sourceCustomerId') AS sid FROM accounts").all() as Row[];
+      this.sourceIds = new Map(rows.filter((r) => r.sid).map((r) => [r.person_id as string, r.sid as string]));
+    }
+    return this.sourceIds.get(personId) ?? null;
+  }
+
+  /** The person with their utility account, for one case. */
+  getPersonWithAccount(id: string): Person | null {
+    const p = this.getPerson(id);
+    if (!p) return null;
+    const r = this.db.prepare("SELECT doc FROM accounts WHERE person_id = ?").get(id) as Row | undefined;
+    return r ? { ...p, account: JSON.parse(r.doc as string) as CustomerAccount } : p;
+  }
+
+  /** Changes whenever a case is added or changed (every change bumps its version): a cheap key for caches. */
+  casesSignature(): string {
+    const r = this.db.prepare("SELECT COUNT(*) AS n, COALESCE(SUM(version), 0) AS v, MAX(updated_at) AS u FROM cases").get() as Row;
+    return `${r.n}:${r.v}:${r.u}`;
   }
 
   dataset(): QueueDataset {

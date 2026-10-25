@@ -48,12 +48,19 @@ export function AccountSignals({ account, asOf, summary, weather = [] }: { accou
 }
 
 /** The utility account: retailer, plan, payments setup, concession, protections and contact settings. */
+type Tone = "yes" | "no" | "bad" | "warn" | "ask";
+const MARK: Record<Tone, string> = { yes: "✓", no: "✕", bad: "✕", warn: "!", ask: "?" };
+/** A tick, cross or flag before a value, so the account reads at a glance. "no" is a plain no; "bad" is a no that matters. */
+export function Mark({ tone }: { tone: Tone }) {
+  return <span className={`mark mark-${tone}`} aria-hidden="true">{MARK[tone]}</span>;
+}
+
 export function UtilityAccount({ account: a, accountNumber }: { account: CustomerAccount; accountNumber: string | null }) {
   const now = a.monthly.at(-1);
   const cp = a.contactPreferences;
   return (
     <section className="case-card" aria-labelledby="ov-account">
-      <h3 id="ov-account">Utility account <span className="sim">synthetic dataset</span></h3>
+      <h3 id="ov-account">Utility account</h3>
       <dl className="details">
         <div><dt>Account number</dt><dd>{accountNumber ?? "Not recorded"}</dd></div>
         <div><dt>Customer since</dt><dd>{date(a.customerSince)}</dd></div>
@@ -61,26 +68,26 @@ export function UtilityAccount({ account: a, accountNumber }: { account: Custome
         <div><dt>Region</dt><dd>{a.region.name}{a.region.northOf26th ? " (north of the 26th parallel)" : ""}</dd></div>
         <div><dt>Plan</dt><dd>{a.plan.name}{a.plan.billingCycle ? ", billed every two months" : ""}</dd></div>
         <div><dt>Meter</dt><dd>{human(a.meterType)}{a.solar ? ` · ${a.solar.kw} kW solar` : ""}</dd></div>
-        <div><dt>Supply</dt><dd className={a.supplyStatus === "disconnected" ? "bill-overdue" : undefined}>{a.supplyStatus === "disconnected" ? "Disconnected" : "Connected"}</dd></div>
+        <div><dt>Supply</dt><dd className={a.supplyStatus === "disconnected" ? "bill-overdue" : undefined}><Mark tone={a.supplyStatus === "disconnected" ? "bad" : "yes"} />{a.supplyStatus === "disconnected" ? "Disconnected" : "Connected"}</dd></div>
         <div><dt>Payment method</dt><dd>{METHOD_LABELS[a.paymentMethod]}</dd></div>
-        {now ? <div><dt>Balance</dt><dd>{dollars(now.balance)}{now.overdue > 0 ? <span className="bill-overdue"> · {dollars(now.overdue)} overdue ({now.daysOverdueOldest} days)</span> : ""}</dd></div> : null}
+        {now ? <div><dt>Balance</dt><dd><Mark tone={now.overdue > 0 ? "bad" : "yes"} />{dollars(now.balance)}{now.overdue > 0 ? <span className="bill-overdue"> · {dollars(now.overdue)} overdue ({now.daysOverdueOldest} days)</span> : ""}</dd></div> : null}
         {a.prepay ? <div><dt>Prepay credit</dt><dd>{dollars(a.prepay.creditNow)}</dd></div> : null}
-        <div><dt>Concession</dt><dd>{a.concession.status === "active" ? "On the account" : a.concession.status === "lapsed" ? `Lapsed ${date(a.concession.endDate)}` : "None on file"}</dd></div>
-        <div><dt>Medical cooling subsidy</dt><dd>{yesNo(a.medicalCoolingSubsidy)}</dd></div>
-        <div><dt>Life support</dt><dd>{a.lifeSupport ? `Registered${a.lifeSupportSince ? ` ${date(a.lifeSupportSince)}` : ""}` : "Not registered"}</dd></div>
-        <div><dt>Third-party authority</dt><dd>{a.thirdPartyAuthority ? `${a.thirdPartyAuthority.type}${a.thirdPartyAuthority.name ? `: ${a.thirdPartyAuthority.name}` : " (name not recorded)"}` : "None"}</dd></div>
-        <div><dt>Hardship program</dt><dd>{a.hardshipProgram.status === "none" ? "Not enrolled" : a.hardshipProgram.status === "active" ? "Enrolled" : `Exited (${human(a.hardshipProgram.exitReason)})`}</dd></div>
-        <div><dt>Payment plan</dt><dd>{a.paymentPlan ? `${human(a.paymentPlan.status)}, ${a.paymentPlan.instalments} × ${dollars(a.paymentPlan.instalment)} from ${date(a.paymentPlan.startedAt)}` : "None"}</dd></div>
+        <div><dt>Concession</dt><dd><Mark tone={a.concession.status === "active" ? "yes" : a.concession.status === "lapsed" ? "warn" : "no"} />{a.concession.status === "active" ? "On the account" : a.concession.status === "lapsed" ? `Lapsed ${date(a.concession.endDate)}` : "None on file"}</dd></div>
+        <div><dt>Medical cooling subsidy</dt><dd><Mark tone={a.medicalCoolingSubsidy ? "warn" : "no"} />{yesNo(a.medicalCoolingSubsidy)}</dd></div>
+        <div><dt>Life support</dt><dd><Mark tone={a.lifeSupport ? "warn" : "no"} />{a.lifeSupport ? `Registered${a.lifeSupportSince ? ` ${date(a.lifeSupportSince)}` : ""}` : "Not registered"}</dd></div>
+        <div><dt>Third-party authority</dt><dd><Mark tone={a.thirdPartyAuthority ? "yes" : "no"} />{a.thirdPartyAuthority ? `${a.thirdPartyAuthority.type}${a.thirdPartyAuthority.name ? `: ${a.thirdPartyAuthority.name}` : " (name not recorded)"}` : "None"}</dd></div>
+        <div><dt>Hardship program</dt><dd><Mark tone={a.hardshipProgram.status === "active" ? "yes" : a.hardshipProgram.status === "none" ? "no" : "warn"} />{a.hardshipProgram.status === "none" ? "Not enrolled" : a.hardshipProgram.status === "active" ? "Enrolled" : `Exited (${human(a.hardshipProgram.exitReason)})`}</dd></div>
+        <div><dt>Payment plan</dt><dd><Mark tone={!a.paymentPlan ? "no" : a.paymentPlan.status === "broken" ? "bad" : a.paymentPlan.status === "active" ? "yes" : "no"} />{a.paymentPlan ? `${human(a.paymentPlan.status)}, ${a.paymentPlan.instalments} × ${dollars(a.paymentPlan.instalment)} from ${date(a.paymentPlan.startedAt)}` : "None"}</dd></div>
         <div className="wide">
           <dt>Contact settings</dt>
           <dd>
             <ul className="contact-prefs">
-              <li><span>Preferred channel</span><strong>{human(cp.preferredChannel)}</strong></li>
-              <li><span>SMS</span><strong>{cp.smsOptIn ? "Opted in" : "Opted out"}</strong></li>
-              <li><span>Email</span><strong>{cp.emailOptIn ? "Opted in" : "Opted out"}</strong></li>
-              <li><span>Phone calls</span><strong>{cp.doNotCall ? "Do not call" : "OK to call"}</strong></li>
-              <li><span>Proactive support contact</span><strong>{cp.proactiveSupportConsent === "not_asked" ? "Not asked" : cp.proactiveSupportConsent === "yes" ? "Consented" : "Declined"}</strong></li>
-              <li><span>Online account</span><strong>{cp.onlineAccountActive ? "Active" : "Not active"}</strong></li>
+              <li><span>Preferred channel</span><strong><Mark tone="yes" />{human(cp.preferredChannel)}</strong></li>
+              <li><span>SMS</span><strong><Mark tone={cp.smsOptIn ? "yes" : "bad"} />{cp.smsOptIn ? "Opted in" : "Opted out"}</strong></li>
+              <li><span>Email</span><strong><Mark tone={cp.emailOptIn ? "yes" : "bad"} />{cp.emailOptIn ? "Opted in" : "Opted out"}</strong></li>
+              <li><span>Phone calls</span><strong><Mark tone={cp.doNotCall ? "bad" : "yes"} />{cp.doNotCall ? "Do not call" : "OK to call"}</strong></li>
+              <li><span>Proactive support contact</span><strong><Mark tone={cp.proactiveSupportConsent === "yes" ? "yes" : cp.proactiveSupportConsent === "not_asked" ? "ask" : "bad"} />{cp.proactiveSupportConsent === "not_asked" ? "Not asked" : cp.proactiveSupportConsent === "yes" ? "Consented" : "Declined"}</strong></li>
+              <li><span>Online account</span><strong><Mark tone={cp.onlineAccountActive ? "yes" : "no"} />{cp.onlineAccountActive ? "Active" : "Not active"}</strong></li>
             </ul>
           </dd>
         </div>
@@ -247,7 +254,8 @@ export function SupplyAndCollections({ account: a }: { account: CustomerAccount 
 export function AccountHistory({ account: a, asOf }: { account: CustomerAccount; asOf: string }) {
   const payments = a.payments.slice(-10).reverse();
   const recharges = (a.prepay?.recharges ?? []).slice(-10).reverse();
-  const recentUsage = a.usage.slice(-13, -1).reverse();
+  // Every complete month in the data (the latest month is still part-way through).
+  const recentUsage = a.usage.slice(0, -1).reverse();
   return (
     <section className="case-card" aria-labelledby="ov-bills">
       {a.prepay ? (
@@ -314,7 +322,9 @@ export function AccountHistory({ account: a, asOf }: { account: CustomerAccount;
 }
 
 /** Bars for each month's kWh, oldest on the left, with a line for the same month last year. */
-function UsageChart({ usage }: { usage: { month: string; kWh: number; kWhLastYear: number | null }[] }) {
+const MONTH_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+export function UsageChart({ usage }: { usage: { month: string; kWh: number; kWhLastYear: number | null }[] }) {
   const months = [...usage].sort((a, b) => a.month.localeCompare(b.month));
   if (months.length < 2) return null;
   const W = 600, H = 120, top = 8, bottom = 18;
@@ -328,7 +338,11 @@ function UsageChart({ usage }: { usage: { month: string; kWh: number; kWhLastYea
         {months.map((m, i) => (
           <g key={m.month}>
             <rect x={i * step + (step - bar) / 2} y={y(m.kWh)} width={bar} height={H - bottom - y(m.kWh)} rx={2} className="usage-bar"><title>{`${m.month}: ${m.kWh} kWh${m.kWhLastYear !== null ? ` (last year ${m.kWhLastYear})` : ""}`}</title></rect>
-            <text x={i * step + step / 2} y={H - 4} textAnchor="middle" className="usage-axis">{m.month.slice(5)}</text>
+            {months.length <= 12 || i % 3 === 0 ? (
+              <text x={i === 0 ? i * step + (step - bar) / 2 : i * step + step / 2} y={H - 4} textAnchor={i === 0 ? "start" : "middle"} className="usage-axis">
+                {MONTH_SHORT[Number(m.month.slice(5)) - 1]}{i === 0 || m.month.endsWith("-01") || (months.length > 12 && i % 12 === 0) ? ` ${m.month.slice(2, 4)}` : ""}
+              </text>
+            ) : null}
           </g>
         ))}
         {last.length > 1 ? <polyline points={last.join(" ")} className="usage-last" /> : null}
