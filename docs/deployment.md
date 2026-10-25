@@ -2,7 +2,21 @@
 
 The Dockerfile serves the API and built web app in one service. The full synthetic dataset is included compressed and unpacked during the image build. SQLite stores cases and group tasks, so mount persistent storage before using the app.
 
-## Railway
+## Live Fly deployment
+
+Live app: https://greenspark-ervei-chit-thway.fly.dev/
+
+The app runs in Singapore (`sin`) on one 512 MB machine with an encrypted 1 GB `greenspark_data` volume mounted at `/data`. The machine suspends when idle and resumes on traffic. The reviewed sample forecast is the default; the Emergency WA feed is enabled.
+
+To publish later changes after logging into your own Fly account:
+
+```sh
+fly deploy --app greenspark-ervei-chit-thway --remote-only --ha=false
+```
+
+GitHub pushes do not deploy automatically until the optional workflow credentials below are configured.
+
+## Railway alternative
 
 1. In Railway, create a project from `Chit-Thway/greenspark-ervei`, branch `main`, with the repository root as the service root. The committed `railway.toml` selects the Dockerfile and health check.
 2. Attach a volume to this service at **`/data`**. Keep one replica because the app uses a single SQLite database.
