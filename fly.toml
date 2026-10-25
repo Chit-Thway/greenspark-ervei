@@ -1,6 +1,6 @@
 # Fly.io config. Built from the repo's Dockerfile; /data is a Fly volume holding the SQLite case database and the Admin flow JSON.
 app = "greenspark-ervei-chit-thway"
-primary_region = "iad"
+primary_region = "sin"
 # A little swap as headroom.
 swap_size_mb = 256
 
